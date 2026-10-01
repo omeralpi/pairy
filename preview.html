@@ -1,0 +1,141 @@
+<!doctype html><meta charset=utf-8><style>body{max-width:920px;margin:0 auto;padding:40px;font:16px/1.6 -apple-system,sans-serif;color:#1f2328;background:#fff}img{max-width:100%}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d0d7de;padding:8px 12px}th{background:#f6f8fa}code{background:#eff1f3;padding:2px 5px;border-radius:4px}pre code{display:block;padding:12px}blockquote{border-left:4px solid #d0d7de;margin:0;padding:0 16px;color:#57606a}hr{border:0;border-top:1px solid #d0d7de}@media (prefers-color-scheme: dark){body{background:#0d1117;color:#e6edf3}th{background:#161b22}td,th{border-color:#30363d}code{background:#161b22}blockquote{border-color:#30363d;color:#8b949e}hr{border-color:#30363d}}</style><div align="center">
+
+<img src="assets/hero.png" alt="Pairy: trade in person" width="100%" />
+
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg" />
+    <img src="assets/wordmark-light.svg" alt="Pairy" width="230" />
+  </picture>
+</h1>
+
+<h3>Trade in person.</h3>
+<p>Pairy is a location-based, peer-to-peer cash and crypto exchange on Stellar. Meet someone near you, trade local cash for stablecoins or tokens face to face, and let an on-chain escrow protect both sides so nobody can walk off with the money.</p>
+<p><a href="https://stellar.org"><img src="https://img.shields.io/badge/Stellar-testnet-7B3FE4" alt="Stellar"></a>
+<a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript"></a>
+<a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white" alt="Next.js"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
+<img src="https://img.shields.io/badge/status-pre--development-FF4E2B" alt="Status"></p>
+</div>
+
+<hr>
+<h2>The problem</h2>
+<p>Buying or selling crypto for local cash still runs through channels with no safety net. Telegram OTC groups and informal middlemen offer no recourse: if the other side takes the cash and disappears, the money is gone. The regulated alternatives are a poor fit for this use case, crypto ATMs commonly charge 10 to 20 percent in fees and spread, and centralized exchanges need bank rails plus KYC and still take days to turn a balance into cash in hand.</p>
+<p>Meeting in person is the most natural way for two people to trade, but nothing makes that meeting safe.</p>
+<p>Stellar already has the settlement rails: sub-cent fees, fast finality, native USDC, and two ready ways to hold funds in escrow, a Soroban contract or native claimable balances with multisig. A trade can be locked on-chain and released only when both people confirm.</p>
+<p>What is missing sits one layer up: the trust layer. Location-based discovery, a negotiate-then-lock deal flow, an in-person handshake, on-chain escrow, and a reputation record that together turn "meet a stranger to swap cash and crypto" into something with guardrails.</p>
+<blockquote>
+<p>The payment is a commodity, the trust flow is the product. Anyone can send USDC on Stellar. Letting two strangers swap cash and crypto in person without either getting robbed, through escrow, an in-person handshake, reputation, and dispute arbitration, is the hard part and the moat.</p>
+</blockquote>
+<hr>
+<h2>How it works</h2>
+<p>Liam is a tourist in Canggu, Bali. He has USDC in his wallet but needs rupiah for the day. Wayan is nearby with cash and wants USDC.</p>
+<ol>
+<li><strong>Sign in.</strong> Liam signs in with email and gets a Privy embedded Stellar wallet provisioned automatically. Wayan connects her own Freighter wallet. Each claims a handle like <code>@liam.pairy</code>.</li>
+<li><strong>Browse the map.</strong> Liam opens the map and sees nearby listings as pins, including Wayan offering cash rupiah for USDC at her rate.</li>
+<li><strong>Propose a deal.</strong> Liam opens a chat. They agree on 200 USDC for 3,200,000 IDR and a warung in Canggu, then one of them sends a structured proposal the other accepts. No fees yet: negotiate first, lock last.</li>
+<li><strong>Lock escrow.</strong> Liam, the side holding crypto, deposits 200 USDC into the on-chain escrow on Stellar. Wayan can see that it is locked.</li>
+<li><strong>Meet and settle.</strong> They meet at the warung. A short-lived signed QR proves both are present. Wayan hands over the cash, Liam releases, and the 200 USDC lands in Wayan's wallet. If Liam refuses to release after taking the cash, Wayan opens a dispute and an on-chain arbiter decides where the funds go.</li>
+<li><strong>Collect a stamp.</strong> The settled trade geocodes the meeting spot into Liam's Trade Passport, a map of the cities he has traded in.</li>
+</ol>
+<p>Every settlement is verifiable on <code>stellar.expert</code> by transaction hash. No engineering knowledge required to check it.</p>
+<hr>
+<h2>Architecture</h2>
+<p>One rule defines the design: <strong>Pairy never holds your money.</strong> The on-chain escrow does, and the app only ever talks to the Pairy API, never to keys or the chain directly. Only the Stellar layer touches Stellar, only the escrow holds funds, and the core deal logic is chain-agnostic, so the escrow can be a Soroban contract or native primitives without the rest of the app caring.</p>
+<div class="mermaid">flowchart TB
+    App["Client app<br/>map, chat, deal flow"]
+    subgraph Core["Pairy core (the brain)"]
+        DEAL["Deal state machine"]
+        ESC["Escrow orchestrator"]
+        LED[("Ledger DB<br/>deals, messages, passport")]
+    end
+    WAL["Wallets<br/>Privy embedded, Freighter"]
+    STL["Stellar layer<br/>escrow, Horizon and Soroban RPC watcher"]
+    OFF["Off-chain services<br/>geocoding, push, handshake"]
+    NET["Stellar testnet<br/>XLM, USDC"]
+
+    App --> Core
+    App --> WAL
+    DEAL --> ESC
+    DEAL --> LED
+    ESC --> STL
+    Core --> OFF
+    WAL --> STL
+    STL --> NET
+</div>
+<h3>Deal lifecycle</h3>
+<p>The whole trade is one explicit, idempotent state machine. Nothing touches the chain until both sides commit, and on-chain state only ever moves forward.</p>
+<div class="mermaid">stateDiagram-v2
+    [*] --> PROPOSED
+    PROPOSED --> ACCEPTED: counterparty accepts
+    PROPOSED --> DECLINED: counterparty declines
+    PROPOSED --> CANCELLED: proposer withdraws
+    ACCEPTED --> ESCROWED: depositor locks funds on-chain
+    ESCROWED --> RELEASED: cash received, depositor releases
+    ESCROWED --> REFUNDED: no show, funds returned
+    ESCROWED --> DISPUTED: either party flags
+    DISPUTED --> RESOLVED: arbiter sends funds to one side
+    DECLINED --> [*]
+    CANCELLED --> [*]
+    RELEASED --> [*]
+    REFUNDED --> [*]
+    RESOLVED --> [*]
+</div>
+<p>The escrow exposes one lifecycle (deposit, release, refund, dispute, resolve) behind a single interface, so two implementations can be evaluated without changing the rest of the system:</p>
+<ul>
+<li><strong>A Soroban contract</strong> in Rust that custodies XLM and Stellar Asset Contract tokens.</li>
+<li><strong>Native Stellar primitives</strong>, claimable balances plus multisig, with no custom contract.</li>
+</ul>
+<p>Curated design notes (architecture, flows, data model, contracts, api, testing) will live in <code>/docs</code> as the build lands.</p>
+<hr>
+<h2>What we are building</h2>
+<p>A working, open-source, escrow-protected P2P swap flow on Stellar testnet, proven end to end by testnet transaction hashes. Everything below is planned. Nothing is built yet.</p>
+<table>
+<thead>
+<tr><th>Deliverable</th><th>What ships</th><th>How you verify it</th></tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D1: Escrow and dual wallets</strong></td>
+<td>The on-chain escrow on Stellar testnet (a Soroban contract or native claimable balances with multisig) exposing deposit, release, refund, dispute, and resolve, wired to both wallet paths (Privy embedded Stellar and Freighter). Tests and CI.</td>
+<td>A deposit tx and a release tx for the same escrow on stellar.expert, and the escrow lifecycle test suite passing.</td>
+</tr>
+<tr>
+<td><strong>D2: The P2P trade flow</strong></td>
+<td>Location-based listings on a map, one to one chat with structured deal proposals, the negotiate-first-lock-last state machine, <code>@handle.pairy</code> onboarding, and the Trade Passport.</td>
+<td>A full proposed to escrowed to released deal run end to end in the app, with the settlement tx visible on stellar.expert.</td>
+</tr>
+<tr>
+<td><strong>D3: Hosted demo and packaging</strong></td>
+<td>The full lifecycle as a hosted Stellar testnet demo, a public repo with a reproducible quickstart, and a short walkthrough video.</td>
+<td>A live demo URL, the public repo, and a 2 minute walkthrough.</td>
+</tr>
+</tbody>
+</table>
+<p>Real fiat handling at scale, reputation hardening, and mainnet are explicitly later phases. The escrow interface and the chain-agnostic core are built as the hooks they plug into.</p>
+<hr>
+<h2>Tech stack</h2>
+<table>
+<thead>
+<tr><th>Layer</th><th>Choice</th></tr>
+</thead>
+<tbody>
+<tr><td>Framework</td><td>Next.js (App Router), React, TypeScript</td></tr>
+<tr><td>API</td><td>tRPC</td></tr>
+<tr><td>Stellar</td><td><code>@stellar/stellar-sdk</code>, Soroban RPC, Horizon</td></tr>
+<tr><td>Wallets</td><td>Privy (embedded Stellar) and Freighter</td></tr>
+<tr><td>Escrow</td><td>Soroban (Rust) or native claimable balances with multisig</td></tr>
+<tr><td>Database</td><td>Postgres with Drizzle ORM</td></tr>
+<tr><td>UI</td><td>Tailwind CSS, Radix UI</td></tr>
+<tr><td>Notifications</td><td>Web Push (VAPID)</td></tr>
+<tr><td>Hosting</td><td>Vercel</td></tr>
+</tbody>
+</table>
+<hr>
+<h2>Status</h2>
+<p>Pre-development, targeting Stellar testnet. Nothing is live, no real money moves, and there are no users yet. This README describes the design and the build plan. Progress is tracked against the deliverables above and verified by testnet transaction hashes.</p>
+<h2>Contact</h2>
+<p>Questions and feedback: open an issue on this repository.</p>
+<h2>License</h2>
+<p><a href="LICENSE">MIT</a>.</p>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script><script>mermaid.initialize({startOnLoad:true,theme:document.matchMedia&&document.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"neutral"});</script>
