@@ -105,7 +105,7 @@ Evidence type: live demo URL, public repo, walkthrough video.
 
 | Item | What it shows | Link | Status |
 |---|---|---|---|
-| Live demo URL (testnet) | Listings on the map, at the city level each user chose | PENDING | PENDING |
+| Live demo URL (testnet) | Listings on the map, at the city level each user chose | https://pairy-seven.vercel.app | Live since 2026-10-16. Smoke-tested end to end on the hosted demo: a seller using a device-generated wallet in the browser listed 1–20 XLM in Istanbul, a buyer client opened a 10 XLM trade, the seller agreed and locked [`e8a800ad…4151`](https://stellar.expert/explorer/testnet/tx/e8a800ad91e2121d5beb7f55172ca46af801ec36967a9e923a4853fa53634151) (buyer `rel_before 259200`, seller `not rel_before 259200`), the buyer claimed [`83087e00…4d9a`](https://stellar.expert/explorer/testnet/tx/83087e00e84c10e2cda251f632a26e013b612f7cb0bd5f2cd8b9e68c95a54d9a), the trade reached `claimed` and its chat went from 1 message to 0 |
 | Public repository | Source for everything above | PENDING | PENDING |
 | 2-minute walkthrough video | The full flow, including the lock screen stating the buyer-claim bound | PENDING | PENDING |
 | Settlement steps on stellar.expert | Every lock, claim and reclaim made in the demo, reachable through the links in Deliverable 1 and 2 | PENDING | PENDING |
