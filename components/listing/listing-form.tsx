@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +25,7 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="grid grid-flow-col auto-cols-fr rounded-xl border p-1">
+    <div className="grid grid-flow-col auto-cols-fr rounded-full border border-line p-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -32,8 +33,8 @@ function Segmented<T extends string>({
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
-            value === o.value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
+            "rounded-full px-3 py-2.5 text-sm font-medium transition-colors",
+            value === o.value ? "bg-ink text-paper" : "text-slate hover:text-ink",
           )}
         >
           {o.label}
@@ -45,8 +46,13 @@ function Segmented<T extends string>({
 
 function FieldError({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null;
-  return <p className="text-sm text-destructive">{messages[0]}</p>;
+  return <p className="text-sm text-danger">{messages[0]}</p>;
 }
+
+// Label ships text-sm/font-medium as utilities, which beat .eyebrow; override them here.
+const LABEL = "eyebrow text-[11px] font-normal";
+const FIELD = "border-line bg-paper text-ink placeholder:text-mist focus-visible:ring-ink";
+const NUMBER = cn(FIELD, "font-mono text-lg tabular-nums");
 
 export function ListingForm() {
   const router = useRouter();
@@ -70,7 +76,7 @@ export function ListingForm() {
 
   return (
     <form
-      className="space-y-6"
+      className="space-y-8"
       onSubmit={(e) => {
         e.preventDefault();
         if (!city) return;
@@ -78,7 +84,7 @@ export function ListingForm() {
       }}
     >
       <div className="space-y-2">
-        <Label>I want to</Label>
+        <Label className={LABEL}>I want to</Label>
         <Segmented
           value={side}
           onChange={setSide}
@@ -90,7 +96,7 @@ export function ListingForm() {
       </div>
 
       <div className="space-y-2">
-        <Label>Asset (Stellar testnet)</Label>
+        <Label className={LABEL}>Asset · testnet</Label>
         <Segmented
           value={asset}
           onChange={setAsset}
@@ -103,30 +109,30 @@ export function ListingForm() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="min">Min {asset}</Label>
-          <Input id="min" inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
+          <Label htmlFor="min" className={LABEL}>Min {asset}</Label>
+          <Input id="min" className={NUMBER} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
           <FieldError messages={fieldErrors.minAmount} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="max">Max {asset}</Label>
-          <Input id="max" inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
+          <Label htmlFor="max" className={LABEL}>Max {asset}</Label>
+          <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
           <FieldError messages={fieldErrors.maxAmount} />
         </div>
       </div>
 
       <div className="grid grid-cols-[1fr_7rem] gap-3">
         <div className="space-y-2">
-          <Label htmlFor="rate">Rate (cash per 1 {asset})</Label>
-          <Input id="rate" inputMode="decimal" required placeholder="41.50" value={rate} onChange={(e) => setRate(e.target.value.trim())} />
+          <Label htmlFor="rate" className={LABEL}>Rate · cash per 1 {asset}</Label>
+          <Input id="rate" className={NUMBER} inputMode="decimal" required placeholder="41.50" value={rate} onChange={(e) => setRate(e.target.value.trim())} />
           <FieldError messages={fieldErrors.rate} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="fiat">Cash</Label>
+          <Label htmlFor="fiat" className={LABEL}>Cash</Label>
           <select
             id="fiat"
             value={fiatCode}
             onChange={(e) => setFiatCode(e.target.value as CreateInput["fiatCode"])}
-            className="flex h-14 w-full rounded-md border border-input bg-transparent px-3"
+            className="flex h-14 w-full rounded-md border border-line bg-paper px-3 font-mono text-lg text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink"
           >
             {FIAT_CODES.map((c) => (
               <option key={c} value={c}>
@@ -138,39 +144,35 @@ export function ListingForm() {
       </div>
 
       <div className="space-y-2">
-        <Label>City</Label>
+        <Label className={LABEL}>City</Label>
         <CityPicker value={city} onChange={setCity} />
-        <p className="text-xs text-muted-foreground">
-          Your listing shows at the city&apos;s centre, never at your position. Agree the exact meeting point in the
-          trade chat.
+        <p className="text-sm text-slate">
+          The pin shows the city, not you. Agree the meeting point in the chat.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="note">Note (optional)</Label>
+        <Label htmlFor="note" className={LABEL}>Note · optional</Label>
         <Textarea
           id="note"
+          className={cn(FIELD, "text-base shadow-none md:text-base")}
           rows={3}
           maxLength={280}
           placeholder="Usually free on weekday evenings. Public places only."
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <p className="text-right text-xs text-muted-foreground">{note.length}/280</p>
+        <p className="text-right font-mono text-xs text-slate">{note.length}/280</p>
         <FieldError messages={fieldErrors.note} />
       </div>
 
       {create.error && !create.error.data?.zodError && (
-        <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{create.error.message}</p>
+        <p className="rounded-xl border border-danger/30 p-3 text-sm text-danger">{create.error.message}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={!city || create.isPending}
-        className="h-12 w-full rounded-full bg-pairy-flame font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
+      <Button type="submit" size="lg" className="w-full" disabled={!city || create.isPending}>
         {create.isPending ? "Publishing…" : city ? "Publish listing" : "Pick a city to publish"}
-      </button>
+      </Button>
     </form>
   );
 }

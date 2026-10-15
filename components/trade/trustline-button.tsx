@@ -1,8 +1,8 @@
 'use client';
 
-import { btnSecondary } from "@/components/trade/format";
 import { StepFeedback, WalletHint, walletProblem } from "@/components/trade/step-feedback";
 import { useChainStep } from "@/components/trade/use-chain-step";
+import { Button } from "@/components/ui/button";
 import { buildUsdcTrustlineTransaction } from "@/lib/stellar/trustline";
 import { loadSourceAccount } from "@/lib/trade/sign-and-submit";
 import { useWallet } from "@/lib/wallet/use-wallet";
@@ -14,21 +14,22 @@ export function TrustlineButton({ buyer, onDone }: { buyer: string; onDone: () =
   const problem = walletProblem(wallet, ready, buyer);
 
   return (
-    <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
-      <p className="text-sm">
-        You need a USDC trustline before the seller can lock USDC for you. Without it the network refuses your claim
-        (<code>op_no_trust</code>). Adding it costs a 0.5 XLM reserve on your account.
+    <div className="space-y-3 rounded-xl bg-sand p-5">
+      <p className="text-sm leading-relaxed text-ink">
+        Add USDC to your wallet before the seller locks it for you. Without it, your claim can&apos;t go through. It
+        sets aside 0.5 XLM in your wallet as a reserve.
       </p>
-      <button
-        className={btnSecondary}
+      <Button
+        variant="outline"
+        size="sm"
         disabled={!!problem || step.busy}
         onClick={() =>
           wallet &&
           step.run(wallet, async () => buildUsdcTrustlineTransaction(await loadSourceAccount(wallet.publicKey)))
         }
       >
-        {step.busy ? "Waiting for signature…" : "Add USDC trustline"}
-      </button>
+        {step.busy ? "Waiting for your signature…" : "Add USDC to my wallet"}
+      </Button>
       <WalletHint problem={problem} />
       <StepFeedback step={step} />
     </div>

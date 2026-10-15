@@ -1,220 +1,257 @@
-import { ArrowRight, Check, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-import { TestnetBadge, Wordmark } from "@/components/app-shell";
+import { Lockup } from "@/components/brand/waypoint";
+import { CityRotator } from "@/components/landing/city-rotator";
+import { SiteNav } from "@/components/landing/site-nav";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const STEPS = [
   {
-    title: "Find someone nearby",
-    body: "Listings sit on a map at city level. Pick one that matches what you have and what you want.",
+    title: "Find a peer.",
+    body: "Open the map, pick a listing in your city, and agree a rate and a meeting point in that trade's own chat.",
   },
   {
-    title: "Agree the terms",
-    body: "Amount, rate and meeting point, in a chat that belongs to that one trade. It is deleted when the trade ends.",
+    title: "Meet.",
+    body: "Go to the meeting point. Lock nothing until you are both standing there.",
   },
   {
-    title: "Seller locks the crypto",
-    body: "At the meeting, the seller puts the crypto in a Stellar claimable balance with two claimants: the buyer and themselves.",
+    title: "The seller locks it.",
+    body: "The seller locks the XLM or USDC for the buyer. From that moment the buyer can claim it, cash or not.",
   },
   {
-    title: "Buyer claims on their phone",
-    body: "Cash changes hands, and the buyer claims the balance, signed on their own device. If they never claim, the seller takes it back after 72 hours.",
+    title: "Cash, then claim.",
+    body: "Hand over the cash. The buyer claims it on their own phone. Settled.",
   },
 ];
 
-const STORED = ["Stellar public keys", "Listing terms", "Claimable balance IDs and transaction hashes", "Trade state"];
-const NOT_STORED = [
-  "Private keys, or anything a key could be derived from",
-  "Names, phone numbers, ID documents, KYC data",
-  "Your live or precise location",
-  "Chat, once the trade is finished",
+const WHY = [
+  {
+    title: "No more hoping.",
+    body: "Cash deals on Telegram and WhatsApp have no recourse: if the other side never sends, the money is gone. Pairy is the in-person version, with a lock only the two of you control.",
+  },
+  {
+    title: "No Pairy fee.",
+    body: "The only cost is the Stellar network fee on each step.",
+    figure: "100 stroops ≈ 0.00001 XLM",
+  },
+  {
+    title: "No sign-up.",
+    body: "No account, no name, no phone number. Just a key on your phone.",
+  },
 ];
 
-function Claimant({ who, predicate, plain }: { who: string; predicate: string; plain: string }) {
+const EXTERNAL = { target: "_blank", rel: "noreferrer" } as const;
+
+function Eyebrow({ n, children, className }: { n: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-semibold">{who}</span>
-        <code className="rounded-md bg-pairy-flame/15 px-2 py-0.5 font-mono text-[11px] text-pairy-flame">{predicate}</code>
-      </div>
-      <p className="mt-1.5 text-sm text-pairy-cream/60">{plain}</p>
-    </div>
+    <p className={cn("eyebrow", className)}>
+      {n} · {children}
+    </p>
   );
 }
 
 export default function Home() {
   return (
-    <div className="min-h-dvh">
-      <section className="relative overflow-hidden bg-pairy-ink text-pairy-cream">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-40 -top-40 size-[34rem] rounded-full border-[3.5rem] border-pairy-flame/10"
-        />
-        <header className="relative mx-auto flex max-w-6xl items-center gap-3 px-5 py-5 md:px-8">
-          {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
-          <img src="/wordmark-dark.svg" alt="Pairy" className="h-8 w-auto" />
-          <TestnetBadge />
-          <Link
-            href="/map"
-            className="ml-auto hidden whitespace-nowrap rounded-full border border-pairy-cream/20 px-4 py-2 sm:inline-flex text-sm font-medium transition-colors hover:border-pairy-cream/60"
-          >
-            Open the map
-          </Link>
-        </header>
+    <div className="min-h-dvh overflow-x-clip bg-paper text-ink">
+      <SiteNav />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-10 md:grid-cols-[1.1fr_1fr] md:px-8 md:pb-28 md:pt-16">
-          <div>
-            <h1 className="font-display text-5xl font-bold leading-[0.95] tracking-tight md:text-7xl">
-              Trade cash for crypto, <span className="text-pairy-flame">in person.</span>
+      {/* Hero */}
+      <section className="mx-auto flex min-h-[calc(100svh-5rem)] max-w-[1400px] flex-col px-4 md:px-10">
+        <div className="flex flex-1 items-center py-16">
+          <div className="flex w-full flex-col gap-2 md:flex-row md:items-center md:gap-[0.25em] md:text-[min(9vw,140px)]">
+            <h1 className="shrink-0 text-[64px] font-bold leading-none tracking-tight sm:text-[88px] md:text-[1em]">
+              Trade in<span className="sr-only"> your city.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-pairy-cream/75">
-              Pairy helps two people near each other swap local cash for XLM or USDC face to face. The seller locks the
-              crypto on Stellar; the buyer claims it on their own device once the cash is in their hand.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/map"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-pairy-flame px-6 font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                See listings on the map <ArrowRight className="size-4" />
-              </Link>
-              <Link
-                href="/listings/new"
-                className="inline-flex h-12 items-center rounded-full border border-pairy-cream/20 px-6 font-semibold transition-colors hover:border-pairy-cream/60"
-              >
-                Post a listing
-              </Link>
-            </div>
-            <p className="mt-6 text-sm text-pairy-cream/50">
-              Stellar testnet only. No real money. Pairy has zero users: this is a reference implementation, not a
-              product in use.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl backdrop-blur md:p-6">
-            <p className="text-xs font-semibold uppercase tracking-wider text-pairy-cream/50">The lock, as it appears on chain</p>
-            <p className="mt-1 font-display text-xl font-bold">Claimable balance · 120 USDC</p>
-            <div className="mt-4 space-y-3">
-              <Claimant
-                who="Buyer"
-                predicate="before relative time 259200"
-                plain="Can claim at any moment in the first 72 hours."
-              />
-              <Claimant
-                who="Seller"
-                predicate="not before relative time 259200"
-                plain="Can take it back only after the 72 hours are up."
-              />
-            </div>
-            <div className="mt-5">
-              <div className="flex h-2 overflow-hidden rounded-full">
-                <div className="w-3/4 bg-pairy-flame" />
-                <div className="w-1/4 bg-pairy-cream/30" />
-              </div>
-              <div className="mt-1.5 flex justify-between text-[11px] text-pairy-cream/50">
-                <span>Locked</span>
-                <span>72 h: seller may reclaim</span>
-              </div>
-            </div>
-            <p className="mt-4 text-xs text-pairy-cream/50">
-              No third claimant, no platform address, no dispute resolver. Illustration; amounts vary per trade.
-            </p>
+            {/* Shift the stack so the beacon city shares a baseline with "Trade in" (measured at rest: 0.17em down). */}
+            <CityRotator className="min-w-0 text-[48px] sm:text-[72px] md:translate-y-[0.17em] md:text-[0.86em]" />
           </div>
         </div>
-      </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-        <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">How a trade works</h2>
-        <ol className="mt-10 grid gap-4 md:grid-cols-4">
-          {STEPS.map((s, i) => (
-            <li key={s.title} className="rounded-2xl border bg-card p-5">
-              <span className="grid size-8 place-items-center rounded-full bg-pairy-flame font-display text-sm font-bold text-white">
-                {i + 1}
-              </span>
-              <h3 className="mt-4 font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-            </li>
-          ))}
-        </ol>
-
-        <div className="mt-6 rounded-2xl border-2 border-pairy-flame/40 bg-pairy-flame/5 p-5 md:p-6">
-          <h3 className="font-semibold">Read this before you lock</h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Once the seller locks, the buyer can claim at any moment inside 72 hours, whether or not cash has changed
-            hands. So lock only when both of you are standing at the meeting point. Pairy never sees the cash and cannot
-            verify it. This protects the buyer against a seller who takes the cash and never sends. It protects the
-            seller only against a buyer who does nothing, not against theft.
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-10">
+          <p className="text-slate">
+            <strong className="font-semibold text-ink">Stellar testnet demo</strong> · no real money
           </p>
+          <Button asChild size="lg">
+            <Link href="/map">
+              Pick yours <ArrowRight strokeWidth={1.5} />
+            </Link>
+          </Button>
         </div>
       </section>
 
-      <section className="border-t bg-secondary/40">
-        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-[1fr_1.4fr] md:px-8 md:py-24">
-          <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">Pairy holds no key.</h2>
-            <p className="mt-4 leading-relaxed text-muted-foreground">
-              Your key is made on your own device, or lives in your Freighter wallet. Pairy has no role on chain: it is
-              not a claimant, not a signer and not an arbiter. Every settlement step can be checked on stellar.expert.
+      {/* How it works */}
+      <section id="how-it-works" className="scroll-mt-24 border-t border-line">
+        <div className="mx-auto max-w-[1400px] px-4 py-24 md:px-10 md:py-32">
+          <Eyebrow n="01">How it works</Eyebrow>
+          <h2 className="mt-4 max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
+            Four steps, <em className="font-serif font-normal">one meeting.</em>
+          </h2>
+
+          <ol className="mt-16 grid gap-10 md:grid-cols-4 md:gap-8">
+            {STEPS.map((s, i) => (
+              <li key={s.title} className="border-t border-line pt-6">
+                <span className="font-mono text-sm text-slate">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="mt-6 text-xl font-semibold">{s.title}</h3>
+                <p className="mt-3 leading-relaxed text-slate">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+
+          <div className="mt-16 flex flex-col gap-6 border-t border-line pt-8 md:flex-row md:items-center md:justify-between">
+            <p className="max-w-2xl leading-relaxed text-slate">
+              If the buyer never claims, the seller takes it back after <span className="font-mono text-ink">72 hours</span>.
+              Until then only the buyer can claim, so lock only when you are both at the meeting point.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link href="/map">Open the map</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/listings/new">Post a listing</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it's safe */}
+      <section id="how-its-safe" className="scroll-mt-24 bg-ink text-paper">
+        <div className="mx-auto max-w-[1400px] px-4 py-24 md:px-10 md:py-32">
+          <Eyebrow n="02" className="text-mist">
+            How it&apos;s safe
+          </Eyebrow>
+          <h2 className="mt-4 max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
+            Two people on the lock. <em className="whitespace-nowrap font-serif font-normal">Not us.</em>
+          </h2>
+
+          <div className="mt-16 grid gap-16 md:grid-cols-[1.1fr_1fr] md:gap-24">
+            <dl className="border-t border-paper/15">
+              <div className="flex items-baseline justify-between gap-6 border-b border-paper/15 py-5">
+                <dt className="eyebrow text-mist">Buyer</dt>
+                <dd className="text-right text-lg">can claim for 72 hours</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-6 border-b border-paper/15 py-5">
+                <dt className="eyebrow text-mist">Seller</dt>
+                <dd className="text-right text-lg">can take it back after that</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-6 border-b border-paper/15 py-5">
+                <dt className="eyebrow text-mist">Pairy</dt>
+                <dd className="text-right text-lg text-mist">not on it</dd>
+              </div>
+            </dl>
+
+            <div className="space-y-6 text-lg leading-relaxed text-paper/80">
+              <p>
+                No third party, no platform key, nobody who can redirect the funds. Pairy holds no key and cannot move
+                the money.
+              </p>
+              <p>
+                Your key is made on your phone and never leaves it. If you use Freighter, it stays in Freighter.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-16 grid gap-8 border-t border-paper/15 pt-8 md:grid-cols-[1.1fr_1fr] md:gap-24">
+            <p className="leading-relaxed text-paper/80">
+              <span className="font-semibold text-paper">The honest limit.</span> Pairy protects the buyer against a
+              seller who takes the cash and never sends. It protects the seller only against a buyer who never claims,
+              not against theft.
+            </p>
+            <p className="font-mono text-sm leading-relaxed text-mist">
+              Check it yourself: every lock and claim has a receipt on{" "}
+              <a
+                href="https://stellar.expert/explorer/testnet"
+                {...EXTERNAL}
+                className="text-paper underline decoration-paper/30 underline-offset-4 hover:decoration-paper"
+              >
+                stellar.expert
+              </a>
+              .
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border bg-card p-5">
-              <h3 className="font-semibold">What Pairy stores</h3>
-              <ul className="mt-3 space-y-2 text-sm">
-                {STORED.map((s) => (
-                  <li key={s} className="flex gap-2">
-                    <Check className="mt-0.5 size-4 shrink-0 text-emerald-600" />
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-2xl border bg-card p-5">
-              <h3 className="font-semibold">What it does not</h3>
-              <ul className="mt-3 space-y-2 text-sm">
-                {NOT_STORED.map((s) => (
-                  <li key={s} className="flex gap-2">
-                    <X className="mt-0.5 size-4 shrink-0 text-pairy-flame" />
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
+        </div>
+      </section>
+
+      {/* Why Pairy */}
+      <section id="why-pairy" className="scroll-mt-24">
+        <div className="mx-auto max-w-[1400px] px-4 py-24 md:px-10 md:py-32">
+          <Eyebrow n="03">Why Pairy</Eyebrow>
+          <h2 className="mt-4 max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
+            Cash deals, <em className="font-serif font-normal">with a lock.</em>
+          </h2>
+
+          <div className="mt-16 grid gap-10 md:grid-cols-3 md:gap-8">
+            {WHY.map((w) => (
+              <div key={w.title} className="border-t border-line pt-6">
+                <h3 className="text-xl font-semibold">{w.title}</h3>
+                <p className="mt-3 leading-relaxed text-slate">{w.body}</p>
+                {w.figure && <p className="mt-4 font-mono text-sm text-ink">{w.figure}</p>}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-16 text-center md:px-8 md:py-24">
-        <h2 className="font-display text-3xl font-bold tracking-tight md:text-4xl">See who trades what, and roughly where.</h2>
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          Pins are cities, never people. Plan ahead for a city you are travelling to.
-        </p>
-        <Link
-          href="/map"
-          className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-pairy-flame px-6 font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          Open the map <ArrowRight className="size-4" />
-        </Link>
-      </section>
+      {/* Footer */}
+      <footer className="border-t border-line">
+        <div className="mx-auto max-w-[1400px] px-4 py-16 md:px-10">
+          <div className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
+            <div>
+              <Lockup />
+              <p className="mt-3 font-serif text-2xl italic">— Trade in person.</p>
+            </div>
+            <ul className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+              <li>
+                <Link href="/map" className="hover:text-slate">
+                  The map
+                </Link>
+              </li>
+              <li>
+                <a href="https://github.com/omeralpi/pairy" {...EXTERNAL} className="hover:text-slate">
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/omeralpi/pairy/blob/main/EVIDENCE.md"
+                  {...EXTERNAL}
+                  className="font-mono hover:text-slate"
+                >
+                  EVIDENCE.md
+                </a>
+              </li>
+            </ul>
+          </div>
 
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-6 text-xs text-muted-foreground md:px-8">
-          <Wordmark className="h-6" />
-          <span>Stellar testnet reference implementation. MIT licensed.</span>
-          <span>
-            Map ©{" "}
-            <a className="underline" href="https://openfreemap.org" target="_blank" rel="noreferrer">
-              OpenFreeMap
-            </a>{" "}
-            ·{" "}
-            <a className="underline" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
-              OpenStreetMap
-            </a>{" "}
-            contributors · Cities from{" "}
-            <a className="underline" href="https://www.geonames.org/" target="_blank" rel="noreferrer">
-              GeoNames
-            </a>
-          </span>
+          <div className="mt-12 space-y-2 border-t border-line pt-6 text-xs leading-relaxed text-slate">
+            <p className="font-mono uppercase tracking-[0.18em]">Stellar testnet · reference implementation · MIT</p>
+            <p>Pairy has zero users. This is a reference implementation, not a product in use.</p>
+            <p>
+              Map ©{" "}
+              <a className="underline underline-offset-2" href="https://openfreemap.org" {...EXTERNAL}>
+                OpenFreeMap
+              </a>{" "}
+              ·{" "}
+              <a className="underline underline-offset-2" href="https://www.openstreetmap.org/copyright" {...EXTERNAL}>
+                OpenStreetMap
+              </a>{" "}
+              contributors · Cities from{" "}
+              <a className="underline underline-offset-2" href="https://www.geonames.org/" {...EXTERNAL}>
+                GeoNames
+              </a>{" "}
+              (
+              <a
+                className="underline underline-offset-2"
+                href="https://creativecommons.org/licenses/by/4.0/"
+                {...EXTERNAL}
+              >
+                CC BY 4.0
+              </a>
+              )
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -1,18 +1,17 @@
 'use client';
 
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { amountRange, countryName, rateLabel, shortAddress } from "@/components/listing/format";
-import { SideBadge } from "@/components/listing/listing-card";
 import { StartTradeButton } from "@/components/trade/start-trade-button";
 import { api } from "@/lib/api";
 
 function Term({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-3">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium tabular-nums">{children}</dd>
+    <div className="flex items-baseline justify-between gap-4 py-3.5">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="text-right font-mono text-sm tabular-nums text-ink">{children}</dd>
     </div>
   );
 }
@@ -21,37 +20,38 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const { data: listing, isLoading, error } = api.listing.byId.useQuery({ id: params.id }, { retry: false });
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 md:py-10">
-      <Link href="/map" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Map
+    <div className="mx-auto max-w-xl px-4 py-6 md:py-12">
+      <Link href="/map" className="inline-flex items-center gap-1.5 text-sm text-slate transition-colors hover:text-ink">
+        <ArrowLeft className="size-4" strokeWidth={1.5} /> Map
       </Link>
 
       {isLoading ? (
-        <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
+        <p className="mt-8 text-sm text-slate">Loading…</p>
       ) : error || !listing ? (
-        <p className="mt-6 text-sm">This listing does not exist.</p>
+        <p className="mt-8 text-sm text-ink">This listing does not exist.</p>
       ) : (
-        <article className="mt-4 rounded-2xl border bg-card p-5 md:p-6">
-          <div className="flex items-center gap-2">
-            <SideBadge side={listing.side} />
-            {listing.status !== "active" && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold capitalize text-muted-foreground">
-                {listing.status}
-              </span>
-            )}
-          </div>
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight">{amountRange(listing)}</h1>
-          <p className="mt-1 text-muted-foreground">
-            {listing.side === "sell_crypto" ? "for cash" : "paid in cash"} at {rateLabel(listing)}
-          </p>
+        <article className="mt-8 space-y-10">
+          <header>
+            <p className="eyebrow">
+              {listing.cityName} · Listing{listing.status !== "active" && ` · ${listing.status}`}
+            </p>
+            <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight text-ink md:text-5xl">
+              {listing.side === "sell_crypto" ? "Selling" : "Buying"}{" "}
+              <span className="font-mono font-medium tracking-normal">{amountRange(listing)}</span>{" "}
+              {listing.side === "sell_crypto" ? "for" : "with"}{" "}
+              <em className="font-serif font-normal">cash.</em>
+            </h1>
+            <p className="mt-3 text-slate">
+              At <span className="font-mono text-ink">{rateLabel(listing)}</span>, met in person in {listing.cityName}.
+            </p>
+          </header>
 
-          <dl className="mt-5 divide-y border-y">
-            <Term label="Asset">{listing.asset} (Stellar testnet)</Term>
-            <Term label="Amount">{amountRange(listing)}</Term>
+          <dl className="divide-y divide-line border-y border-line">
             <Term label="Rate">{rateLabel(listing)}</Term>
+            <Term label="Amount">{amountRange(listing)}</Term>
+            <Term label="Asset">{listing.asset} · testnet</Term>
             <Term label="City">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="size-3.5" />
+              <span className="font-sans text-base">
                 {listing.cityName}, {countryName(listing.countryCode)}
               </span>
             </Term>
@@ -61,21 +61,25 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 target="_blank"
                 rel="noreferrer"
                 title={listing.owner}
-                className="font-mono text-sm underline decoration-dotted underline-offset-4"
+                className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
               >
                 {shortAddress(listing.owner)}
               </a>
             </Term>
           </dl>
 
-          {listing.note && <p className="mt-4 whitespace-pre-wrap rounded-xl bg-secondary p-3 text-sm">{listing.note}</p>}
+          {listing.note && (
+            <div className="rounded-xl bg-sand p-5">
+              <p className="eyebrow">Their note</p>
+              <p className="mt-2 whitespace-pre-wrap text-ink">{listing.note}</p>
+            </div>
+          )}
 
-          <p className="mt-4 text-xs text-muted-foreground">
-            The pin marks the city, not a person. You agree the meeting point in the trade chat.
-          </p>
-
-          <div className="mt-5">
+          <div className="space-y-4">
             <StartTradeButton listingId={listing.id} />
+            <p className="text-sm text-slate">
+              The pin shows the city, not the person. Agree the meeting point in the chat.
+            </p>
           </div>
         </article>
       )}

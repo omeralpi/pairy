@@ -23,7 +23,7 @@ export function useChainStep(record: (txHash: string) => Promise<unknown>) {
       setUnreported(null);
     } catch (e) {
       setUnreported(hash);
-      setError(`The transaction is on-chain, but Pairy could not record it yet: ${describeStellarError(e)}`);
+      setError(`It went through on Stellar testnet, but Pairy could not record it yet: ${describeStellarError(e)}`);
     }
   }
 

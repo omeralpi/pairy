@@ -3,15 +3,15 @@
 import { useEffect } from "react";
 
 import { trimAmount } from "@/components/listing/format";
-import { btnPrimary, countdown, type TradeView } from "@/components/trade/format";
+import { countdown, shortWhen, windowLabel, type TradeView } from "@/components/trade/format";
 import { StepFeedback, WalletHint, walletProblem } from "@/components/trade/step-feedback";
 import { TrustlineButton } from "@/components/trade/trustline-button";
 import { useChainStep } from "@/components/trade/use-chain-step";
 import { useNow } from "@/components/trade/use-now";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { buildClaimTransaction } from "@/lib/stellar/settlement";
 import { loadSourceAccount } from "@/lib/trade/sign-and-submit";
-import { cn } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet/use-wallet";
 
 function useClaimStep(trade: TradeView, account: string) {
@@ -30,8 +30,6 @@ function useClaimStep(trade: TradeView, account: string) {
   return { step, problem, run };
 }
 
-const when = (ms: number) => new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-
 /** Buyer, locked: claim once the cash has changed hands. */
 export function ClaimPanel({ trade }: { trade: TradeView }) {
   const now = useNow();
@@ -45,29 +43,40 @@ export function ClaimPanel({ trade }: { trade: TradeView }) {
   const blocked = window.error
     ? window.error.message
     : w && !w.buyerCanClaim
-      ? "The claim window has closed. Only the seller can take the funds back now."
+      ? `Your ${windowLabel(trade.windowSeconds)} to claim are up. Only the seller can take it back now.`
       : needsTrustline
-        ? "Add the USDC trustline first."
+        ? `Add ${trade.asset} to your wallet first.`
         : problem;
 
   return (
-    <section className="space-y-4 rounded-2xl border-2 border-emerald-500/50 bg-card p-5">
-      <h2 className="font-display text-xl font-bold">{amount} is locked for you</h2>
-      <p className="text-sm leading-relaxed">
-        Hand over the cash, then claim. Only you can claim, from your own device, and only until the window closes.
-      </p>
+    <section className="space-y-6" aria-labelledby="claim-heading">
+      <div className="space-y-3">
+        <p className="eyebrow">Your move</p>
+        <h2 id="claim-heading" className="text-3xl font-semibold tracking-tight">
+          Claim <span className="font-mono font-medium">{amount}</span> once the seller has the cash.
+        </h2>
+        <p className="leading-relaxed text-slate">Only you can claim it, from your own device.</p>
+      </div>
       {w?.buyerClaimUntil && (
-        <p className="text-sm">
-          You can claim until <strong>{when(w.buyerClaimUntil)}</strong>
-          {w.buyerCanClaim && <> ({countdown(w.buyerClaimUntil - now)} left)</>}.
+        <p className="text-sm text-slate">
+          You can claim until <span className="font-mono text-ink">{shortWhen(w.buyerClaimUntil)}</span>
+          {w.buyerCanClaim && (
+            <>
+              {" "}
+              · <span className="font-mono tabular-nums text-ink">{countdown(w.buyerClaimUntil - now)}</span> left
+            </>
+          )}
+          .
         </p>
       )}
       {needsTrustline && <TrustlineButton buyer={trade.buyer} onDone={() => preflight.refetch()} />}
-      <button className={cn(btnPrimary, "w-full bg-emerald-600")} disabled={!!blocked || !w || step.busy} onClick={run}>
-        {step.busy ? "Signing and submitting…" : `Claim ${amount}`}
-      </button>
-      {blocked === problem ? <WalletHint problem={problem} /> : <p className="text-sm text-muted-foreground">{blocked}</p>}
-      <StepFeedback step={step} />
+      <div className="space-y-3">
+        <Button variant="beacon" size="lg" className="w-full" disabled={!!blocked || !w || step.busy} onClick={run}>
+          {step.busy ? "Signing and sending…" : `Claim ${amount}`}
+        </Button>
+        {blocked === problem ? <WalletHint problem={problem} /> : <p className="text-sm text-slate">{blocked}</p>}
+        <StepFeedback step={step} />
+      </div>
     </section>
   );
 }
@@ -80,6 +89,7 @@ export function ReclaimPanel({ trade }: { trade: TradeView }) {
   const w = window.data;
   const opensAt = w?.sellerReclaimFrom ?? null;
   const { refetch } = window;
+  const span = windowLabel(trade.windowSeconds);
 
   // The package evaluated the predicate at fetch time; ask again once the
   // countdown reaches zero so the button unlocks without a reload.
@@ -91,38 +101,42 @@ export function ReclaimPanel({ trade }: { trade: TradeView }) {
   const blocked = window.error
     ? window.error.message
     : !w
-      ? "Reading the locked balance from Stellar testnet…"
+      ? "Reading the lock from Stellar testnet…"
       : !w.sellerCanReclaim
-        ? "Reclaim opens when the buyer's claim window closes."
+        ? `You can take it back once the buyer's ${span} are up.`
         : problem;
 
   return (
-    <section className="space-y-4 rounded-2xl border bg-card p-5">
-      <h2 className="font-display text-xl font-bold">
-        {trimAmount(trade.amount)} {trade.asset} is locked
-      </h2>
-      <p className="text-sm leading-relaxed">
-        The buyer can claim it once they have handed you the cash. If they never claim, you can take it back after
-        the window closes.
+    <section className="space-y-6" aria-labelledby="reclaim-heading">
+      <p id="reclaim-heading" className="leading-relaxed text-slate">
+        The buyer can claim the{" "}
+        <span className="font-mono text-ink">
+          {trimAmount(trade.amount)} {trade.asset}
+        </span>{" "}
+        once they have handed you the cash. If they never claim, you can take it back after {span}.
       </p>
       {opensAt && (
-        <div className="rounded-xl bg-secondary p-4 text-center">
+        <div className="border-y border-line py-8">
           {w?.sellerCanReclaim ? (
-            <p className="font-semibold">You can reclaim now.</p>
+            <p className="text-2xl font-semibold tracking-tight">You can take it back now.</p>
           ) : (
             <>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Reclaim opens in</p>
-              <p className="font-display text-2xl font-bold tabular-nums">{countdown(opensAt - now)}</p>
-              <p className="text-xs text-muted-foreground">{when(opensAt)}</p>
+              <p className="eyebrow">You can take it back in</p>
+              <p className="mt-2 font-mono text-5xl font-medium tabular-nums tracking-tight md:text-6xl">
+                {countdown(opensAt - now)}
+              </p>
+              <p className="mt-2 font-mono text-xs text-slate">from {shortWhen(opensAt)}</p>
             </>
           )}
         </div>
       )}
-      <button className={cn(btnPrimary, "w-full")} disabled={!!blocked || step.busy} onClick={run}>
-        {step.busy ? "Signing and submitting…" : "Reclaim"}
-      </button>
-      {blocked === problem ? <WalletHint problem={problem} /> : <p className="text-sm text-muted-foreground">{blocked}</p>}
-      <StepFeedback step={step} />
+      <div className="space-y-3">
+        <Button size="lg" className="w-full" disabled={!!blocked || step.busy} onClick={run}>
+          {step.busy ? "Signing and sending…" : "Take it back"}
+        </Button>
+        {blocked === problem ? <WalletHint problem={problem} /> : <p className="text-sm text-slate">{blocked}</p>}
+        <StepFeedback step={step} />
+      </div>
     </section>
   );
 }

@@ -2,16 +2,13 @@
 
 import { Account, TransactionBuilder, type Transaction } from "@stellar/stellar-sdk";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, Download, ExternalLink, LogOut } from "lucide-react";
+import { ArrowUpRight, Copy, Download } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLogin } from "@/lib/auth/use-login";
 import { useSession } from "@/lib/auth/use-session";
@@ -29,6 +26,9 @@ import { buildUsdcTrustlineTransaction } from "@/lib/stellar/trustline";
 import { useWalletContext } from "@/lib/wallet/use-wallet";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
+
+/** G-addresses are 56 characters; groups of four are easier to read aloud and compare. */
+const groupAddress = (publicKey: string) => publicKey.match(/.{1,4}/g)?.join(" ") ?? publicKey;
 
 export default function WalletPage() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function WalletPage() {
   if (!ready || sessionLoading) {
     return (
       <Page>
-        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl bg-sand" />
       </Page>
     );
   }
@@ -59,17 +59,13 @@ export default function WalletPage() {
   if (!wallet) {
     return (
       <Page>
-        <Card>
-          <CardHeader>
-            <CardTitle>No wallet connected</CardTitle>
-            <CardDescription>Connect Freighter, create a wallet on this device, or import a backup.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/onboard">Get started</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <section className="space-y-4 border-t border-line pt-8">
+          <h2 className="text-xl font-semibold tracking-tight">No wallet connected.</h2>
+          <p className="text-sm text-slate">Make a key on this device, use Freighter, or restore a backup file.</p>
+          <Button asChild className="w-full">
+            <Link href="/onboard">Get started</Link>
+          </Button>
+        </section>
       </Page>
     );
   }
@@ -89,19 +85,19 @@ export default function WalletPage() {
     act("fund", async () => {
       await fundWithFriendbot(wallet.publicKey);
       await account.refetch();
-      toast.success("Funded with testnet XLM by Friendbot.");
+      toast.success("Friendbot sent 10,000 test XLM.");
     });
 
   const addTrustline = () =>
     act("trust", async () => {
       const current = await loadAccount(wallet.publicKey);
-      if (!current) throw new Error("Fund the account first.");
+      if (!current) throw new Error("Get test XLM first.");
       const tx = buildUsdcTrustlineTransaction(new Account(current.accountId(), current.sequenceNumber()));
       const signed = await wallet.signTransaction(tx.toXDR());
       const res = await submit(TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE) as Transaction);
       await account.refetch();
-      toast.success("USDC trustline added.", {
-        action: { label: "View", onClick: () => window.open(explorerTxUrl(res.hash), "_blank", "noopener") },
+      toast.success("This wallet can now hold USDC.", {
+        action: { label: "Receipt", onClick: () => window.open(explorerTxUrl(res.hash), "_blank", "noopener") },
       });
     });
 
@@ -112,139 +108,160 @@ export default function WalletPage() {
       router.push("/onboard");
     });
 
+  const backup = () => exportBackup().catch((e) => toast.error(message(e)));
+
   const acct = account.data;
 
   return (
-    <Page>
-      {justCreated && wallet.kind === "device" && (
-        <Alert>
-          <AlertTitle>Export a backup now</AlertTitle>
-          <AlertDescription className="space-y-2">
-            <p>
-              This wallet lives only in this browser. Without a backup file, losing this device or the pincode loses
-              the wallet. The file is encrypted with your pincode, so keep both.
-            </p>
-            <Button size="sm" onClick={() => exportBackup().catch((e) => toast.error(message(e)))}>
-              <Download className="mr-1.5 size-4" />
-              Export backup
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+    <Page kind={wallet.kind === "freighter" ? "Freighter" : "Key on this device"}>
+      {justCreated && wallet.kind === "device" && <BackupPanel title="Export a backup now." onExport={backup} />}
 
       {sessionKey !== wallet.publicKey && (
-        <Alert variant="destructive">
-          <AlertTitle>Not signed in with this wallet</AlertTitle>
-          <AlertDescription>
-            <Link href="/onboard" className="underline">
+        <div role="alert" className="border-l-2 border-danger pl-4 text-sm">
+          <p className="font-semibold text-danger">Not signed in with this wallet.</p>
+          <p className="text-ink">
+            <Link href="/onboard" className="underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
               Sign in
             </Link>{" "}
             to list and trade.
-          </AlertDescription>
-        </Alert>
+          </p>
+        </div>
       )}
 
-      <Card>
-        <CardHeader className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle>Your wallet</CardTitle>
-            <Badge variant="outline">{wallet.kind === "freighter" ? "Freighter" : "On this device"}</Badge>
-          </div>
-          <p className="break-all font-mono text-sm">{wallet.publicKey}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigator.clipboard.writeText(wallet.publicKey).then(() => toast.success("Address copied."))}
-            >
-              <Copy className="mr-1.5 size-4" />
-              Copy
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <a href={explorerAccountUrl(wallet.publicKey)} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-1.5 size-4" />
-                stellar.expert
-              </a>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {account.isLoading ? (
-            <Skeleton className="h-16 w-full" />
-          ) : account.error ? (
-            <p className="text-sm text-destructive">Couldn&apos;t reach Horizon: {message(account.error)}</p>
-          ) : !acct ? (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                This account doesn&apos;t exist on testnet yet. Friendbot, the network&apos;s free testnet faucet, can
-                create it with 10,000 test XLM.
+      <section className="space-y-3">
+        <p className="eyebrow">Address</p>
+        <p className="font-mono text-base leading-relaxed text-ink">{groupAddress(wallet.publicKey)}</p>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 text-ink hover:text-deep"
+            onClick={() => navigator.clipboard.writeText(wallet.publicKey).then(() => toast.success("Address copied."))}
+          >
+            <Copy strokeWidth={1.5} className="size-4" />
+            Copy
+          </button>
+          <a
+            href={explorerAccountUrl(wallet.publicKey)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+          >
+            View on stellar.expert
+            <ArrowUpRight strokeWidth={1.5} className="size-4" />
+          </a>
+        </div>
+      </section>
+
+      <section className="space-y-6 border-t border-line pt-8">
+        {account.isLoading ? (
+          <Skeleton className="h-24 w-full bg-sand" />
+        ) : account.error ? (
+          <p className="text-sm text-danger">Couldn&apos;t reach the Stellar testnet: {message(account.error)}</p>
+        ) : !acct ? (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="font-semibold">This wallet isn&apos;t on testnet yet.</h2>
+              <p className="text-sm text-slate">
+                Friendbot, the test network&apos;s faucet, opens it with 10,000 test XLM. It&apos;s free testnet money
+                and worth nothing.
               </p>
-              <Button className="w-full" disabled={busy !== null} onClick={fund}>
-                {busy === "fund" ? "Funding…" : "Fund with Friendbot"}
-              </Button>
             </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <Balance code="XLM" amount={balanceOf(acct, "XLM")} />
-                <Balance code="USDC" amount={hasTrustline(acct, "USDC") ? balanceOf(acct, "USDC") : null} />
-              </div>
-              {!hasTrustline(acct, "USDC") && (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    To receive testnet USDC in a trade, your account needs a USDC trustline. It reserves 0.5 XLM.
-                  </p>
-                  <Button className="w-full" disabled={busy !== null} onClick={addTrustline}>
-                    {busy === "trust" ? "Waiting for signature…" : "Add USDC trustline"}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {wallet.kind === "device" && !justCreated && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Backup</CardTitle>
-            <CardDescription>
-              Download this wallet as a file encrypted with your pincode, to restore it in another browser. Pairy keeps
-              no copy, so this file and your pincode are the only way back in.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => exportBackup().catch((e) => toast.error(message(e)))}>
-              <Download className="mr-1.5 size-4" />
-              Export backup
+            <Button className="w-full" disabled={busy !== null} onClick={fund}>
+              {busy === "fund" ? "Asking Friendbot…" : "Get 10,000 test XLM"}
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 divide-x divide-line">
+              <Balance code="XLM" amount={balanceOf(acct, "XLM")} />
+              <Balance code="USDC" amount={hasTrustline(acct, "USDC") ? balanceOf(acct, "USDC") : null} />
+            </div>
+            {!hasTrustline(acct, "USDC") && (
+              <div className="space-y-3 border-t border-line pt-6">
+                <p className="text-sm text-slate">
+                  To receive test USDC in a trade, this wallet has to accept it first. That reserves 0.5 XLM of your
+                  balance.
+                </p>
+                <Button className="w-full" disabled={busy !== null} onClick={addTrustline}>
+                  {busy === "trust" ? "Waiting for your signature…" : "Add USDC to this wallet"}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
 
-      <Button variant="outline" className="w-full" disabled={busy !== null} onClick={signOut}>
-        <LogOut className="mr-1.5 size-4" />
-        {busy === "logout" ? "Logging out…" : "Log out"}
-      </Button>
-      {wallet.kind === "device" && (
-        <p className="text-center text-xs text-muted-foreground">
-          Logging out keeps the encrypted wallet in this browser. You can sign back in with your pincode.
-        </p>
-      )}
+      {wallet.kind === "device" && !justCreated && <BackupPanel title="Keep a backup." onExport={backup} />}
+
+      <section className="space-y-2 border-t border-line pt-6">
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={signOut}
+          className="text-sm text-slate underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+        >
+          {busy === "logout" ? "Logging out…" : "Log out"}
+        </button>
+        {wallet.kind === "device" && (
+          <p className="text-xs text-slate">
+            Logging out keeps the locked key in this browser. You can sign back in with your pincode.
+          </p>
+        )}
+      </section>
     </Page>
   );
 }
 
-function Page({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto w-full max-w-md space-y-4 px-4 py-6 md:py-10">{children}</div>;
+function Page({ kind, children }: { kind?: string; children: React.ReactNode }) {
+  return (
+    <div className="mx-auto w-full max-w-md space-y-10 px-4 py-10 md:py-16">
+      <header className="space-y-3">
+        <p className="eyebrow">{kind ? `Wallet · ${kind} · testnet` : "Wallet · testnet"}</p>
+        <h1 className="text-4xl font-bold leading-[1.05] tracking-tight">
+          Your <em className="font-serif font-normal italic">wallet.</em>
+        </h1>
+      </header>
+      {children}
+    </div>
+  );
+}
+
+function BackupPanel({ title, onExport }: { title: string; onExport: () => void }) {
+  return (
+    <section className="space-y-4 rounded-xl bg-sand p-5">
+      <div className="space-y-2">
+        <p className="eyebrow">Backup</p>
+        <h2 className="font-semibold">{title}</h2>
+        <p className="text-sm text-ink">
+          This key lives only in this browser and Pairy keeps no copy. If you lose this device or forget the pincode
+          without a backup, the wallet is gone.
+        </p>
+        <p className="text-sm text-slate">
+          The file is locked with your pincode, so keep both. Use it to restore the wallet in another browser.
+        </p>
+      </div>
+      <Button className="w-full" onClick={onExport}>
+        <Download strokeWidth={1.5} />
+        Export backup
+      </Button>
+    </section>
+  );
 }
 
 function Balance({ code, amount }: { code: string; amount: string | null }) {
   return (
-    <div className="rounded-lg border p-3">
-      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{code}</p>
-      <p className="mt-1 font-mono text-lg">{amount === null ? "—" : Number(amount).toLocaleString(undefined, { maximumFractionDigits: 7 })}</p>
-      {amount === null && <p className="text-xs text-muted-foreground">No trustline</p>}
+    <div className="space-y-2 px-4 first:pl-0 last:pr-0">
+      <p className="eyebrow">{code}</p>
+      {/* en-US so "9,979.99" never reads as a Turkish 9.979,99; the full 7-decimal balance is in the title. */}
+      <p
+        className="whitespace-nowrap font-mono text-2xl tabular-nums text-ink sm:text-3xl"
+        title={amount ?? undefined}
+      >
+        {amount === null
+          ? "—"
+          : Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
+      {amount === null && <p className="text-xs text-slate">Not added yet</p>}
     </div>
   );
 }

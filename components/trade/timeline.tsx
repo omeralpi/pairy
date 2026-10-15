@@ -1,38 +1,47 @@
-import { ExternalLink } from "lucide-react";
+import { shortWhen, type TradeView } from "@/components/trade/format";
 
-import { roleName, type TradeView } from "@/components/trade/format";
-
-const EVENT_LABEL: Record<string, string> = {
-  open: "Trade opened",
-  agree: "Terms agreed",
-  lock: "Funds locked on-chain",
-  claim: "Buyer claimed the funds",
-  reclaim: "Seller reclaimed the funds",
-  cancel: "Trade cancelled",
-  flagDispute: "Problem flagged",
-};
+/** One plain sentence per event, from the viewer's side. */
+function sentence(type: string, by: string, mine: boolean, asset: string): string {
+  const who = mine ? "You" : `The ${by}`;
+  switch (type) {
+    case "open":
+      return `${who} opened the trade.`;
+    case "agree":
+      return `${who} agreed.`;
+    case "lock":
+      return `${who} locked the ${asset}.`;
+    case "claim":
+      return `${who} claimed the ${asset}.`;
+    case "reclaim":
+      return `${who} took the ${asset} back.`;
+    case "cancel":
+      return `${who} cancelled.`;
+    case "flagDispute":
+      return `${who} flagged a problem.`;
+    default:
+      return `${who}: ${type}.`;
+  }
+}
 
 export function Timeline({ trade }: { trade: TradeView }) {
   return (
-    <ol className="space-y-3 border-l pl-4">
+    <ol className="divide-y divide-line border-y border-line">
       {trade.events.map((e) => (
-        <li key={e.id} className="relative">
-          <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-pairy-flame" />
-          <p className="text-sm font-medium">{EVENT_LABEL[e.type] ?? e.type}</p>
-          <p className="text-xs text-muted-foreground">
-            {e.by === trade.role ? "You" : roleName(e.by as "seller" | "buyer")} ·{" "}
-            {e.createdAt.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+        <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
+          <p className="text-sm text-ink">{sentence(e.type, e.by, e.by === trade.role, trade.asset)}</p>
+          <p className="flex items-baseline gap-4 font-mono text-xs text-slate">
+            <time dateTime={e.createdAt.toISOString()}>{shortWhen(e.createdAt)}</time>
+            {e.txUrl && (
+              <a
+                href={e.txUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+              >
+                Receipt ↗
+              </a>
+            )}
           </p>
-          {e.txUrl && (
-            <a
-              href={e.txUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-mono text-xs underline decoration-dotted underline-offset-4"
-            >
-              {e.txHash?.slice(0, 10)}… on stellar.expert <ExternalLink className="size-3" />
-            </a>
-          )}
         </li>
       ))}
     </ol>

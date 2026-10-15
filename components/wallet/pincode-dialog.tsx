@@ -8,14 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /**
- * Asks for the device wallet's pincode. `onSubmit` does the signing; if it
+ * Asks for the device wallet's pincode. `title` names what is being signed
+ * ("Sign in", "Sign transaction") and is shown as the eyebrow. `onSubmit` does the signing; if it
  * throws, the message is shown and the user can retry. The pincode stays in
  * this component's state only until the dialog closes.
  */
 export function PincodeDialog({
   open,
   title,
-  description,
   onSubmit,
   onCancel,
 }: {
@@ -45,7 +45,7 @@ export function PincodeDialog({
         }
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm border-line bg-paper shadow-none sm:rounded-xl">
         <form
           className="space-y-4"
           onSubmit={async (e) => {
@@ -61,9 +61,12 @@ export function PincodeDialog({
             }
           }}
         >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
+          <DialogHeader className="space-y-2 text-left">
+            {title && <p className="eyebrow">{title}</p>}
+            <DialogTitle className="text-xl font-semibold tracking-tight">Sign with your pincode</DialogTitle>
+            <DialogDescription className="text-sm text-slate">
+              This signs on this device. Your pincode and key are never sent to Pairy.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="pairy-pincode">Pincode</Label>
@@ -72,16 +75,21 @@ export function PincodeDialog({
               type="password"
               autoComplete="off"
               autoFocus
+              className="font-mono"
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
               disabled={busy}
             />
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <p className="text-xs text-muted-foreground">Unlocking takes a second: the pincode is stretched with scrypt.</p>
+            {error && (
+              <p role="alert" className="border-l-2 border-danger pl-3 text-sm text-danger">
+                {error}
+              </p>
+            )}
+            <p className="text-xs text-slate">Unlocking takes a second or two.</p>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={busy || pincode.length === 0}>
-              {busy ? "Unlocking…" : "Unlock and sign"}
+            <Button type="submit" className="w-full sm:w-auto" disabled={busy || pincode.length === 0}>
+              {busy ? "Signing…" : "Sign"}
             </Button>
           </DialogFooter>
         </form>

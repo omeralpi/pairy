@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { btnPrimary } from "@/components/trade/format";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -30,31 +30,31 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
   }, [count]);
 
   return (
-    <section className="flex flex-col rounded-2xl border bg-card">
-      <header className="border-b p-4">
-        <h2 className="font-semibold">Chat</h2>
-        <p className="text-xs text-muted-foreground">
-          Only you and your counterparty see this. It is deleted from Pairy when the trade ends. Agree the meeting
-          point here; don&apos;t share personal details.
+    <section className="flex flex-col self-start rounded-xl border border-line">
+      <header className="space-y-1.5 border-b border-line p-5">
+        <h2 className="text-base font-semibold">Chat</h2>
+        <p className="text-sm leading-relaxed text-slate">
+          Only you and your peer see this. It&apos;s deleted when the trade ends. Agree the meeting point here; skip
+          personal details.
         </p>
       </header>
 
-      <div className="max-h-96 min-h-40 space-y-2 overflow-y-auto p-4">
+      <div className="max-h-[28rem] min-h-48 space-y-3 overflow-y-auto p-5">
         {closed ? (
-          <p className="text-sm text-muted-foreground">This trade has ended, so its chat was deleted. Pairy keeps no chat history.</p>
+          <p className="text-sm text-slate">This trade has ended, so its chat was deleted.</p>
         ) : count === 0 ? (
-          <p className="text-sm text-muted-foreground">No messages yet.</p>
+          <p className="text-sm text-slate">No messages yet. Start with where to meet.</p>
         ) : (
           messages.data?.map((m) => (
             <div
               key={m.id}
               className={cn(
-                "max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm",
-                m.author === me ? "ml-auto bg-pairy-flame text-white" : "bg-secondary",
+                "w-fit max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                m.author === me ? "ml-auto rounded-br-md bg-ink text-paper" : "rounded-bl-md bg-sand text-ink",
               )}
             >
               {m.body}
-              <span className={cn("mt-0.5 block text-[10px]", m.author === me ? "text-white/70" : "text-muted-foreground")}>
+              <span className={cn("mt-1 block font-mono text-[10px]", m.author === me ? "text-paper/60" : "text-slate")}>
                 {m.createdAt.toLocaleTimeString(undefined, { timeStyle: "short" })}
               </span>
             </div>
@@ -65,7 +65,7 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
 
       {!closed && (
         <form
-          className="flex items-end gap-2 border-t p-3"
+          className="flex items-end gap-2 border-t border-line p-3"
           onSubmit={(e) => {
             e.preventDefault();
             if (body.trim()) send.mutate({ tradeId, body });
@@ -77,6 +77,7 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
               maxLength={MAX}
               value={body}
               placeholder="Write a message"
+              className="resize-none rounded-xl border-line bg-paper shadow-none"
               onChange={(e) => setBody(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -86,14 +87,14 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
               }}
             />
             {body.length > MAX - 100 && (
-              <p className="mt-1 text-right text-xs text-muted-foreground">
+              <p className="mt-1 text-right font-mono text-xs text-slate">
                 {body.length}/{MAX}
               </p>
             )}
           </div>
-          <button type="submit" className={btnPrimary} disabled={!body.trim() || send.isPending}>
+          <Button type="submit" size="sm" disabled={!body.trim() || send.isPending}>
             Send
-          </button>
+          </Button>
         </form>
       )}
     </section>

@@ -4,6 +4,7 @@ import { ArrowLeftRight, LayoutList, Map, Plus, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { Lockup } from "@/components/brand/waypoint";
 import { shortAddress } from "@/components/listing/format";
 import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
@@ -15,29 +16,15 @@ const NAV = [
   { href: "/wallet", label: "Wallet", icon: Wallet },
 ] as const;
 
-export function TestnetBadge({ className }: { className?: string }) {
+/** A quiet label, not a pill: the whole app runs on Stellar testnet. */
+function TestnetBadge({ className }: { className?: string }) {
   return (
     <span
       title="Stellar testnet only. Nothing here is real money."
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-pairy-flame/40 bg-pairy-flame/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-pairy-flame",
-        className,
-      )}
+      className={cn("eyebrow shrink-0 whitespace-nowrap", className)}
     >
-      <span className="size-1.5 rounded-full bg-pairy-flame" />
-      Testnet only
+      Testnet
     </span>
-  );
-}
-
-export function Wordmark({ className }: { className?: string }) {
-  return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, no optimisation to gain */}
-      <img src="/wordmark-light.svg" alt="Pairy" className={cn("h-8 w-auto dark:hidden", className)} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/wordmark-dark.svg" alt="Pairy" className={cn("hidden h-8 w-auto dark:block", className)} />
-    </>
   );
 }
 
@@ -50,42 +37,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { publicKey } = useSession();
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur md:h-16 md:gap-4 md:px-6">
+    <div className="flex h-dvh flex-col bg-paper text-ink">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-paper px-4 md:h-16 md:gap-6 md:px-8">
         <Link href="/" className="shrink-0">
-          <Wordmark className="h-7 md:h-8" />
+          <Lockup />
         </Link>
-        <TestnetBadge />
-        <nav className="ml-4 hidden items-center gap-1 md:flex">
-          {NAV.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-                isActive(pathname, href) && "bg-secondary text-foreground",
-              )}
-            >
-              {label}
-            </Link>
-          ))}
+        <TestnetBadge className="pt-0.5" />
+        <nav className="ml-2 hidden items-center gap-6 md:flex">
+          {NAV.map(({ href, label }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "border-b py-1 text-sm transition-colors",
+                  active ? "border-ink font-medium text-ink" : "border-transparent text-slate hover:text-ink",
+                )}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-4">
           <Link
             href="/listings/new"
-            className="hidden items-center gap-1.5 rounded-full bg-pairy-flame px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 md:inline-flex"
+            className="hidden items-center gap-1.5 text-sm font-medium text-ink underline-offset-4 hover:underline md:inline-flex"
           >
-            <Plus className="size-4" />
+            <Plus className="size-4" strokeWidth={1.5} />
             New listing
           </Link>
           {publicKey ? (
-            <Link href="/wallet" className="whitespace-nowrap rounded-full border px-3 py-1.5 font-mono text-xs">
+            <Link
+              href="/wallet"
+              title={publicKey}
+              className="whitespace-nowrap rounded-full border border-line px-3 py-1.5 font-mono text-xs text-ink transition-colors hover:border-ink/40"
+            >
               {shortAddress(publicKey)}
             </Link>
           ) : (
             <Link
               href="/onboard"
-              className="rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:border-foreground"
+              className="inline-flex h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper transition-colors hover:bg-deep"
             >
               Sign in
             </Link>
@@ -95,13 +90,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="relative flex-1 overflow-y-auto">{children}</main>
 
-      <nav className="grid shrink-0 grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="grid shrink-0 grid-cols-5 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] md:hidden">
         {NAV.slice(0, 2).map((item) => (
           <NavItem key={item.href} {...item} active={isActive(pathname, item.href)} />
         ))}
         <Link href="/listings/new" aria-label="New listing" className="grid place-items-center">
-          <span className="grid size-11 place-items-center rounded-full bg-pairy-flame text-white shadow-md">
-            <Plus className="size-5" />
+          <span className="grid size-11 place-items-center rounded-full bg-ink text-paper">
+            <Plus className="size-5" strokeWidth={1.5} />
           </span>
         </Link>
         {NAV.slice(2).map((item) => (
@@ -126,12 +121,13 @@ function NavItem({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-muted-foreground",
-        active && "text-pairy-flame",
+        "flex flex-col items-center gap-1 py-2.5 text-[11px] text-slate",
+        active && "font-medium text-ink",
       )}
     >
-      <Icon className="size-5" />
+      <Icon className="size-5" strokeWidth={1.5} />
       {label}
     </Link>
   );

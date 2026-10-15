@@ -5,14 +5,14 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl } from "maplibre-gl";
-import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
 
 import type { CityPin } from "./pins";
 
 // OpenFreeMap's hosted styles (openfreemap.org/quick_start): no API key, no account.
-const STYLE_LIGHT = "https://tiles.openfreemap.org/styles/liberty";
-const STYLE_DARK = "https://tiles.openfreemap.org/styles/dark";
+// Positron is near-monochrome, so the beacon pins are the only colour on the map.
+const STYLE = "https://tiles.openfreemap.org/styles/positron";
+const PAPER = "#F5F1EA";
 
 // MapLibre locates its worker from import.meta.url, which the bundler rewrites,
 // and its ESM worker cannot go through Next's production minifier. The
@@ -34,17 +34,17 @@ export function ListingsMap({
   const fitted = useRef(false);
   const onSelect = useRef(onSelectCity);
   onSelect.current = onSelectCity;
-  const { resolvedTheme } = useTheme();
-  const style = resolvedTheme === "dark" ? STYLE_DARK : STYLE_LIGHT;
 
   useEffect(() => {
     if (!container.current) return;
     const m = new MapLibreMap({
       container: container.current,
-      style,
+      style: STYLE,
       center: [20, 25],
       zoom: 1.4,
       attributionControl: {
+        // Keep the credits written out, not collapsed behind an (i) button.
+        compact: false,
         // OpenFreeMap / OpenMapTiles / OpenStreetMap credits come from the style's
         // own source attribution; the city centroids come from GeoNames.
         customAttribution: '<a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a> (CC BY 4.0)',
@@ -52,18 +52,16 @@ export function ListingsMap({
     });
     m.addControl(new NavigationControl({ showCompass: false }), "top-right");
     m.on("click", () => onSelect.current(null));
+    // Warm the style's land colour to paper so the map sits on the page, not on white.
+    m.on("style.load", () => {
+      if (m.getLayer("background")) m.setPaintProperty("background", "background-color", PAPER);
+    });
     map.current = m;
     return () => {
       m.remove();
       map.current = null;
     };
-    // The style is swapped below; the map itself is created once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    map.current?.setStyle(style);
-  }, [style]);
 
   useEffect(() => {
     const m = map.current;
@@ -77,10 +75,9 @@ export function ListingsMap({
       btn.type = "button";
       btn.setAttribute("aria-label", `${pin.cityName}: ${pin.listings.length} listings`);
       btn.className = [
-        "grid h-8 min-w-8 place-items-center rounded-full px-2 font-display text-sm font-bold shadow-lg ring-2 transition-transform hover:scale-110",
-        pin.cityId === selectedCityId
-          ? "scale-110 bg-pairy-ink text-pairy-cream ring-pairy-flame"
-          : "bg-pairy-flame text-white ring-white",
+        // Beacon belongs here and only here: it means a peer is near.
+        "grid h-8 min-w-8 place-items-center rounded-full bg-beacon px-2 font-mono text-xs font-medium text-white shadow-sm ring-[3px] transition-transform hover:scale-110",
+        pin.cityId === selectedCityId ? "scale-110 ring-ink" : "ring-paper",
       ].join(" ");
       btn.textContent = String(pin.listings.length);
       el.appendChild(btn);
@@ -100,7 +97,7 @@ export function ListingsMap({
 
   // maplibre-gl.css forces position: relative on the map container, so it fills a positioned wrapper.
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 bg-paper [&_.maplibregl-ctrl-attrib]:bg-paper/85 [&_.maplibregl-ctrl-attrib]:text-[10px] [&_.maplibregl-ctrl-attrib]:text-slate">
       <div ref={container} className="h-full w-full" />
     </div>
   );

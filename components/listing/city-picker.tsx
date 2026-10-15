@@ -40,23 +40,23 @@ export function CityPicker({ value, onChange }: { value: PickedCity | null; onCh
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex h-14 w-full items-center gap-2 rounded-md border border-input px-4 text-left"
+          className="flex h-14 w-full items-center gap-2.5 rounded-md border border-line bg-paper px-4 text-left text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink"
         >
-          <MapPin className="size-4 shrink-0 text-muted-foreground" />
+          <MapPin className="size-4 shrink-0 text-slate" strokeWidth={1.5} />
           {value ? (
             <span className="truncate">
               {value.name}
-              <span className="text-muted-foreground">
+              <span className="text-slate">
                 {value.region && value.region !== value.name ? `, ${value.region}` : ""}, {countryName(value.countryCode)}
               </span>
             </span>
           ) : (
-            <span className="text-muted-foreground">Search a city</span>
+            <span className="text-mist">Search a city</span>
           )}
-          <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-auto size-4 shrink-0 text-slate" strokeWidth={1.5} />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className="w-[--radix-popover-trigger-width] border-line bg-paper p-0 shadow-sm" align="start">
         <Command shouldFilter={false}>
           <CommandInput placeholder="Istanbul, Lagos, Buenos Aires…" value={q} onValueChange={setQ} />
           <CommandList>
@@ -66,15 +66,17 @@ export function CityPicker({ value, onChange }: { value: PickedCity | null; onCh
                 <CommandItem
                   key={c.id}
                   value={c.id}
+                  // The highlighted row stays ink on sand, never slate on beacon.
+                  className="py-2.5 text-ink data-[selected=true]:bg-sand data-[selected=true]:text-ink"
                   onSelect={() => {
                     onChange(c);
                     setOpen(false);
                   }}
                 >
-                  <Check className={cn("size-4", value?.id === c.id ? "opacity-100" : "opacity-0")} />
+                  <Check className={cn("size-4 text-ink", value?.id === c.id ? "opacity-100" : "opacity-0")} strokeWidth={1.5} />
                   <span className="truncate">
                     {c.name}
-                    <span className="text-muted-foreground">
+                    <span className="text-slate">
                       {c.region && c.region !== c.name ? `, ${c.region}` : ""}, {countryName(c.countryCode)}
                     </span>
                   </span>
@@ -82,7 +84,7 @@ export function CityPicker({ value, onChange }: { value: PickedCity | null; onCh
               ))}
             </CommandGroup>
           </CommandList>
-          <p className="border-t px-3 py-2 text-[11px] text-muted-foreground">
+          <p className="border-t border-line px-3 py-2 text-[11px] text-slate">
             Cities with 100k+ people, from{" "}
             <a href="https://www.geonames.org/" target="_blank" rel="noreferrer" className="underline">
               GeoNames

@@ -1,18 +1,27 @@
 'use client';
 
-import { CheckCircle2, Circle, Lock } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useState } from "react";
 
 import { shortAddress, trimAmount } from "@/components/listing/format";
-import { btnPrimary, windowLabel, windowShort, type TradeView } from "@/components/trade/format";
+import { windowLabel, type TradeView } from "@/components/trade/format";
 import { StepFeedback, WalletHint, walletProblem } from "@/components/trade/step-feedback";
 import { useChainStep } from "@/components/trade/use-chain-step";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { toAsset } from "@/lib/stellar/assets";
 import { buildLockTransaction } from "@/lib/stellar/settlement";
+import type { PreflightCheck } from "@/lib/trade/preflight";
 import { loadSourceAccount } from "@/lib/trade/sign-and-submit";
-import { cn } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet/use-wallet";
+
+/** Plain words for a check; the trustline one would otherwise say "op_no_trust". */
+function checkText(c: PreflightCheck, asset: string): string {
+  if (c.id === "buyerTrustline") {
+    return c.ok ? `The buyer can receive ${asset}` : `The buyer needs to add ${asset} to their wallet first.`;
+  }
+  return c.ok ? c.label : (c.detail ?? c.label);
+}
 
 /** The seller's lock screen (state agreed). */
 export function LockPanel({ trade }: { trade: TradeView }) {
@@ -28,62 +37,80 @@ export function LockPanel({ trade }: { trade: TradeView }) {
 
   const amount = `${trimAmount(trade.amount)} ${trade.asset}`;
   const window = windowLabel(trade.windowSeconds);
-  const short = windowShort(trade.windowSeconds);
   const problem = walletProblem(wallet, ready, trade.seller);
   const blocked = preflight.isLoading
-    ? "Checking both accounts on Stellar testnet…"
+    ? "Checking both wallets on Stellar testnet…"
     : preflight.error
       ? preflight.error.message
-      : (preflight.data?.blockedReason ??
-        (!ack ? "Confirm the statement above to continue." : problem));
+      : preflight.data?.blockedReason
+        ? "Sort out the item above, then lock."
+        : !ack
+          ? "Tick the box above to continue."
+          : problem;
 
   return (
-    <section className="space-y-4 rounded-2xl border-2 border-pairy-flame/50 bg-card p-5">
-      <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-        <Lock className="size-5 text-pairy-flame" /> Lock {amount}
-      </h2>
-
-      <p className="rounded-xl bg-pairy-flame/10 p-4 text-base font-medium leading-relaxed">
-        Once you lock, the buyer can claim these funds at any moment in the next {window}, whether or not they have
-        handed you the cash. Lock only when you are both at the meeting point.
-      </p>
-
-      <div className="space-y-1 text-sm">
-        <p className="font-semibold">Who can take the locked {trade.asset}</p>
-        <p>
-          Buyer ({shortAddress(trade.buyer)}): can claim before {short} · You: can reclaim after {short}
-        </p>
-        <p className="text-muted-foreground">
-          No one else. Pairy is not a claimant and cannot move these funds. The lock also holds 1 XLM of reserve
-          (0.5 XLM per claimant) from your account, which comes back to you on claim or reclaim.
+    <section className="space-y-10" aria-labelledby="lock-heading">
+      <div className="space-y-5">
+        <p className="eyebrow">Before you lock</p>
+        <h2 id="lock-heading" className="text-3xl font-semibold tracking-tight">
+          Lock <span className="font-mono font-medium">{amount}</span> for the buyer.
+        </h2>
+        <p className="border-l-2 border-ink pl-5 text-lg leading-relaxed text-ink">
+          Once you lock, the buyer can claim the {amount} at any moment in the next {window}, whether or not they have
+          handed you the cash. Lock only when you are both at the meeting point.
         </p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
+        <p className="eyebrow">Who can take the locked {trade.asset}</p>
+        <dl className="divide-y divide-line border-y border-line">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
+            <dt className="font-medium">
+              Buyer <span className="font-mono text-xs font-normal text-slate">{shortAddress(trade.buyer)}</span>
+            </dt>
+            <dd className="text-slate">can claim for the next {window}</dd>
+          </div>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
+            <dt className="font-medium">You</dt>
+            <dd className="text-slate">can take it back after {window}</dd>
+          </div>
+        </dl>
+        <p className="text-sm text-ink">No one else. Pairy is not on the lock and can&apos;t move it.</p>
+        <p className="text-sm leading-relaxed text-slate">
+          Locking also sets aside <span className="font-mono">1 XLM</span> from your wallet as a network reserve (
+          <span className="font-mono">0.5 XLM</span> for each of the two people on the lock). It comes back to you
+          when the buyer claims or you take it back.
+        </p>
+      </div>
+
+      <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold">Before you lock</p>
-          <button className="text-xs text-muted-foreground underline" onClick={() => preflight.refetch()}>
+          <p className="eyebrow">Checklist</p>
+          <button
+            className="text-xs text-slate underline decoration-slate/40 underline-offset-4 hover:text-ink"
+            onClick={() => preflight.refetch()}
+          >
             {preflight.isFetching ? "Checking…" : "Check again"}
           </button>
         </div>
-        <ul className="space-y-1.5">
+        <ul className="space-y-2">
           {preflight.data?.checks.map((c) => (
-            <li key={c.id} className="flex gap-2 text-sm">
+            <li key={c.id} className="flex gap-3 text-sm">
               {c.ok ? (
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                <Check className="mt-0.5 size-4 shrink-0 text-slate" strokeWidth={1.5} aria-label="Done" />
               ) : (
-                <Circle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <X className="mt-0.5 size-4 shrink-0 text-danger" strokeWidth={1.5} aria-label="Not yet" />
               )}
-              <span className={cn(!c.ok && "text-destructive")}>{c.ok ? c.label : c.detail}</span>
+              <span className={c.ok ? "text-slate" : "font-medium text-ink"}>{checkText(c, trade.asset)}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4 text-sm leading-relaxed">
         <input
           type="checkbox"
-          className="mt-0.5 size-4 accent-[#FF4E2B]"
+          className="mt-1 size-4 shrink-0 accent-ink"
           checked={ack}
           onChange={(e) => setAck(e.target.checked)}
         />
@@ -93,9 +120,11 @@ export function LockPanel({ trade }: { trade: TradeView }) {
         </span>
       </label>
 
-      <div className="space-y-2">
-        <button
-          className={cn(btnPrimary, "w-full")}
+      <div className="space-y-3">
+        <Button
+          variant="beacon"
+          size="lg"
+          className="w-full"
           disabled={!!blocked || step.busy}
           onClick={() =>
             wallet &&
@@ -109,12 +138,12 @@ export function LockPanel({ trade }: { trade: TradeView }) {
             })
           }
         >
-          {step.busy ? "Signing and submitting…" : `Lock ${amount}`}
-        </button>
+          {step.busy ? "Signing and sending…" : `Lock ${amount}`}
+        </Button>
         {blocked && blocked === problem ? (
           <WalletHint problem={problem} />
         ) : (
-          blocked && <p className="text-sm text-muted-foreground">{blocked}</p>
+          blocked && <p className="text-sm text-slate">{blocked}</p>
         )}
         <StepFeedback step={step} />
       </div>

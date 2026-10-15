@@ -19,8 +19,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium shadow-sm transition-colors",
-        active ? "border-foreground bg-foreground text-background" : "bg-background/95 hover:border-foreground/50",
+        "shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition-colors",
+        active ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink hover:border-ink/40",
       )}
     >
       {children}
@@ -41,7 +41,7 @@ export default function MapPage() {
 
   return (
     <div className="absolute inset-0 flex flex-col">
-      <div className="z-10 flex items-center gap-2 border-b bg-background py-2.5 pr-4">
+      <div className="z-10 flex items-center gap-2 border-b border-line bg-paper py-3 pr-4">
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pl-4 [scrollbar-width:none]">
           <Chip active={filters.side === "sell_crypto"} onClick={() => toggle("side", "sell_crypto")}>
             Selling crypto
@@ -49,13 +49,13 @@ export default function MapPage() {
           <Chip active={filters.side === "buy_crypto"} onClick={() => toggle("side", "buy_crypto")}>
             Buying crypto
           </Chip>
-          <span className="h-5 w-px shrink-0 bg-border" />
+          <span className="h-5 w-px shrink-0 bg-line" />
           {(["XLM", "USDC"] as const).map((a) => (
             <Chip key={a} active={filters.asset === a} onClick={() => toggle("asset", a)}>
               {a}
             </Chip>
           ))}
-          <span className="h-5 w-px shrink-0 bg-border" />
+          <span className="h-5 w-px shrink-0 bg-line" />
           <select
             aria-label="Cash currency"
             value={filters.fiatCode ?? ""}
@@ -63,8 +63,8 @@ export default function MapPage() {
               setFilters((f) => ({ ...f, fiatCode: (e.target.value || undefined) as Filters["fiatCode"] }))
             }
             className={cn(
-              "shrink-0 rounded-full border bg-background px-3 py-1.5 text-sm font-medium shadow-sm",
-              filters.fiatCode && "border-foreground",
+              "shrink-0 rounded-full border px-3.5 py-1.5 font-mono text-sm",
+              filters.fiatCode ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink",
             )}
           >
             <option value="">Any cash</option>
@@ -75,7 +75,7 @@ export default function MapPage() {
             ))}
           </select>
         </div>
-        <div className="flex shrink-0 rounded-full border p-0.5">
+        <div className="flex shrink-0 rounded-full border border-line p-0.5">
           {(["map", "list"] as const).map((v) => (
             <button
               key={v}
@@ -83,11 +83,11 @@ export default function MapPage() {
               onClick={() => setView(v)}
               aria-pressed={view === v}
               className={cn(
-                "flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium capitalize",
-                view === v ? "bg-foreground text-background" : "text-muted-foreground",
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm capitalize transition-colors",
+                view === v ? "bg-ink text-paper" : "text-slate hover:text-ink",
               )}
             >
-              {v === "map" ? <MapIcon className="size-4" /> : <List className="size-4" />}
+              {v === "map" ? <MapIcon className="size-4" strokeWidth={1.5} /> : <List className="size-4" strokeWidth={1.5} />}
               {v}
             </button>
           ))}
@@ -96,7 +96,7 @@ export default function MapPage() {
 
       <div className="relative flex-1">
         {error && (
-          <p className="absolute inset-x-4 top-4 z-20 rounded-lg bg-destructive p-3 text-sm text-destructive-foreground">
+          <p className="absolute inset-x-4 top-4 z-20 rounded-xl border border-danger/30 bg-paper p-3 text-sm text-danger">
             Could not load listings: {error.message}
           </p>
         )}
@@ -105,45 +105,59 @@ export default function MapPage() {
           <>
             <ListingsMap pins={pins} selectedCityId={cityId} onSelectCity={setCityId} />
             {!isLoading && pins.length === 0 && (
-              <p className="pointer-events-none absolute inset-x-0 top-6 z-10 mx-auto w-fit rounded-full bg-background/95 px-4 py-2 text-sm shadow">
-                No active listings match these filters yet.
+              <p className="pointer-events-none absolute inset-x-0 top-6 z-10 mx-auto w-fit rounded-full border border-line bg-paper px-4 py-2 text-sm text-slate">
+                No listings match these filters yet.
               </p>
             )}
             {selected && (
-              <section className="absolute inset-x-2 bottom-2 z-20 max-h-[55%] overflow-y-auto rounded-2xl border bg-background p-4 shadow-xl md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100%-2rem)] md:w-96">
-                <header className="mb-3 flex items-start justify-between gap-2">
+              <section className="absolute inset-x-2 bottom-2 z-20 max-h-[60%] overflow-y-auto rounded-xl border border-line bg-paper px-5 pb-4 pt-5 shadow-sm md:inset-x-auto md:bottom-auto md:left-4 md:top-4 md:max-h-[calc(100%-2rem)] md:w-96">
+                <header className="flex items-start justify-between gap-2">
                   <div>
-                    <h2 className="font-display text-lg font-bold leading-tight">{selected.cityName}</h2>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="eyebrow">
                       {countryName(selected.countryCode)} · {selected.listings.length} listing
                       {selected.listings.length === 1 ? "" : "s"}
                     </p>
+                    <h2 className="mt-2 font-serif text-4xl italic leading-none text-ink">{selected.cityName}.</h2>
                   </div>
                   <button
                     type="button"
                     onClick={() => setCityId(null)}
                     aria-label="Close"
-                    className="rounded-full p-1 text-muted-foreground hover:bg-secondary"
+                    className="-mr-1 rounded-full p-1.5 text-slate transition-colors hover:bg-sand hover:text-ink"
                   >
-                    <X className="size-4" />
+                    <X className="size-4" strokeWidth={1.5} />
                   </button>
                 </header>
-                <div className="space-y-2">
+                <div className="mt-4 divide-y divide-line border-y border-line">
                   {selected.listings.map((l) => (
                     <ListingCard key={l.id} listing={l} showCity={false} />
                   ))}
                 </div>
+                <p className="mt-3 text-xs text-slate">
+                  The pin shows the city, not a person. Agree the meeting point in the chat.
+                </p>
               </section>
             )}
           </>
         ) : (
           <div className="absolute inset-0 overflow-y-auto">
-            <div className="mx-auto max-w-2xl space-y-2 p-4">
-              {isLoading && <p className="text-sm text-muted-foreground">Loading listings…</p>}
+            <div className="mx-auto max-w-2xl px-4 py-6 md:py-10">
+              {isLoading && <p className="text-sm text-slate">Loading listings…</p>}
               {!isLoading && data?.length === 0 && (
-                <p className="text-sm text-muted-foreground">No active listings match these filters yet.</p>
+                <p className="text-sm text-slate">No listings match these filters yet.</p>
               )}
-              {data?.map((l) => <ListingCard key={l.id} listing={l} />)}
+              {!!data?.length && (
+                <>
+                  <p className="eyebrow">
+                    {data.length} listing{data.length === 1 ? "" : "s"}
+                  </p>
+                  <div className="mt-3 divide-y divide-line border-y border-line">
+                    {data.map((l) => (
+                      <ListingCard key={l.id} listing={l} />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
