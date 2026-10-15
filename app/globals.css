@@ -2,52 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Pairy brand system v0.1. Paper is the only theme: the brand lives in the
+   physical world. Ink sections are "reversed" blocks, not a dark mode. */
 @layer base {
   :root {
     --radius: 0.75rem;
 
-    /* LIGHT — cream canvas, ink text, flame accent */
-    --background: 37 38% 94%;
-    --foreground: 216 22% 7%;
-    --card: 37 40% 98%;
+    --background: 37 38% 94%;        /* paper  #F5F1EA */
+    --foreground: 216 22% 7%;        /* ink    #0E1116 */
+    --card: 38 30% 91%;              /* sand   #EEE9E0 */
     --card-foreground: 216 22% 7%;
-    --popover: 0 0% 100%;
+    --popover: 37 38% 96%;
     --popover-foreground: 216 22% 7%;
-    --primary: 216 22% 7%;
+    --primary: 216 22% 7%;           /* ink */
     --primary-foreground: 37 38% 94%;
-    --secondary: 37 22% 88%;
+    --secondary: 38 30% 91%;         /* sand */
     --secondary-foreground: 216 22% 7%;
-    --muted: 37 22% 90%;
-    --muted-foreground: 216 8% 38%;
-    --accent: 10 100% 58%;
+    --muted: 38 30% 91%;
+    --muted-foreground: 223 13% 41%; /* slate  #5A6275 */
+    --accent: 10 100% 58%;           /* beacon #FF4E2B */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 48%;
+    --destructive: 7 63% 48%;        /* danger #C7402D */
     --destructive-foreground: 0 0% 100%;
-    --border: 37 14% 82%;
-    --input: 37 14% 82%;
-    --ring: 10 100% 58%;
-  }
-
-  .dark {
-    --background: 216 22% 7%;
-    --foreground: 37 38% 94%;
-    --card: 216 18% 11%;
-    --card-foreground: 37 38% 94%;
-    --popover: 216 18% 10%;
-    --popover-foreground: 37 38% 94%;
-    --primary: 37 38% 94%;
-    --primary-foreground: 216 22% 7%;
-    --secondary: 216 14% 17%;
-    --secondary-foreground: 37 38% 94%;
-    --muted: 216 14% 15%;
-    --muted-foreground: 37 10% 66%;
-    --accent: 10 100% 58%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 52%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 216 12% 20%;
-    --input: 216 12% 20%;
-    --ring: 10 100% 58%;
+    --border: 40 13% 88%;            /* line   #E6E3DC */
+    --input: 40 13% 88%;
+    --ring: 216 22% 7%;
   }
 }
 
@@ -56,6 +35,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Small spaced mono label used above headings and on data rows. */
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.18em] text-slate;
   }
 }

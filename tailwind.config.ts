@@ -13,9 +13,12 @@ const config: Config = {
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
+			// Brand system v0.1: two voices plus mono for data. Newsreader is the
+			// italic editorial accent only (headlines, taglines, >= 24px).
 			fontFamily: {
-				display: ["var(--font-space-grotesk)", "sans-serif"],
-				body: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+				sans: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+				serif: ["var(--font-newsreader)", "Georgia", "serif"],
+				mono: ["var(--font-jetbrains-mono)", "ui-monospace", "monospace"],
 			},
 			colors: {
 				background: 'hsl(var(--background))',
@@ -51,12 +54,31 @@ const config: Config = {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
-				// Pairy brand — fixed in both themes (matches assets/wordmark-*.svg).
-				pairy: {
-					ink: "#0E1116",
-					cream: "#F5F1EA",
-					flame: "#FF4E2B",
+				// Brand system v0.1 palette ("warm pavement").
+				ink: "#0E1116",
+				deep: "#1B2230",
+				slate: "#5A6275",
+				mist: "#9AA0AF",
+				line: "#E6E3DC",
+				paper: "#F5F1EA",
+				sand: "#EEE9E0",
+				// Beacon carries the action and always means "a peer is near".
+				// Use sparingly.
+				beacon: {
+					50: "#FFF1ED",
+					100: "#FFE2D8",
+					200: "#FFC5B1",
+					300: "#FFA689",
+					400: "#FF8666",
+					DEFAULT: "#FF4E2B",
+					500: "#FF4E2B",
+					600: "#E03A1A",
+					700: "#C3361B",
+					800: "#8A2814",
 				},
+				success: "#1F8A5B",
+				warning: "#D49F1F",
+				danger: "#C7402D",
 			},
 			keyframes: {
 				'accordion-down': {
