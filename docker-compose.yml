@@ -1,0 +1,14 @@
+volumes:
+  postgres:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pairy
+      POSTGRES_DB: pairy
+      POSTGRES_PASSWORD: pairy
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "35433:5432"
