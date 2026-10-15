@@ -45,11 +45,12 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 
 | Step | Native XLM | Testnet USDC |
 |---|---|---|
-| Lock (72-hour window) | PENDING | PENDING |
-| Claim by the buyer | PENDING | PENDING |
-| Lock (60-second test window) | PENDING | PENDING |
-| Reclaim by the seller after 60 seconds | PENDING | PENDING |
-| Lock deliberately abandoned in Week 1 (72-hour window) | PENDING | PENDING |
+| Lock (72-hour window) | [`7c5b7f75…3899`](https://stellar.expert/explorer/testnet/tx/7c5b7f75cdd14eab7adf97ed5ca408b659f60021700daba6ac6321ec1d263899) | [`aa3001a4…25d8`](https://stellar.expert/explorer/testnet/tx/aa3001a462f433d0df06528e45e7fd26d2f5bdc88fd3dead9477a3a573ff25d8) |
+| Claim by the buyer | [`50337eab…81ad`](https://stellar.expert/explorer/testnet/tx/50337eab3e73da498dd440bb894985d4d1b6cf6af079562830af09e5c0ba81ad) | [`bc61af15…8d62`](https://stellar.expert/explorer/testnet/tx/bc61af1514b7057bf9f071a48a78d6d7e8ad8e835ca8af7f8719ad23eb308d62) |
+| Lock (60-second test window) | [`cfa40fc3…c1a8`](https://stellar.expert/explorer/testnet/tx/cfa40fc3cd8cc5c75dc7e42686adcab350b4e5814c9461daa06be926e777c1a8) | [`3faa888b…de24`](https://stellar.expert/explorer/testnet/tx/3faa888b743ffc929464971fa05b7379e278a2a92ae73799b6f57e4134c0de24) |
+| Early reclaim attempt before the 60 seconds were up (rejected on-chain with `op_cannot_claim`, as it should be) | [`491b3d15…06b8`](https://stellar.expert/explorer/testnet/tx/491b3d15316b0ba98c813ba232ec5f69c1e2550e34c66c523aadbc0fbd0606b8) | [`bc4cd234…56cf`](https://stellar.expert/explorer/testnet/tx/bc4cd234b08e8cb0239b70200f1286af4fd390b63288bcb73de386c27c5b56cf) |
+| Reclaim by the seller after 60 seconds | [`45e5053f…81b8`](https://stellar.expert/explorer/testnet/tx/45e5053f106f2cc66dcb7a79aa041472957cc5688aea205b7596528ad8fc81b8) | [`c1ade40e…8b78`](https://stellar.expert/explorer/testnet/tx/c1ade40ea7126f6f8435356bb51323e2daf2a10c8cc9d29a92094c30153e8b78) |
+| Lock deliberately abandoned (72-hour window), opened 2026-10-15 ~06:55 UTC, matures 2026-10-18 ~06:55 UTC | [`02b073e7…0598`](https://stellar.expert/explorer/testnet/tx/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598) | [`340d915d…62a9`](https://stellar.expert/explorer/testnet/tx/340d915d875621a6c86075840c7cfa0a624a286c090c8055275cd4b2dcde62a9) |
 | Reclaim by the seller after the real 72 hours matured | PENDING (cannot exist until 72 hours after the abandoned lock) | PENDING (as left) |
 
 ### Measured fees and reserves (stroops)
@@ -58,11 +59,11 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 
 | Item | Network parameter (2026-10-15) | Measured on Pairy's transactions |
 |---|---|---|
-| Fee charged, lock transaction | base fee 100 per operation | PENDING |
-| Fee charged, claim transaction | base fee 100 per operation | PENDING |
-| Fee charged, reclaim transaction | base fee 100 per operation | PENDING |
-| Reserve locked against the seller while the balance exists (one base reserve per claimant, two claimants) | base reserve 5,000,000 per claimant, so 10,000,000 for two | PENDING |
-| Reserve returned to the seller on claim or reclaim | same amount, returned to the creator ([Stellar docs](https://developers.stellar.org/docs/build/guides/transactions/sponsored-reserves)) | PENDING |
+| Fee charged, lock transaction | base fee 100 per operation | 100 (every lock above, Horizon `fee_charged`) |
+| Fee charged, claim transaction | base fee 100 per operation | 100, paid by the buyer |
+| Fee charged, reclaim transaction | base fee 100 per operation | 100. A rejected early reclaim is also charged 100 |
+| Reserve locked against the seller while the balance exists (one base reserve per claimant, two claimants) | base reserve 5,000,000 per claimant, so 10,000,000 for two | 10,000,000. The seller's `num_sponsoring` goes 0 → 2 and minimum balance 10,000,000 → 20,000,000. The reserve is not deducted from the balance; it raises the minimum the seller must keep. XLM seller balance 100,000,000,000 → 99,949,999,900 = the 50,000,000 locked + the 100 fee |
+| Reserve returned to the seller on claim or reclaim | same amount, returned to the creator ([Stellar docs](https://developers.stellar.org/docs/build/guides/transactions/sponsored-reserves)) | Returned to the seller: after the buyer's claim the seller's `num_sponsoring` is back to 0 and minimum balance back to 10,000,000, while the buyer's stays 0. The buyer receives the amount (+49,999,900 = 5 XLM − their own 100 fee), not the reserve |
 
 ### Trustless Work comparison and upstream issue
 
@@ -87,7 +88,7 @@ Evidence type: transaction hash on stellar.expert, screen recordings, green CI r
 
 | Item | What it shows | Link | Status |
 |---|---|---|---|
-| Transaction signed by a device-generated wallet | A testnet transaction signed by a key that was generated in the user's own browser and never left it | PENDING | PENDING |
+| Transaction signed by a device-generated wallet | A testnet transaction signed by a key that was generated in the user's own browser and never left it | Lock [`c0c9e6c2…64c8`](https://stellar.expert/explorer/testnet/tx/c0c9e6c29dc15f6112afbc97fc2110f8bc1a37275ca0684ea649590805a164c8) and claim [`bc74206a…3d6b`](https://stellar.expert/explorer/testnet/tx/bc74206a5780adf6bbf35b24450ef53c548588014078c628e9db21a7b1223d6b), each signed in the browser by a device-generated wallet during a local end-to-end trade on 2026-10-15 (seller and buyer on two separate browser origins) | Done for device ↔ device |
 | Export / re-import recording | A key exported from one browser, re-imported in a second browser profile, then used to sign a testnet transaction | PENDING | PENDING |
 | Re-imported key's signing transaction | The transaction signed in the second browser profile | PENDING | PENDING |
 | Two-wallet-type end-to-end run: recording | Two test users, one on Freighter and one on a device-generated wallet, completing a trade end to end | PENDING | PENDING |
