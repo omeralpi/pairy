@@ -1,7 +1,6 @@
 'use client';
 
-// STUB — replaced by the wallet agent. The shape below is the contract the
-// trade UI relies on; keep it.
+import { createContext, useContext } from "react";
 
 export type WalletKind = "device" | "freighter";
 
@@ -16,10 +15,42 @@ export type Wallet = {
   signTransaction: (xdr: string) => Promise<string>;
 };
 
+/** Everything the onboarding and wallet screens need beyond `useWallet()`. */
+export type WalletContextValue = {
+  wallet: Wallet | null;
+  ready: boolean;
+  /** The public key of the encrypted wallet stored in this browser, if any. */
+  deviceWalletPublicKey: string | null;
+  connectFreighter: () => Promise<Wallet>;
+  createDeviceWallet: (pincode: string) => Promise<Wallet>;
+  importDeviceWallet: (backup: unknown, pincode: string) => Promise<Wallet>;
+  /** Selects the wallet already stored in this browser. */
+  selectDeviceWallet: () => Wallet;
+  /**
+   * SEP-53 signs `message` with `wallet`; returns a base64 signature. Used for
+   * login only. A device wallet prompts for its pincode unless the caller just
+   * collected it (create/import), so the user isn't asked twice in a row.
+   */
+  signMessage: (wallet: Wallet, message: string, pincode?: string) => Promise<string>;
+  /** Downloads the pincode-encrypted keystore entry as a JSON file. */
+  exportBackup: () => Promise<void>;
+  /** Forgets the selected wallet. The device wallet stays stored in this browser. */
+  disconnect: () => Promise<void>;
+};
+
+export const WalletContext = createContext<WalletContextValue | null>(null);
+
+export function useWalletContext(): WalletContextValue {
+  const ctx = useContext(WalletContext);
+  if (!ctx) throw new Error("useWallet must be used inside <WalletProvider>");
+  return ctx;
+}
+
 /** The connected wallet, or null when none is connected/unlocked. */
 export function useWallet(): {
   wallet: Wallet | null;
   ready: boolean;
 } {
-  return { wallet: null, ready: true };
+  const { wallet, ready } = useWalletContext();
+  return { wallet, ready };
 }

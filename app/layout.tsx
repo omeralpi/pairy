@@ -3,6 +3,7 @@ import { Space_Grotesk } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
 import { TRPCProvider } from "@/components/providers/trpc-provider";
+import { WalletProvider } from "@/components/providers/wallet-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={spaceGrotesk.variable}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TRPCProvider>{children}</TRPCProvider>
+          <TRPCProvider>
+            <WalletProvider>{children}</WalletProvider>
+          </TRPCProvider>
           <Toaster />
         </ThemeProvider>
       </body>
