@@ -23,7 +23,11 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
   });
   const end = useRef<HTMLDivElement>(null);
   const count = messages.data?.length ?? 0;
-  useEffect(() => end.current?.scrollIntoView({ block: "nearest" }), [count]);
+  // Braces matter: newer Chrome returns a Promise from scrollIntoView, and an
+  // effect that returns one crashes React's cleanup.
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "nearest" });
+  }, [count]);
 
   return (
     <section className="flex flex-col rounded-2xl border bg-card">
