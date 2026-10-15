@@ -1,0 +1,148 @@
+{
+  "asset": "XLM",
+  "amount": "5.0000000",
+  "network": "testnet",
+  "seller": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+  "buyer": "GC4COOIH2ZHG7LNC3CIKINVMUWWYO2D2ZXJJXAWEC6A7PFAMZ2H5THMX",
+  "setup": [],
+  "claimPath": {
+    "snapshots": [
+      {
+        "label": "seller before lock",
+        "account": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+        "at": "2026-10-15T06:55:52Z",
+        "xlmBalanceStroops": "100000000000",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "10000000"
+      },
+      {
+        "label": "seller after lock",
+        "account": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+        "at": "2026-10-15T06:55:57Z",
+        "xlmBalanceStroops": "99949999900",
+        "numSponsoring": 2,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "20000000"
+      },
+      {
+        "label": "buyer before claim",
+        "account": "GC4COOIH2ZHG7LNC3CIKINVMUWWYO2D2ZXJJXAWEC6A7PFAMZ2H5THMX",
+        "at": "2026-10-15T06:55:57Z",
+        "xlmBalanceStroops": "100000000000",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "10000000"
+      },
+      {
+        "label": "seller after claim",
+        "account": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+        "at": "2026-10-15T06:56:02Z",
+        "xlmBalanceStroops": "99949999900",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "10000000"
+      },
+      {
+        "label": "buyer after claim",
+        "account": "GC4COOIH2ZHG7LNC3CIKINVMUWWYO2D2ZXJJXAWEC6A7PFAMZ2H5THMX",
+        "at": "2026-10-15T06:56:02Z",
+        "xlmBalanceStroops": "100049999900",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "10000000"
+      }
+    ],
+    "steps": [
+      {
+        "step": "lock (259200s window)",
+        "hash": "7c5b7f75cdd14eab7adf97ed5ca408b659f60021700daba6ac6321ec1d263899",
+        "url": "https://stellar.expert/explorer/testnet/tx/7c5b7f75cdd14eab7adf97ed5ca408b659f60021700daba6ac6321ec1d263899",
+        "successful": true,
+        "resultCodes": null,
+        "ledger": 5204754,
+        "closedAt": "2026-10-15T06:55:57Z",
+        "feeChargedStroops": "100",
+        "balanceId": "00000000c30a462d10803d187253224c8f2e685c48b87f7a5ac094a764b7de8a000b2baf"
+      },
+      {
+        "step": "buyer claims",
+        "hash": "50337eab3e73da498dd440bb894985d4d1b6cf6af079562830af09e5c0ba81ad",
+        "url": "https://stellar.expert/explorer/testnet/tx/50337eab3e73da498dd440bb894985d4d1b6cf6af079562830af09e5c0ba81ad",
+        "successful": true,
+        "resultCodes": null,
+        "ledger": 5204755,
+        "closedAt": "2026-10-15T06:56:02Z",
+        "feeChargedStroops": "100"
+      }
+    ]
+  },
+  "reclaimPath": {
+    "snapshots": [
+      {
+        "label": "seller before lock",
+        "account": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+        "at": "2026-10-15T06:56:02Z",
+        "xlmBalanceStroops": "99949999900",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "10000000"
+      },
+      {
+        "label": "seller after lock",
+        "account": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+        "at": "2026-10-15T06:56:07Z",
+        "xlmBalanceStroops": "99899999800",
+        "numSponsoring": 2,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "20000000"
+      },
+      {
+        "label": "seller after reclaim",
+        "account": "GDNI2IHSOIQ2AVQQPC7JNFICAJTCULWMYKHL53TY6PVATGWHUAP5BINB",
+        "at": "2026-10-15T06:57:17Z",
+        "xlmBalanceStroops": "99949999600",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "10000000"
+      }
+    ],
+    "steps": [
+      {
+        "step": "lock (60s window)",
+        "hash": "cfa40fc3cd8cc5c75dc7e42686adcab350b4e5814c9461daa06be926e777c1a8",
+        "url": "https://stellar.expert/explorer/testnet/tx/cfa40fc3cd8cc5c75dc7e42686adcab350b4e5814c9461daa06be926e777c1a8",
+        "successful": true,
+        "resultCodes": null,
+        "ledger": 5204756,
+        "closedAt": "2026-10-15T06:56:07Z",
+        "feeChargedStroops": "100",
+        "balanceId": "000000006178233d66f18c9975dc8c39a15adb42d1d48b7e395b528a87a8cc50af2222ae",
+        "reclaimOpensAt": "2026-10-15T06:57:07.000Z"
+      },
+      {
+        "step": "seller reclaims early (rejected)",
+        "hash": "491b3d15316b0ba98c813ba232ec5f69c1e2550e34c66c523aadbc0fbd0606b8",
+        "url": "https://stellar.expert/explorer/testnet/tx/491b3d15316b0ba98c813ba232ec5f69c1e2550e34c66c523aadbc0fbd0606b8",
+        "successful": false,
+        "resultCodes": [
+          "tx_failed",
+          "op_cannot_claim"
+        ],
+        "ledger": 5204757,
+        "closedAt": "2026-10-15T06:56:12Z",
+        "feeChargedStroops": "100"
+      },
+      {
+        "step": "seller reclaims after window",
+        "hash": "45e5053f106f2cc66dcb7a79aa041472957cc5688aea205b7596528ad8fc81b8",
+        "url": "https://stellar.expert/explorer/testnet/tx/45e5053f106f2cc66dcb7a79aa041472957cc5688aea205b7596528ad8fc81b8",
+        "successful": true,
+        "resultCodes": null,
+        "ledger": 5204770,
+        "closedAt": "2026-10-15T06:57:17Z",
+        "feeChargedStroops": "100"
+      }
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm lint
+      - name: typecheck
+        run: pnpm typecheck
+      # tests/ci/* run below as their own named steps, so a failure there is
+      # visible by name in the run.
+      - name: unit tests
+        run: pnpm vitest run --exclude "tests/ci/**"
+      - name: no-secret-fields
+        run: pnpm vitest run tests/ci/no-secret-fields.test.ts
+      - name: coordination-purge-on-terminal
+        run: pnpm vitest run tests/ci/coordination-purge-on-terminal.test.ts
+
+      - name: build
+        run: pnpm build
+        env:
+          # Build-time placeholders only; nothing connects to them.
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci-not-used
+          SESSION_SECRET: ci-build-placeholder-at-least-32-characters

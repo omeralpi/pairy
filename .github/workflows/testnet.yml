@@ -1,0 +1,29 @@
+name: Testnet integration
+
+# Hits the real Stellar testnet (Friendbot, Horizon, the testnet DEX) and waits
+# out two 60-second claim windows, so it runs on main and on demand, not per PR.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: testnet
+  cancel-in-progress: false
+
+jobs:
+  testnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: settlement on testnet
+        run: pnpm test:testnet
