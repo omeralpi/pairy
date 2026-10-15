@@ -13,6 +13,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -88,6 +89,8 @@ export const trades = pgTable(
   (t) => [
     index("trades_seller_idx").on(t.seller),
     index("trades_buyer_idx").on(t.buyer),
+    // One on-chain lock backs at most one trade.
+    uniqueIndex("trades_balance_id_idx").on(t.balanceId),
   ],
 );
 

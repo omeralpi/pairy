@@ -8,6 +8,13 @@
       "when": 1792046293841,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792047897047,
+      "tag": "0001_trades_balance_id_unique",
+      "breakpoints": true
     }
   ]
 }

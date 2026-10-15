@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "trades_balance_id_idx" ON "trades" USING btree ("balance_id");

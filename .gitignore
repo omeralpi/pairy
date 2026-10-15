@@ -29,3 +29,6 @@ next-env.d.ts
 
 # evidence script local state (testnet keypairs for evidence runs; never commit)
 /scripts/evidence/.state/
+
+# copied from node_modules by the predev/prebuild scripts
+/public/maplibre-gl-worker.mjs
