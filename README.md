@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/hero.png" alt="Trade in İstanbul." width="100%" />
+
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg" />
@@ -7,144 +9,201 @@
   </picture>
 </h1>
 
-In-person cash and crypto trades on the Stellar testnet, settled with claimable balances (CAP-23).
+### Trade in person.
 
-[![Stellar](https://img.shields.io/badge/Stellar-testnet-7B3FE4)](https://stellar.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Status](https://img.shields.io/badge/status-in%20development-FF4E2B)
+Pairy helps two people in the same city swap local cash for XLM or USDC, face to face. The seller locks the crypto on Stellar for the buyer, and the buyer claims it on their own phone once the cash is in the seller's hand. Pairy holds no key and has no role in the lock.
+
+[![Stellar testnet](https://img.shields.io/badge/Stellar-testnet-0E1116)](https://stellar.org)
+[![CAP-23](https://img.shields.io/badge/settlement-CAP--23%20claimable%20balances-0E1116)](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0023.md)
+[![Next.js](https://img.shields.io/badge/Next.js-14-0E1116?logo=next.js&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-0E1116?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-0E1116.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-testnet%20demo-FF4E2B)
+
+[**Live demo**](https://pairy.org) · [**Evidence**](EVIDENCE.md) · [**Why not an escrow contract**](docs/settlement-rail-comparison.md)
 
 </div>
 
 ---
 
-## What Pairy is
+## The problem
 
-Pairy helps two people near each other agree a trade of local cash for crypto (testnet XLM or testnet USDC) and settle the crypto side on Stellar. Here is how a trade works. The seller lists an offer on a map, at the city level. A buyer agrees to it. When they meet, the seller locks the crypto in a claimable balance that only the buyer can claim during the next 72 hours. The buyer hands over the cash and claims the crypto from their own device. If the buyer never claims, the seller takes it back once the 72 hours are over. Pairy writes no smart contract and holds no key. Settlement uses Stellar's built-in claimable balances, created and claimed with the stock `@stellar/stellar-sdk`.
+People already buy and sell crypto for cash in person. They find each other in Telegram and WhatsApp groups, meet a stranger, and hope. One side hands over the cash, the other is supposed to send the tokens, and if they don't, there is no recourse. Nothing holds the funds while the two people are standing there, and there is no trusted way to find someone nearby.
 
-Pairy is a testnet reference implementation. It has zero users and moves no real money.
+Stellar already has the primitive this needs. A claimable balance (CAP-23) can name exactly who may take the funds and when. Pairy builds the local, in-person flow around it: a map of offers by city, a chat for each trade, and a lock that only the buyer and the seller are on.
 
-## Trust model
+> Anyone can send XLM. Letting two strangers swap cash and crypto at a café table, with a lock neither of them can cheat and nobody else can touch, is the part that was missing.
 
-**The lock.** Every trade is one claimable balance with exactly two claimants:
+---
 
-| Claimant | Condition | Meaning |
+## How it works
+
+Liam is visiting İstanbul. He has 200 test USDC and needs lira for the week. Deniz lives in Kadıköy, has cash and wants USDC.
+
+1. **Find a peer.** Liam opens the map and sees Deniz's listing pinned on İstanbul: buying USDC at 41.50 TRY each. The pin marks the city, never a person or an address.
+2. **Agree the terms.** Liam opens a trade for 200 USDC. They use the trade's own chat to pick a café near the Moda pier. Nothing moves yet.
+3. **Meet, then lock.** At the café, Liam locks the 200 USDC. The lock screen tells him plainly: from this moment Deniz can claim at any time in the next 72 hours, cash or not, so lock only when you are both there. Liam signs on his own phone.
+4. **Cash, then claim.** Deniz hands over 8,300 TRY. Deniz taps **Claim** and signs on their own phone. The USDC is in Deniz's wallet. The trade is settled and its chat is deleted.
+
+If Deniz never claims, the lock flips after 72 hours and Liam takes the USDC back himself. Every step has a receipt on [stellar.expert](https://stellar.expert/explorer/testnet) that anyone can open.
+
+---
+
+## Why it's safe
+
+Every trade is one claimable balance with exactly two people on it:
+
+| Who | Condition on the lock | In plain words |
 |---|---|---|
-| Buyer | `BEFORE_RELATIVE_TIME(259200)` | can claim during the first 72 hours after the lock |
-| Seller | `NOT(BEFORE_RELATIVE_TIME(259200))` | can reclaim from hour 72 onward |
+| Buyer | `BEFORE_RELATIVE_TIME(259200)` | can claim during the first 72 hours |
+| Seller | `NOT(BEFORE_RELATIVE_TIME(259200))` | can take it back from hour 72 on |
 
-The two windows meet exactly at 72 hours and never overlap. There is no third claimant, no platform address, no dispute resolver and no Pairy signature anywhere in the settlement path. CAP-23 has no such roles.
+The two windows meet at exactly 72 hours and never overlap. There is no third claimant, no platform address, no dispute resolver and no Pairy signature anywhere in the settlement path. The Stellar network checks the conditions on every claim; Pairy only reads the result back.
 
-**Who signs what.** The seller signs the lock. The buyer signs the claim, on their own device, at the meeting, once the cash has changed hands. The seller signs the reclaim, on their own device, after the window closes. Pairy's server never signs anything and never sees a private key. It only reads finished transactions back from Horizon to record what happened.
+**Who signs what.** The seller signs the lock. The buyer signs the claim. The seller signs the take-back. Each signature happens on that person's own device. Pairy's server never signs, never submits a transaction for anyone and never sees a private key. It reads finished transactions from Horizon and checks them before recording a step: the lock must have exactly these two claimants with exactly these conditions, or the server refuses it.
 
-**What v1 protects, in one line:** v1 protects the buyer against a seller who takes cash and never sends, and protects the seller only against inaction, not against theft. Once the seller locks, the buyer can claim at any moment inside 72 hours, whether or not cash has changed hands. That is why the lock screen says so in plain words and recommends locking only when both people are at the meeting point. The cash leg is physical and off-chain; Pairy never sees it and cannot verify it.
+**The honest limit.** Pairy protects the buyer against a seller who takes the cash and never sends. It protects the seller only against a buyer who never claims, not against theft: once locked, the buyer can claim before handing over the cash. That is why the lock screen says so word for word and asks the seller to lock only at the meeting point. The cash itself never touches Pairy, and Pairy cannot see or verify it.
 
-Why claimable balances and not an escrow contract: [docs/settlement-rail-comparison.md](docs/settlement-rail-comparison.md).
+**Check it yourself.** Open any lock receipt on stellar.expert and find "created claimable balance". It must be claimable by exactly two accounts: the buyer "before 3 days from now" and the seller "after 3 days from now". If either says "unconditional", the lock is broken. Step-by-step instructions and every real transaction are in [EVIDENCE.md](EVIDENCE.md).
 
-## What Pairy stores, and what it does not
+---
 
-**Stored:** Stellar public keys, listing terms, claimable balance IDs and transaction hashes, trade state, and the per-deal chat while a trade is live.
+## Keys stay on your phone
 
-**Per-deal chat** belongs to a single trade. The server deletes it as soon as the trade reaches a terminal state: claimed, reclaimed or cancelled. This happens automatically; nobody has to ask for it.
+There are two ways to hold a wallet. Neither gives Pairy custody.
 
-**Not stored:** private keys or anything a key could be derived from, pincodes, real names, phone numbers, identity documents, KYC data. Listings show a city or district the user picked, never a live or precise device position.
+- **A key made on this device.** The browser calls `Keypair.random()`, which draws from WebCrypto (`crypto.getRandomValues`). The key goes straight into SDF's `KeyManager` (`@stellar/typescript-wallet-sdk-km`): `ScryptEncrypter` locks it under a pincode you choose and `LocalStorageKeyStore` keeps only the ciphertext in the browser. Pairy writes no key-derivation or encryption code of its own.
+- **Freighter**, connected through `@creit.tech/stellar-wallets-kit`. Your key stays in Freighter.
 
-## Keys
+You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)) with your wallet. The key and the pincode never leave the device, and no API endpoint has a field that could accept either. The CI test `no-secret-fields` fails the build if one is ever added.
 
-There are two ways to hold a wallet. Neither one gives Pairy custody.
+**The tradeoff.** Pairy keeps no copy, so losing the device or forgetting the pincode loses the wallet. You can export an encrypted backup file and restore it in another browser with the same pincode. There is no server-side recovery, because that would be custody.
 
-- **Freighter**, connected through `@creit.tech/stellar-wallets-kit`.
-- **A wallet generated on the device.** The browser calls `Keypair.random()`, which draws its entropy from WebCrypto (`crypto.getRandomValues`). The keypair goes straight to SDF's `KeyManager` from `@stellar/typescript-wallet-sdk-km`. Its `ScryptEncrypter` encrypts the key under a pincode the user chooses, and `LocalStorageKeyStore` writes only the ciphertext to the device. Pairy writes no key-derivation or encryption code of its own. New testnet accounts are funded by Friendbot.
+**The residual risk.** The encrypted key lives in browser storage, so a cross-site scripting flaw on Pairy's own site could read the ciphertext. This is a testnet demo. Passkey-wrapped storage is planned for evaluation before any mainnet work.
 
-The key, encrypted or not, is never sent to Pairy. The pincode never leaves the device and is not a login credential. Login works by signing a one-time challenge message with the wallet. Pairy's API has no field, on any endpoint, that accepts a secret key or a pincode. The CI test `no-secret-fields` fails the build if one is added.
+---
 
-**The tradeoff.** Pairy keeps no server copy, so a lost device or a forgotten pincode means a lost wallet. Pairy therefore offers an export that the user starts and can re-import in another browser. There is no server-side recovery, because server-side recovery would be custody.
+## What Pairy stores
 
-**The residual risk.** The scrypt-encrypted key sits in browser storage. A cross-site scripting flaw on Pairy's own origin could read it. v1 is testnet-only. Passkey-wrapped storage is a Phase 3 evaluation, before any mainnet consideration.
+**Stored:** Stellar public keys, listing terms, the city each listing picked, claimable balance IDs and transaction hashes, trade state, and each trade's chat while the trade is live.
 
-## Trade lifecycle
+**Deleted automatically:** a trade's chat, the moment the trade is claimed, taken back or cancelled. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it.
 
-`TradeStateMachine` ([lib/trade/state-machine.ts](lib/trade/state-machine.ts)) is the off-chain record of a trade. It never decides whether a claim or reclaim is allowed; the chain decides that. The machine records what the chain has already accepted.
+**Never stored:** private keys or anything a key could be derived from, pincodes, names, phone numbers, emails, identity documents, or a precise location. Listings are placed at a city's centre, chosen from a list of cities with 100,000+ people. The app never asks for your device location.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Phone["Your phone"]
+        UI["Pairy web app<br/>map · trade room · chat"]
+        W["Wallet<br/>device key or Freighter"]
+    end
+    API["Pairy API<br/>Next.js + tRPC"]
+    DB[("Postgres<br/>listings · trades · chat")]
+    H["Horizon<br/>Stellar testnet"]
+
+    UI -- "build tx" --> W
+    W -- "signed tx" --> H
+    UI -- "public keys, terms, tx hashes" --> API
+    API --> DB
+    API -- "read and verify tx" --> H
+```
+
+Transactions go from your wallet straight to Stellar. Pairy's API only ever receives public information and checks it against the chain.
+
+### Trade lifecycle
+
+`TradeStateMachine` ([lib/trade/state-machine.ts](lib/trade/state-machine.ts)) records what the chain has already accepted. It never decides whether a claim is allowed; the network does.
 
 ```mermaid
 stateDiagram-v2
     [*] --> listed
-    listed --> agreed: counterparty agrees
+    listed --> agreed: the other side agrees
     listed --> cancelled: cancel
-    agreed --> locked: seller creates the claimable balance
+    agreed --> locked: seller locks the crypto
     agreed --> cancelled: cancel
-    locked --> claimed: buyer claims (before 72h)
-    locked --> reclaimed: seller reclaims (from 72h)
+    locked --> claimed: buyer claims, within 72h
+    locked --> reclaimed: seller takes it back, after 72h
     claimed --> [*]
     reclaimed --> [*]
     cancelled --> [*]
 ```
 
-Once a trade is locked, it cannot be cancelled; the only ways out are claim and reclaim.
+Once locked, a trade cannot be cancelled: the only ways out are claim and take-back. `disputed` is a flag, not a state. Either side can raise it on a live trade; it changes nothing today and is the hook a Phase 2 arbiter will plug into.
 
-`disputed` is a flag, not a state. Either party can raise it on a trade that is not yet settled. The machine records it and does nothing else. It is the hook a Phase 2 arbiter will plug into.
+Before the lock, the app checks what would otherwise fail later. For USDC, the buyer's wallet must accept USDC first (a trustline): the lock itself would succeed without it, but the buyer's claim would fail with `op_no_trust`. And the seller must hold the amount plus the network reserve (0.5 XLM per person on the lock), which comes back to the seller when the trade ends.
 
-**Preconditions handled before the lock:**
+### The reusable part
 
-- **USDC needs a trustline.** USDC is not native. The lock itself can be created without the buyer's USDC trustline, but the buyer's claim would then fail with `op_no_trust`. The lock screen therefore blocks the seller until the buyer's trustline exists.
-- **The seller pays the reserve, and gets it back.** The claimable balance ties up one base reserve per claimant against the seller's account. That reserve goes back to the seller on claim or reclaim, not to whoever claimed.
+[`lib/stellar/settlement.ts`](lib/stellar/settlement.ts) is the whole settlement surface, built only from stock SDK calls: `Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance` and `Operation.claimClaimableBalance`. No contract, no predicate evaluation, no signing. Together with the state machine it is meant as a worked example any Stellar P2P app can fork for two-party CAP-23 settlement.
 
-## Architecture
+---
+
+## Tech stack
 
 | Layer | Choice |
 |---|---|
 | App | Next.js 14 (App Router), React 18, TypeScript |
 | API | tRPC 11, zod |
-| Database | Postgres with Drizzle ORM (PGlite in tests) |
-| Stellar | `@stellar/stellar-sdk` 17, Horizon (testnet) |
-| Wallets | Freighter via `@creit.tech/stellar-wallets-kit`; device keys via `@stellar/typescript-wallet-sdk-km` |
-| Claim-window countdown | `stellar-resolve-claimant-predicates` |
-| Map | MapLibre GL with OpenFreeMap vector tiles (no API key, no account) |
-| UI | Tailwind CSS, Radix UI |
-| Tests | Vitest |
+| Database | Postgres with Drizzle ORM (Neon in production, PGlite in tests) |
+| Stellar | `@stellar/stellar-sdk` 17, Horizon testnet |
+| Wallets | `@stellar/typescript-wallet-sdk-km`, `@creit.tech/stellar-wallets-kit` (Freighter) |
+| Claim window | `stellar-resolve-claimant-predicates` |
+| Map | MapLibre GL with OpenFreeMap tiles (no API key), GeoNames cities |
+| UI | Tailwind CSS, Radix UI, the [Pairy brand system](docs/design.md) |
+| Hosting | Vercel (Frankfurt), next to the Neon database |
+| Tests | Vitest, GitHub Actions |
 
-**`lib/stellar/settlement.ts` is the reusable part.** It contains the entire settlement surface and uses only stock SDK calls: `Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance` and `Operation.claimClaimableBalance`. It has no predicate logic, no predicate evaluation, no signing code and no contract. Together with `lib/trade/state-machine.ts`, it is meant as a worked reference that any Stellar P2P app can fork for two-party CAP-23 settlement.
+---
 
-## Out of scope
+## Run it locally
 
-- **Custom escrow contracts.** Pairy does not write one, in any phase. If the protocol primitive ever proves insufficient, we document the gap and propose it upstream instead of forking a contract.
-- **Phase 2:** dispute resolution and the arbiter flow (v1 ships only the state-machine hook); integrating Trustless Work's already-deployed escrow once a dispute-resolver role is actually justified; assets beyond native testnet XLM and testnet USDC; any reputation layer.
-- **Phase 3:** mainnet, real money, KYC and identity verification, native mobile apps, passkey-wrapped key storage.
-- **Real-money trades.** Testnet only, at every stage.
-
-## Running locally
-
-Requirements: Node 22 (see `.nvmrc`; the Stellar SDK needs `>=22.12`), pnpm, and Docker for Postgres.
+You need Node 22 (see `.nvmrc`; the Stellar SDK requires `>=22.12`), pnpm and Docker.
 
 ```bash
 nvm use
 pnpm install
-docker compose up -d          # Postgres 16 on localhost:35433
+docker compose up -d          # Postgres on localhost:35433
 cp .env.example .env          # DATABASE_URL and SESSION_SECRET
 pnpm db:migrate
 pnpm dev                      # http://localhost:3000
 ```
 
-`SESSION_SECRET` signs the login session cookie. It is not a Stellar key.
+`SESSION_SECRET` signs the login cookie. It is not a Stellar key.
 
 ## Tests
 
 ```bash
-pnpm test           # unit and CI tests; no network needed
-pnpm test:testnet   # integration tests against the live Stellar testnet
+pnpm test           # unit and CI tests, no network needed
+pnpm test:testnet   # lock, claim and take-back on the live Stellar testnet
 ```
 
-`pnpm test:testnet` funds throwaway accounts with Friendbot and runs lock, claim and reclaim on the real testnet. The reclaim test uses a 60-second window and waits it out during the run.
+The testnet suite funds throwaway accounts and runs every path for XLM and USDC. The take-back test uses a 60-second window and waits it out, after checking that an early take-back is rejected by the network.
 
-Two tests are named in the SOW and are part of CI:
+Two tests come straight from the project's scope and run as their own CI steps:
 
-- **`no-secret-fields`** ([tests/ci/no-secret-fields.test.ts](tests/ci/no-secret-fields.test.ts)) walks every API input schema. It fails if any field could carry a secret key or a pincode.
-- **`coordination-purge-on-terminal`** ([tests/ci/coordination-purge-on-terminal.test.ts](tests/ci/coordination-purge-on-terminal.test.ts)) drives trades to claimed, reclaimed and cancelled. It checks that the trade's chat rows are gone each time.
+- **`no-secret-fields`** ([tests/ci/no-secret-fields.test.ts](tests/ci/no-secret-fields.test.ts)) walks every API input and fails if any field could carry a secret key or a pincode.
+- **`coordination-purge-on-terminal`** ([tests/ci/coordination-purge-on-terminal.test.ts](tests/ci/coordination-purge-on-terminal.test.ts)) drives trades to claimed, taken back and cancelled, and checks the chat is gone each time.
 
-The CI workflow on the public repository is planned and not yet set up. CI run links will go in [EVIDENCE.md](EVIDENCE.md).
+---
+
+## Scope
+
+| Now | Later |
+|---|---|
+| Testnet XLM and testnet USDC | More assets (Phase 2) |
+| Two-party lock, claim and take-back | Dispute resolution with an arbiter, using Trustless Work's escrow once a resolver role is justified (Phase 2) |
+| Device keys and Freighter | Passkey-wrapped keys, native apps (Phase 3) |
+| Testnet only | Mainnet, real money, identity checks (Phase 3) |
+
+Pairy will not write a custom escrow contract in any phase. If the protocol primitive ever falls short, the gap gets documented and proposed upstream.
 
 ## Status
 
-In development, on the Stellar testnet only. Nothing is deployed yet and there are no users. Evidence for each deliverable (transaction hashes, CI runs, recordings, the demo URL) is collected in [EVIDENCE.md](EVIDENCE.md). Each item stays marked `PENDING` until it exists.
+A working demo on the Stellar testnet at [pairy.org](https://pairy.org). No real money moves, and Pairy has no users: it is a reference implementation, not a product in use. Every transaction, test run and recording that backs this README is listed in [EVIDENCE.md](EVIDENCE.md).
 
 ## License
 
