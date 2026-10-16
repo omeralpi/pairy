@@ -6,13 +6,15 @@ import { listings, users } from "@/lib/db/schema";
 import { FIAT_CODES } from "@/lib/fiat";
 import { cityById } from "@/lib/geo/cities";
 import { ASSET_CODES } from "@/lib/stellar/assets";
+import { MAX_STROOPS, fiatTotal } from "@/lib/trade/amount";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 
 // Stellar amounts carry at most 7 decimals; 13 integer digits fits numeric(20, 7).
 const amount = z
   .string()
   .regex(/^\d{1,13}(\.\d{1,7})?$/, "Amount must be a number with at most 7 decimals")
-  .refine((v) => Number(v) > 0, "Amount must be greater than zero");
+  .refine((v) => Number(v) > 0, "Amount must be greater than zero")
+  .refine((v) => toStroops(v) <= MAX_STROOPS, "Amount is larger than a Stellar transaction can carry");
 
 // numeric(20, 4)
 const rate = z
@@ -42,6 +44,11 @@ const createInput = z
   .refine((v) => toStroops(v.minAmount) <= toStroops(v.maxAmount), {
     message: "Minimum must not exceed maximum",
     path: ["minAmount"],
+  })
+  // A trade's cash total is stored as numeric(20, 2): at most 18 integer digits.
+  .refine((v) => fiatTotal(v.maxAmount, v.rate).split(".")[0].length <= 18, {
+    message: "Rate is too high for the maximum amount",
+    path: ["rate"],
   });
 
 const lng = z.number().min(-180).max(180);

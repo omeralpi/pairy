@@ -57,6 +57,15 @@ describe("listing.create", () => {
     expect(await db.select().from(listings)).toHaveLength(0);
   });
 
+  it("rejects an amount Stellar cannot hold (above int64 stroops)", async () => {
+    // 922337203685.4775807 is the largest amount a Stellar operation accepts.
+    await rejects(as(ALICE).create({ ...valid, maxAmount: "922337203686" }), "BAD_REQUEST");
+  });
+
+  it("rejects a rate whose cash total would not fit the database", async () => {
+    await rejects(as(ALICE).create({ ...valid, maxAmount: "900000000000", rate: "9999999999999999" }), "BAD_REQUEST");
+  });
+
   it("rejects an unknown city", async () => {
     await rejects(as(ALICE).create({ ...valid, cityId: "999999999" }), "BAD_REQUEST");
   });

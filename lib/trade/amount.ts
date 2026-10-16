@@ -3,12 +3,16 @@
 
 import { z } from "zod";
 
-/** A Stellar amount as typed by a user: at most 7 decimals, > 0. */
+/** The largest amount a Stellar operation accepts: int64 stroops (922337203685.4775807). */
+export const MAX_STROOPS = 9_223_372_036_854_775_807n;
+
+/** A Stellar amount as typed by a user: at most 7 decimals, > 0, within int64 stroops. */
 export const amountInput = z
   .string()
   .trim()
   .regex(/^\d{1,13}(\.\d{1,7})?$/, "Amount must be a number with at most 7 decimals")
-  .refine((v) => toStroops(v) > 0n, "Amount must be greater than zero");
+  .refine((v) => toStroops(v) > 0n, "Amount must be greater than zero")
+  .refine((v) => toStroops(v) <= MAX_STROOPS, "Amount is larger than a Stellar transaction can carry");
 
 export function toUnits(v: string, scale: number): bigint {
   const [int, frac = ""] = v.split(".");
