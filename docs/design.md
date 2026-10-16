@@ -37,6 +37,7 @@ Headlines end with a full stop. Sentence case everywhere except eyebrows.
 - Prefer hairline dividers and whitespace over boxes. Generous vertical rhythm (`space-y-10`+ between sections on pages).
 - No icon-in-a-coloured-circle tiles, no emoji, no badges sprinkled for decoration. Icons (lucide) only where they carry meaning, 16 px, stroke 1.5, ink or slate.
 - Data rows: label in `.eyebrow`, value in mono, right-aligned numbers.
+- **App icon (the default everywhere: favicon, home screen, PWA, avatars):** the ink Waypoint on a Line (`#E6E3DC`) rounded square, corner radius 22% (`assets/app-icon.svg`). The white and ink variants exist for places where Line clashes, but Line is the default. The favicon (`app/icon.svg`) uses a heavier ring and dot so it survives 16 px; the Apple touch icon is full-bleed because iOS rounds its own corners.
 - The Waypoint (`components/brand/waypoint.tsx`) is the only logo. Don't redraw it, offset the dot, recolour it off-palette or put it on busy backgrounds.
 
 ## Voice: plain, local, never crypto jargon
