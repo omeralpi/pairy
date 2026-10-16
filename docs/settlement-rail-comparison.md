@@ -1,6 +1,6 @@
 # Settlement rail comparison: CAP-23 claimable balances vs Trustless Work escrow
 
-This note explains why Pairy v1 settles trades with Stellar's built-in claimable balances (CAP-23) and not with Trustless Work's Soroban escrow. It checks each claim the SOW makes about Trustless Work against Trustless Work's own documentation and source code, and each claim about claimable balances against CAP-23 and Stellar's documentation.
+This note explains why Pairy v1 settles trades with Stellar's built-in claimable balances (CAP-23) and not with Trustless Work's Soroban escrow. It sets out what Trustless Work's escrow requires, from its own documentation and source code, and what claimable balances provide, from CAP-23 and Stellar's documentation.
 
 Sources were read on 2026-10-15. Trustless Work publishes two documentation versions (V1 and V2) and keeps separate contract branches for each, so every quote below names the version it comes from. GitHub links are pinned to a commit so they keep pointing at the text quoted.
 
@@ -15,16 +15,16 @@ Two people meet in person. The seller has crypto (testnet XLM or testnet USDC). 
 
 There are two humans and nobody else. Any design that needs a third signer breaks requirement 4.
 
-## Claim-by-claim check of the SOW
+## Summary of findings
 
-| # | SOW claim | Verdict |
+| # | Finding | Source |
 |---|---|---|
-| 1 | Trustless Work's escrow requires a dispute resolver. | **Verified** in V1 and V2 |
-| 2 | Its documentation states the resolver cannot overlap with approvers, service providers, release signers or the receiver. | **Verified for V2, now understated.** Since late August 2026, V2 also forbids the resolver from being the `platform` address. V1 documentation does not state this rule, and the V1 contract does not enforce it. |
-| 3 | There is no deadline field, so the only way back to the funder is dispute resolution, signed by the resolver. | **Verified** in V1 and V2 |
-| 4 | The resolver role can re-route funds. | **Verified.** The resolver chooses which addresses get paid and how much. |
-| 5 | OfferHub and ArcusX are remote, digital-deliverable marketplaces built on Trustless Work. | **Mostly true.** Both are built on Trustless Work, and both are remote freelance marketplaces. However, OfferHub's own reference docs say its order flow covers "both goods and services", so "digital-deliverable" is narrower than what OfferHub says about itself. |
-| 6 | Claimable balances give two claimants, time predicates and no third role. | **Verified** (CAP-23, Stellar docs) |
+| 1 | Trustless Work's escrow requires a dispute resolver. | V1 and V2 docs and contracts |
+| 2 | The resolver cannot also be an approver, service provider, release signer, the receiver or the platform. | V2 docs, enforced by the V2 contract. V1 has no such rule. |
+| 3 | There is no deadline field, so the only way funds go back to the funder is a dispute settled by the resolver. | V1 and V2 |
+| 4 | The resolver chooses which addresses get paid and how much. | V1 and V2 contracts |
+| 5 | OfferHub and ArcusX, both built on Trustless Work, are remote freelance marketplaces, not local, in-person or cash-settled. | Trustless Work and SCF pages |
+| 6 | Claimable balances give two claimants, time conditions and no third role. | CAP-23, Stellar docs |
 
 ### 1. A dispute resolver is required
 
@@ -48,7 +48,7 @@ The same page gives the fix: "Give the dispute resolver a distinct address that 
 
 **V2 contract (enforced on-chain).** [`validate_dispute_resolver_role_overlap`, single-release-develop-v2 @ 1d22d0c](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/blob/1d22d0c1b9c5788f4fd7184e42024bbe10303756/contracts/escrow/src/core/validators/escrow.rs#L126-L138) rejects any resolver found in `approvers`, `service_providers` or `release_signers`, or equal to `receiver` or `platform`.
 
-**What changed since the SOW was written.** The `platform` exclusion was added through [issue #109](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues/109) ("dispute_resolver role can overlap with platform, enabling self-dealing"), closed on 2026-08-27. That is after the SOW was submitted on 2026-08-04. The SOW's list was accurate when written and is now incomplete. The change makes the SOW's argument stronger: under V2, Pairy cannot be both the platform and the resolver on the same escrow.
+**Recent change.** The `platform` exclusion was added through [issue #109](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues/109) ("dispute_resolver role can overlap with platform, enabling self-dealing"), closed on 2026-08-27. Under V2, Pairy cannot be both the platform and the resolver on the same escrow.
 
 **V1 is different.** The V1 roles page lists "Platform Address + Dispute Resolver" as a "common combination", with the risk "Platform gains significant influence over outcomes" ([Roles in Trustless Work (V1)](https://docs.trustlesswork.com/trustless-work/introduction/technology-overview/roles-in-trustless-work)). The V1 contract's escrow validator has no overlap check at all ([`validators/escrow.rs`, single-release-main @ 6e4d40e](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/blob/6e4d40e25057dc51fcffd9c5cbee05eaf369380a/contracts/escrow/src/core/validators/escrow.rs)). It only blocks the resolver from *opening* a dispute (`DisputeResolverCannotDisputeTheEscrow`).
 
@@ -74,10 +74,10 @@ That flexibility is right for a marketplace with a support team. For Pairy it wo
 
 ### 5. OfferHub and ArcusX
 
-- **OfferHub.** Trustless Work lists it among its open-source dApps. Its docs say it "composes" Airtm, "Trustless Work: non-custodial escrow engine + disputes" and Stellar USDC, with "platform customer support as resolver" ([OfferHub: Marketplace](https://docs.trustlesswork.com/trustless-work/oss-dapps/offerhub-marketplace)). Its SCF #44 submission calls it "a freelance marketplace on Stellar where client payments lock into Soroban escrow and release only upon delivery" ([SCF submission](https://communityfund.stellar.org/submissions/recQJGuWgzvNmv2sM)). Its SCF project page lists "design, programming, writing, consulting" ([SCF project](https://communityfund.stellar.org/project/offer-hub-o3j)). However, its own [Delivery & Approval](https://docs.trustlesswork.com/trustless-work/oss-dapps/offerhub-marketplace/core-flows/delivery-and-approval) page says: "This flow applies to **both goods and services**." Remote: yes. Built on Trustless Work: yes. Strictly digital deliverables: not quite.
+- **OfferHub.** Trustless Work lists it among its open-source dApps. Its docs say it "composes" Airtm, "Trustless Work: non-custodial escrow engine + disputes" and Stellar USDC, with "platform customer support as resolver" ([OfferHub: Marketplace](https://docs.trustlesswork.com/trustless-work/oss-dapps/offerhub-marketplace)). Its SCF #44 submission calls it "a freelance marketplace on Stellar where client payments lock into Soroban escrow and release only upon delivery" ([SCF submission](https://communityfund.stellar.org/submissions/recQJGuWgzvNmv2sM)). Its SCF project page lists "design, programming, writing, consulting" ([SCF project](https://communityfund.stellar.org/project/offer-hub-o3j)). Remote: yes. Built on Trustless Work: yes.
 - **ArcusX.** Trustless Work's ecosystem page labels it "Built with Trustless Work" and calls it "a freelancing platform built on Stellar that enables fast, low-cost, and trustless payments through real escrow infrastructure". The page also says it "focuses on digitally skilled individuals" ([Trustless Work ecosystem: ArcusX](https://www.trustlesswork.com/ecosystem/arcusx)). An older, archived ArcusX repository ([Arcus-DAO/ArcusX](https://github.com/Arcus-DAO/ArcusX), archived) describes a version built on Base. The Stellar version's own repository was not publicly reachable when checked.
 
-Neither one is local, in person or cash-settled. That part of the SOW holds.
+Neither one is local, in person or cash-settled.
 
 ### 6. What CAP-23 gives instead
 
@@ -126,7 +126,7 @@ When dispute resolution becomes part of the product, Trustless Work is the plann
 
 ## How the lock appears on stellar.expert
 
-The SOW tells a reviewer to look for "before relative time 259200" and "not before relative time 259200". **stellar.expert does not show those words.** On 2026-10-15 we checked with a probe lock built with the same predicates as `settlement.ts` (1 testnet XLM, throwaway accounts, sent by a one-off script, not by the Pairy app): [6cf9488b…c694d](https://stellar.expert/explorer/testnet/tx/6cf9488bcfbc069f6c8c4da69e0179fcdfa334ce58b70f89bf0940ddc0fc694d). The transaction page reads:
+stellar.expert shows the lock's conditions in plain words rather than as protocol fields. On 2026-10-15 we checked how, with a probe lock built with the same predicates as `settlement.ts` (1 testnet XLM, throwaway accounts, sent by a one-off script, not by the Pairy app): [6cf9488b…c694d](https://stellar.expert/explorer/testnet/tx/6cf9488bcfbc069f6c8c4da69e0179fcdfa334ce58b70f89bf0940ddc0fc694d). The transaction page reads:
 
 ```
 GA5I…FHVC created claimable balance BATE…W7PU 1 XLM claimable by

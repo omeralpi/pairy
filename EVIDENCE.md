@@ -20,7 +20,7 @@ A "lock" is the transaction where the seller puts the crypto aside for the buyer
 4. There must be **exactly two** accounts, the buyer and the seller. A third account in the list means the lock is wrong.
 5. If either account says **"unconditional"**, the lock is broken. "Unconditional" means that account could take the funds at any time.
 
-"3 days" is how stellar.expert displays 259,200 seconds, which is 72 hours. The SOW describes the rows as "before relative time 259200" and "not before relative time 259200". That is the same condition in its raw protocol form, but it is **not** the wording stellar.expert shows. We checked the explorer's actual wording on 2026-10-15; the details are in [docs/settlement-rail-comparison.md](docs/settlement-rail-comparison.md#how-the-lock-appears-on-stellarexpert).
+"3 days" is how stellar.expert displays 259,200 seconds, which is 72 hours. In protocol terms the buyer's condition is `BEFORE_RELATIVE_TIME(259200)` and the seller's is its `NOT`; [more detail](docs/settlement-rail-comparison.md#how-the-lock-appears-on-stellarexpert).
 
 To check a **claim** or a **reclaim**, open its link. The line reads "*account* claimed balance *id*". For a claim, *account* is the buyer. For a reclaim, it is the seller. The balance id matches the one created by the lock. The same transaction can be confirmed independently on Stellar's own servers at `https://horizon-testnet.stellar.org/transactions/<hash>`.
 
@@ -70,9 +70,9 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 **Summary.** Pairy settles with CAP-23 claimable balances because a two-person trade has only two humans. Trustless Work's Soroban escrow needs a third one. Checked against Trustless Work's own docs and code on 2026-10-15:
 
 - **A dispute resolver is required.** V2 rejects an escrow with no resolver ("roles.dispute\_resolvers must contain at least one address"). In V1 the resolver is a mandatory field.
-- **The resolver must be a separate address.** V2 docs: "A dispute resolver cannot also appear in approvers, service\_providers, release\_signers or be the receiver / platform", and the V2 contract enforces it. The SOW lists every role except `platform`; Trustless Work added `platform` on 2026-08-27, after the SOW was written. V1 neither states nor enforces this rule.
+- **The resolver must be a separate address.** V2 docs: "A dispute resolver cannot also appear in approvers, service\_providers, release\_signers or be the receiver / platform", and the V2 contract enforces it. V1 neither states nor enforces this rule.
 - **There is no deadline field**, in the V2 deploy payload or in the contract. If the buyer never shows up, the only way the funds go back to the seller is a dispute settled by the resolver. The resolver can split the funds across any addresses.
-- **OfferHub and ArcusX** are both built on Trustless Work and are both remote freelance marketplaces. OfferHub's own docs say its order flow covers "both goods and services", so it is not strictly digital-only. Neither one is local, in person or cash-settled.
+- **OfferHub and ArcusX** are both built on Trustless Work and are both remote freelance marketplaces. Neither one is local, in person or cash-settled.
 - **CAP-23** gives exactly what the trade needs: two claimants, time conditions that meet exactly at 72 hours, and no third role. The cost, stated plainly: there is no dispute resolution. The buyer can claim at any moment inside the window whether or not the cash has changed hands. v1 protects the seller only against the buyer not acting, not against theft.
 
 | Item | Link | Status |
