@@ -1,15 +1,8 @@
 <div align="center">
 
-<img src="assets/hero.png" alt="Trade in İstanbul." width="100%" />
+<img src="assets/hero.png" alt="Pairy. Cash. Crypto. In person." width="100%" />
 
-<h1 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg" />
-    <img src="assets/wordmark-light.svg" alt="Pairy" width="230" />
-  </picture>
-</h1>
-
-### Trade in person.
+<br />
 
 Pairy helps two people in the same city swap local cash for XLM or USDC, face to face. The seller locks the crypto on Stellar for the buyer, and the buyer claims it on their own phone once the cash is in the seller's hand. Pairy holds no key and has no role in the lock.
 
