@@ -35,13 +35,13 @@ Evidence type: public GitHub repo, green CI run, transaction hashes on stellar.e
 | Item | Link | Status |
 |---|---|---|
 | Public repository | PENDING (repo not yet public) | PENDING |
-| `lib/stellar/settlement.ts` (the entire settlement surface: four stock SDK calls) | [lib/stellar/settlement.ts](lib/stellar/settlement.ts) | Written; not yet published |
+| `lib/stellar/settlement.ts` (the entire settlement surface: stock SDK calls only) | [lib/stellar/settlement.ts](lib/stellar/settlement.ts) | Written; not yet published |
 | `lib/trade/state-machine.ts` (TradeStateMachine) | [lib/trade/state-machine.ts](lib/trade/state-machine.ts) | Written; not yet published |
 | Green CI run on the public repo | PENDING | PENDING |
 
 ### Testnet transactions
 
-Each row is one transaction on stellar.expert. The 60-second reclaim uses a test lock whose window is 60 seconds instead of 72 hours, waited out during the test run. The real 72-hour reclaim uses a balance locked on purpose in Week 1 and left alone until it matured on its own.
+Each row is one transaction on stellar.expert. The 60-second reclaim uses a test lock whose window is 60 seconds instead of 72 hours, waited out during the test run. The real 72-hour reclaim uses a balance locked on purpose and left alone until it matures on its own.
 
 | Step | Native XLM | Testnet USDC |
 |---|---|---|
@@ -51,11 +51,12 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 | Early reclaim attempt before the 60 seconds were up (rejected on-chain with `op_cannot_claim`, as it should be) | [`491b3d15…06b8`](https://stellar.expert/explorer/testnet/tx/491b3d15316b0ba98c813ba232ec5f69c1e2550e34c66c523aadbc0fbd0606b8) | [`bc4cd234…56cf`](https://stellar.expert/explorer/testnet/tx/bc4cd234b08e8cb0239b70200f1286af4fd390b63288bcb73de386c27c5b56cf) |
 | Reclaim by the seller after 60 seconds | [`45e5053f…81b8`](https://stellar.expert/explorer/testnet/tx/45e5053f106f2cc66dcb7a79aa041472957cc5688aea205b7596528ad8fc81b8) | [`c1ade40e…8b78`](https://stellar.expert/explorer/testnet/tx/c1ade40ea7126f6f8435356bb51323e2daf2a10c8cc9d29a92094c30153e8b78) |
 | Lock deliberately abandoned (72-hour window), opened 2026-10-15 ~06:55 UTC, matures 2026-10-18 ~06:55 UTC | [`02b073e7…0598`](https://stellar.expert/explorer/testnet/tx/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598) | [`340d915d…62a9`](https://stellar.expert/explorer/testnet/tx/340d915d875621a6c86075840c7cfa0a624a286c090c8055275cd4b2dcde62a9) |
-| Reclaim by the seller after the real 72 hours matured | PENDING (cannot exist until 72 hours after the abandoned lock) | PENDING (as left) |
+| Early reclaim attempt on that real 72-hour lock, before it matured (rejected on-chain with `op_cannot_claim`: the window is enforced) | [`a8bb0db5…9c00`](https://stellar.expert/explorer/testnet/tx/a8bb0db50e6ab7e56c344b6aa9b4cc90219c24e30e582fdeabea40a125f49c00) | [`0079ce6f…ae7c`](https://stellar.expert/explorer/testnet/tx/0079ce6fe6a1895a5c12239c96ce8f0381f8db15e97f86e8d91d8392d75cae7c) |
+| Reclaim by the seller after the real 72 hours matured | Scheduled: the XLM lock matures 2026-10-18 06:54:57 UTC | Scheduled: the USDC lock matures 2026-10-18 06:55:27 UTC |
 
 ### Measured fees and reserves (stroops)
 
-1 XLM = 10,000,000 stroops. These numbers are read from the transactions above once they exist. The "network parameter" column shows the testnet settings on 2026-10-15 (Horizon, latest ledger) for comparison only; it is not a measurement of Pairy's transactions.
+1 XLM = 10,000,000 stroops. These numbers are read from the transactions above. The "network parameter" column shows the testnet settings on 2026-10-15 (Horizon, latest ledger) for comparison only; it is not a measurement of Pairy's transactions.
 
 | Item | Network parameter (2026-10-15) | Measured on Pairy's transactions |
 |---|---|---|
@@ -105,10 +106,10 @@ Evidence type: live demo URL, public repo, walkthrough video.
 
 | Item | What it shows | Link | Status |
 |---|---|---|---|
-| Live demo URL (testnet) | Listings on the map, at the city level each user chose | https://pairy.org | Live since 2026-10-16 (also at https://pairy-seven.vercel.app). Smoke-tested end to end on the hosted demo: a seller using a device-generated wallet in the browser listed 1 to 20 XLM in Istanbul, a buyer client opened a 10 XLM trade, the seller agreed and locked [`e8a800ad…4151`](https://stellar.expert/explorer/testnet/tx/e8a800ad91e2121d5beb7f55172ca46af801ec36967a9e923a4853fa53634151) (buyer `rel_before 259200`, seller `not rel_before 259200`), the buyer claimed [`83087e00…4d9a`](https://stellar.expert/explorer/testnet/tx/83087e00e84c10e2cda251f632a26e013b612f7cb0bd5f2cd8b9e68c95a54d9a), the trade reached `claimed` and its chat went from 1 message to 0 |
+| Live demo URL (testnet) | Listings on the map, at the city level each user chose | https://pairy.org | Live since 2026-10-15 UTC (also at https://pairy-seven.vercel.app). Smoke-tested end to end on the hosted demo: a seller using a device-generated wallet in the browser listed 1 to 20 XLM in Istanbul, a scripted buyer using the same public API and sign-in opened a 10 XLM trade, the seller agreed and locked [`e8a800ad…4151`](https://stellar.expert/explorer/testnet/tx/e8a800ad91e2121d5beb7f55172ca46af801ec36967a9e923a4853fa53634151) (buyer `rel_before 259200`, seller `not rel_before 259200`), the buyer claimed [`83087e00…4d9a`](https://stellar.expert/explorer/testnet/tx/83087e00e84c10e2cda251f632a26e013b612f7cb0bd5f2cd8b9e68c95a54d9a), the trade reached `claimed` and its chat went from 1 message to 0 |
 | Public repository | Source for everything above | PENDING | PENDING |
 | 2-minute walkthrough video | The full flow, including the lock screen stating the buyer-claim bound | PENDING | PENDING |
-| Settlement steps on stellar.expert | Every lock, claim and reclaim made in the demo, reachable through the links in Deliverable 1 and 2 | PENDING | PENDING |
+| Settlement steps on stellar.expert | Every lock, claim and reclaim made in the demo, reachable through the links in Deliverable 1 and 2 | Hosted demo lock and claim in the row above; all others in Deliverable 1 | Partial |
 
 ---
 

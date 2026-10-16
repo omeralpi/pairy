@@ -1,6 +1,6 @@
 # Pairy design guide
 
-How the app applies the Pairy brand system v0.1 (`pairybrand.pdf`). If this file and the brand book disagree, the brand book wins.
+How the app applies the Pairy brand system v0.1 (the brand book). If this file and the brand book disagree, the brand book wins.
 
 ## Feel
 
@@ -19,6 +19,8 @@ Editorial, calm, physical. Warm paper, deep ink, lots of space, one orange signa
 | `sand` | `#EEE9E0` | Panels and cards on paper |
 | `beacon` | `#FF4E2B` | **Sparingly.** It always means *a peer is near*: map pins, the one action that moves a trade forward, the live city word |
 | `success` / `warning` / `danger` | `#1F8A5B` / `#D49F1F` / `#C7402D` | Status only |
+
+Two deliberate exceptions on the landing page: the floating nav pill is white with a soft shadow, and the hero's city list fades out with a mask. Nowhere else.
 
 Rules: one beacon element per view where possible. Never beacon for decoration, links or icons. No gradients, no glows, no coloured shadows. No off-palette colours (no blues, purples, greens beyond `success`).
 

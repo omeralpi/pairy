@@ -25,7 +25,7 @@ People already buy and sell crypto for cash in person. They find each other in T
 
 Stellar already has the primitive this needs. A claimable balance (CAP-23) can name exactly who may take the funds and when. Pairy builds the local, in-person flow around it: a map of offers by city, a chat for each trade, and a lock that only the buyer and the seller are on.
 
-> Anyone can send XLM. Letting two strangers swap cash and crypto at a café table, with a lock neither of them can cheat and nobody else can touch, is the part that was missing.
+> Anyone can send XLM. Letting two strangers swap cash and crypto at a café table, with a lock that only the two of them are on and nobody else can touch, is the part that was missing.
 
 ---
 
@@ -68,7 +68,7 @@ There are two ways to hold a wallet. Neither gives Pairy custody.
 - **A key made on this device.** The browser calls `Keypair.random()`, which draws from WebCrypto (`crypto.getRandomValues`). The key goes straight into SDF's `KeyManager` (`@stellar/typescript-wallet-sdk-km`): `ScryptEncrypter` locks it under a pincode you choose and `LocalStorageKeyStore` keeps only the ciphertext in the browser. Pairy writes no key-derivation or encryption code of its own.
 - **Freighter**, connected through `@creit.tech/stellar-wallets-kit`. Your key stays in Freighter.
 
-You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)) with your wallet. The key and the pincode never leave the device, and no API endpoint has a field that could accept either. The CI test `no-secret-fields` fails the build if one is ever added.
+You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)) with your wallet. The key and the pincode are never sent to Pairy, and no API field is meant for, or named like, a secret key or a pincode. The CI test `no-secret-fields` fails the build if one is ever added.
 
 **The tradeoff.** Pairy keeps no copy, so losing the device or forgetting the pincode loses the wallet. You can export an encrypted backup file and restore it in another browser with the same pincode. There is no server-side recovery, because that would be custody.
 
@@ -78,11 +78,11 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 
 ## What Pairy stores
 
-**Stored:** Stellar public keys, listing terms, the city each listing picked, claimable balance IDs and transaction hashes, trade state, and each trade's chat while the trade is live.
+**Stored:** Stellar public keys, listing terms, the city each listing picked, claimable balance IDs and transaction hashes, trade state, an optional public note on each listing, and each trade's chat while the trade is live.
 
-**Deleted automatically:** a trade's chat, the moment the trade is claimed, taken back or cancelled. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it.
+**Deleted automatically:** a trade's chat, as soon as Pairy records the claim, the take-back or the cancel. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it.
 
-**Never stored:** private keys or anything a key could be derived from, pincodes, names, phone numbers, emails, identity documents, or a precise location. Listings are placed at a city's centre, chosen from a list of cities with 100,000+ people. The app never asks for your device location.
+**Never stored:** private keys or anything a key could be derived from, pincodes, identity documents, or a precise location. Pairy has no field for names, phone numbers or emails; the listing note and the chat are free text, so don't put them there. Listings are placed at a city's centre, chosen from a list of cities with 100,000+ people. The app never asks for your device location.
 
 ---
 
@@ -131,7 +131,7 @@ Before the lock, the app checks what would otherwise fail later. For USDC, the b
 
 ### The reusable part
 
-[`lib/stellar/settlement.ts`](lib/stellar/settlement.ts) is the whole settlement surface, built only from stock SDK calls: `Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance` and `Operation.claimClaimableBalance`. No contract, no predicate evaluation, no signing. Together with the state machine it is meant as a worked example any Stellar P2P app can fork for two-party CAP-23 settlement.
+[`lib/stellar/settlement.ts`](lib/stellar/settlement.ts) is the whole settlement surface, built only from stock SDK calls: `Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance` and `Operation.claimClaimableBalance`, wrapped in `TransactionBuilder`, with the balance ID taken from the SDK's own `getClaimableBalanceId`. No contract, no predicate evaluation, no signing. Together with the state machine it is meant as a worked example any Stellar P2P app can fork for two-party CAP-23 settlement.
 
 ---
 
@@ -174,7 +174,7 @@ pnpm test           # unit and CI tests, no network needed
 pnpm test:testnet   # lock, claim and take-back on the live Stellar testnet
 ```
 
-The testnet suite funds throwaway accounts and runs every path for XLM and USDC. The take-back test uses a 60-second window and waits it out, after checking that an early take-back is rejected by the network.
+The testnet suite funds throwaway accounts and runs every path for XLM and, when the testnet DEX can supply test USDC, for USDC too (otherwise the USDC cases are skipped and say so). The take-back test uses a 60-second window and waits it out, after checking that an early take-back is rejected by the network.
 
 Two tests come straight from the project's scope and run as their own CI steps:
 
@@ -196,7 +196,7 @@ Pairy will not write a custom escrow contract in any phase. If the protocol prim
 
 ## Status
 
-A working demo on the Stellar testnet at [pairy.org](https://pairy.org). No real money moves, and Pairy has no users: it is a reference implementation, not a product in use. Every transaction, test run and recording that backs this README is listed in [EVIDENCE.md](EVIDENCE.md).
+A working demo on the Stellar testnet at [pairy.org](https://pairy.org). No real money moves, and Pairy has no users: it is a reference implementation, not a product in use. Evidence for each deliverable is listed in [EVIDENCE.md](EVIDENCE.md) as it is produced.
 
 ## License
 

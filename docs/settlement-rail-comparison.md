@@ -8,7 +8,7 @@ Sources were read on 2026-10-15. Trustless Work publishes two documentation vers
 
 Two people meet in person. The seller has crypto (testnet XLM or testnet USDC). The buyer has cash. We need:
 
-1. The seller locks the crypto before the meeting, so the buyer can see it is really there.
+1. The seller locks the crypto at the meeting point, once both people are there, so the buyer can see it is really there before handing over the cash.
 2. The buyer, and only the buyer, can take it at the meeting, once the cash has changed hands.
 3. If the buyer never takes it, the seller gets it back on their own after a fixed time.
 4. Nobody else, including Pairy, can move the funds at any point.
