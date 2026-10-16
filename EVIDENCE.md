@@ -78,7 +78,7 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 | Item | Link | Status |
 |---|---|---|
 | Full written comparison, with quotes and sources | [docs/settlement-rail-comparison.md](docs/settlement-rail-comparison.md) | Written |
-| Upstream issue (Trustless Work: optional on-chain deadline with a funder refund path) | PENDING (draft ready in [docs/upstream-issue-draft.md](docs/upstream-issue-draft.md); not filed yet) | PENDING |
+| Upstream issue (Trustless Work: optional on-chain deadline with a funder refund path) | PENDING (to be filed on [Trustless-Work/trustlesswork-smart-contract-stellar](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues)) | PENDING |
 
 ---
 
