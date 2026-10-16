@@ -1,141 +1,193 @@
-<!doctype html><meta charset=utf-8><style>body{max-width:920px;margin:0 auto;padding:40px;font:16px/1.6 -apple-system,sans-serif;color:#1f2328;background:#fff}img{max-width:100%}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d0d7de;padding:8px 12px}th{background:#f6f8fa}code{background:#eff1f3;padding:2px 5px;border-radius:4px}pre code{display:block;padding:12px}blockquote{border-left:4px solid #d0d7de;margin:0;padding:0 16px;color:#57606a}hr{border:0;border-top:1px solid #d0d7de}@media (prefers-color-scheme: dark){body{background:#0d1117;color:#e6edf3}th{background:#161b22}td,th{border-color:#30363d}code{background:#161b22}blockquote{border-color:#30363d;color:#8b949e}hr{border-color:#30363d}}</style><div align="center">
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Pairy · README preview</title><!-- Generated from README.md: a static, self-contained preview (diagrams pre-rendered as SVG). --><style>body{max-width:920px;margin:0 auto;padding:40px;font:16px/1.6 -apple-system,sans-serif;color:#1f2328;background:#fff}img{max-width:100%}a{color:#0969da;text-decoration:none}a:hover{text-decoration:underline}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d0d7de;padding:8px 12px}th{background:#f6f8fa}code{background:#eff1f3;padding:2px 5px;border-radius:4px;font-size:90%}pre code{display:block;padding:12px;overflow-x:auto}blockquote{border-left:4px solid #d0d7de;margin:0;padding:0 16px;color:#57606a}hr{border:0;border-top:1px solid #d0d7de}h2{border-bottom:1px solid #d0d7de;padding-bottom:.3em}.mermaid{background:#fff;border-radius:6px;padding:16px;margin:16px 0;text-align:center}.mermaid svg{max-width:100%;height:auto;font-family:Helvetica,Arial,sans-serif}@media (prefers-color-scheme: dark){body{background:#0d1117;color:#e6edf3}a{color:#4493f8}th{background:#161b22}td,th{border-color:#30363d}code{background:#161b22}blockquote{border-color:#30363d;color:#8b949e}hr,h2{border-color:#30363d}}</style><div align="center">
 
-<img src="assets/hero.png" alt="Pairy: trade in person" width="100%" />
+<img src="assets/hero.png" alt="Trade in İstanbul." width="100%">
 
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg" />
-    <img src="assets/wordmark-light.svg" alt="Pairy" width="230" />
+    <source media="(prefers-color-scheme: dark)" srcset="assets/wordmark-dark.svg">
+    <img src="assets/wordmark-light.svg" alt="Pairy" width="230">
   </picture>
 </h1>
 
 <h3>Trade in person.</h3>
-<p>Pairy is a location-based, peer-to-peer cash and crypto exchange on Stellar. Meet someone near you, trade local cash for stablecoins or tokens face to face, and let an on-chain escrow protect both sides so nobody can walk off with the money.</p>
-<p><a href="https://stellar.org"><img src="https://img.shields.io/badge/Stellar-testnet-7B3FE4" alt="Stellar"></a>
-<a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript"></a>
-<a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white" alt="Next.js"></a>
-<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
-<img src="https://img.shields.io/badge/status-pre--development-FF4E2B" alt="Status"></p>
+<p>Pairy helps two people in the same city swap local cash for XLM or USDC, face to face. The seller locks the crypto on Stellar for the buyer, and the buyer claims it on their own phone once the cash is in the seller's hand. Pairy holds no key and has no role in the lock.</p>
+<p><a href="https://stellar.org"><img src="https://img.shields.io/badge/Stellar-testnet-0E1116" alt="Stellar testnet"></a>
+<a href="https://github.com/stellar/stellar-protocol/blob/master/core/cap-0023.md"><img src="https://img.shields.io/badge/settlement-CAP--23%20claimable%20balances-0E1116" alt="CAP-23"></a>
+<a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-14-0E1116?logo=next.js&amp;logoColor=white" alt="Next.js"></a>
+<a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5-0E1116?logo=typescript&amp;logoColor=white" alt="TypeScript"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0E1116.svg" alt="License: MIT"></a>
+<img src="https://img.shields.io/badge/status-testnet%20demo-FF4E2B" alt="Status"></p>
+<p><a href="https://pairy.org"><strong>Live demo</strong></a> · <a href="EVIDENCE.md"><strong>Evidence</strong></a> · <a href="docs/settlement-rail-comparison.md"><strong>Why not an escrow contract</strong></a></p>
 </div>
 
 <hr>
 <h2>The problem</h2>
-<p>Buying or selling crypto for local cash still runs through channels with no safety net. Telegram OTC groups and informal middlemen offer no recourse: if the other side takes the cash and disappears, the money is gone. The regulated alternatives are a poor fit for this use case, crypto ATMs commonly charge 10 to 20 percent in fees and spread, and centralized exchanges need bank rails plus KYC and still take days to turn a balance into cash in hand.</p>
-<p>Meeting in person is the most natural way for two people to trade, but nothing makes that meeting safe.</p>
-<p>Stellar already has the settlement rails: sub-cent fees, fast finality, native USDC, and two ready ways to hold funds in escrow, a Soroban contract or native claimable balances with multisig. A trade can be locked on-chain and released only when both people confirm.</p>
-<p>What is missing sits one layer up: the trust layer. Location-based discovery, a negotiate-then-lock deal flow, an in-person handshake, on-chain escrow, and a reputation record that together turn "meet a stranger to swap cash and crypto" into something with guardrails.</p>
+<p>People already buy and sell crypto for cash in person. They find each other in Telegram and WhatsApp groups, meet a stranger, and hope. One side hands over the cash, the other is supposed to send the tokens, and if they don't, there is no recourse. Nothing holds the funds while the two people are standing there, and there is no trusted way to find someone nearby.</p>
+<p>Stellar already has the primitive this needs. A claimable balance (CAP-23) can name exactly who may take the funds and when. Pairy builds the local, in-person flow around it: a map of offers by city, a chat for each trade, and a lock that only the buyer and the seller are on.</p>
 <blockquote>
-<p>The payment is a commodity, the trust flow is the product. Anyone can send USDC on Stellar. Letting two strangers swap cash and crypto in person without either getting robbed, through escrow, an in-person handshake, reputation, and dispute arbitration, is the hard part and the moat.</p>
+<p>Anyone can send XLM. Letting two strangers swap cash and crypto at a café table, with a lock neither of them can cheat and nobody else can touch, is the part that was missing.</p>
 </blockquote>
 <hr>
 <h2>How it works</h2>
-<p>Liam is a tourist in Canggu, Bali. He has USDC in his wallet but needs rupiah for the day. Wayan is nearby with cash and wants USDC.</p>
+<p>Liam is visiting İstanbul. He has 200 test USDC and needs lira for the week. Deniz lives in Kadıköy, has cash and wants USDC.</p>
 <ol>
-<li><strong>Sign in.</strong> Liam signs in with email and gets a Privy embedded Stellar wallet provisioned automatically. Wayan connects her own Freighter wallet. Each claims a handle like <code>@liam.pairy</code>.</li>
-<li><strong>Browse the map.</strong> Liam opens the map and sees nearby listings as pins, including Wayan offering cash rupiah for USDC at her rate.</li>
-<li><strong>Propose a deal.</strong> Liam opens a chat. They agree on 200 USDC for 3,200,000 IDR and a warung in Canggu, then one of them sends a structured proposal the other accepts. No fees yet: negotiate first, lock last.</li>
-<li><strong>Lock escrow.</strong> Liam, the side holding crypto, deposits 200 USDC into the on-chain escrow on Stellar. Wayan can see that it is locked.</li>
-<li><strong>Meet and settle.</strong> They meet at the warung. A short-lived signed QR proves both are present. Wayan hands over the cash, Liam releases, and the 200 USDC lands in Wayan's wallet. If Liam refuses to release after taking the cash, Wayan opens a dispute and an on-chain arbiter decides where the funds go.</li>
-<li><strong>Collect a stamp.</strong> The settled trade geocodes the meeting spot into Liam's Trade Passport, a map of the cities he has traded in.</li>
+<li><strong>Find a peer.</strong> Liam opens the map and sees Deniz's listing pinned on İstanbul: buying USDC at 41.50 TRY each. The pin marks the city, never a person or an address.</li>
+<li><strong>Agree the terms.</strong> Liam opens a trade for 200 USDC. They use the trade's own chat to pick a café near the Moda pier. Nothing moves yet.</li>
+<li><strong>Meet, then lock.</strong> At the café, Liam locks the 200 USDC. The lock screen tells him plainly: from this moment Deniz can claim at any time in the next 72 hours, cash or not, so lock only when you are both there. Liam signs on his own phone.</li>
+<li><strong>Cash, then claim.</strong> Deniz hands over 8,300 TRY. Deniz taps <strong>Claim</strong> and signs on their own phone. The USDC is in Deniz's wallet. The trade is settled and its chat is deleted.</li>
 </ol>
-<p>Every settlement is verifiable on <code>stellar.expert</code> by transaction hash. No engineering knowledge required to check it.</p>
+<p>If Deniz never claims, the lock flips after 72 hours and Liam takes the USDC back himself. Every step has a receipt on <a href="https://stellar.expert/explorer/testnet">stellar.expert</a> that anyone can open.</p>
 <hr>
-<h2>Architecture</h2>
-<p>One rule defines the design: <strong>Pairy never holds your money.</strong> The on-chain escrow does, and the app only ever talks to the Pairy API, never to keys or the chain directly. Only the Stellar layer touches Stellar, only the escrow holds funds, and the core deal logic is chain-agnostic, so the escrow can be a Soroban contract or native primitives without the rest of the app caring.</p>
-<div class="mermaid">flowchart TB
-    App["Client app<br/>map, chat, deal flow"]
-    subgraph Core["Pairy core (the brain)"]
-        DEAL["Deal state machine"]
-        ESC["Escrow orchestrator"]
-        LED[("Ledger DB<br/>deals, messages, passport")]
-    end
-    WAL["Wallets<br/>Privy embedded, Freighter"]
-    STL["Stellar layer<br/>escrow, Horizon and Soroban RPC watcher"]
-    OFF["Off-chain services<br/>geocoding, push, handshake"]
-    NET["Stellar testnet<br/>XLM, USDC"]
-
-    App --> Core
-    App --> WAL
-    DEAL --> ESC
-    DEAL --> LED
-    ESC --> STL
-    Core --> OFF
-    WAL --> STL
-    STL --> NET
-</div>
-<h3>Deal lifecycle</h3>
-<p>The whole trade is one explicit, idempotent state machine. Nothing touches the chain until both sides commit, and on-chain state only ever moves forward.</p>
-<div class="mermaid">stateDiagram-v2
-    [*] --> PROPOSED
-    PROPOSED --> ACCEPTED: counterparty accepts
-    PROPOSED --> DECLINED: counterparty declines
-    PROPOSED --> CANCELLED: proposer withdraws
-    ACCEPTED --> ESCROWED: depositor locks funds on-chain
-    ESCROWED --> RELEASED: cash received, depositor releases
-    ESCROWED --> REFUNDED: no show, funds returned
-    ESCROWED --> DISPUTED: either party flags
-    DISPUTED --> RESOLVED: arbiter sends funds to one side
-    DECLINED --> [*]
-    CANCELLED --> [*]
-    RELEASED --> [*]
-    REFUNDED --> [*]
-    RESOLVED --> [*]
-</div>
-<p>The escrow exposes one lifecycle (deposit, release, refund, dispute, resolve) behind a single interface, so two implementations can be evaluated without changing the rest of the system:</p>
-<ul>
-<li><strong>A Soroban contract</strong> in Rust that custodies XLM and Stellar Asset Contract tokens.</li>
-<li><strong>Native Stellar primitives</strong>, claimable balances plus multisig, with no custom contract.</li>
-</ul>
-<p>Curated design notes (architecture, flows, data model, contracts, api, testing) will live in <code>/docs</code> as the build lands.</p>
-<hr>
-<h2>What we are building</h2>
-<p>A working, open-source, escrow-protected P2P swap flow on Stellar testnet, proven end to end by testnet transaction hashes. Everything below is planned. Nothing is built yet.</p>
+<h2>Why it's safe</h2>
+<p>Every trade is one claimable balance with exactly two people on it:</p>
 <table>
 <thead>
-<tr><th>Deliverable</th><th>What ships</th><th>How you verify it</th></tr>
+<tr>
+<th>Who</th>
+<th>Condition on the lock</th>
+<th>In plain words</th>
+</tr>
 </thead>
-<tbody>
-<tr>
-<td><strong>D1: Escrow and dual wallets</strong></td>
-<td>The on-chain escrow on Stellar testnet (a Soroban contract or native claimable balances with multisig) exposing deposit, release, refund, dispute, and resolve, wired to both wallet paths (Privy embedded Stellar and Freighter). Tests and CI.</td>
-<td>A deposit tx and a release tx for the same escrow on stellar.expert, and the escrow lifecycle test suite passing.</td>
+<tbody><tr>
+<td>Buyer</td>
+<td><code>BEFORE_RELATIVE_TIME(259200)</code></td>
+<td>can claim during the first 72 hours</td>
 </tr>
 <tr>
-<td><strong>D2: The P2P trade flow</strong></td>
-<td>Location-based listings on a map, one to one chat with structured deal proposals, the negotiate-first-lock-last state machine, <code>@handle.pairy</code> onboarding, and the Trade Passport.</td>
-<td>A full proposed to escrowed to released deal run end to end in the app, with the settlement tx visible on stellar.expert.</td>
+<td>Seller</td>
+<td><code>NOT(BEFORE_RELATIVE_TIME(259200))</code></td>
+<td>can take it back from hour 72 on</td>
 </tr>
-<tr>
-<td><strong>D3: Hosted demo and packaging</strong></td>
-<td>The full lifecycle as a hosted Stellar testnet demo, a public repo with a reproducible quickstart, and a short walkthrough video.</td>
-<td>A live demo URL, the public repo, and a 2 minute walkthrough.</td>
-</tr>
-</tbody>
-</table>
-<p>Real fiat handling at scale, reputation hardening, and mainnet are explicitly later phases. The escrow interface and the chain-agnostic core are built as the hooks they plug into.</p>
+</tbody></table>
+<p>The two windows meet at exactly 72 hours and never overlap. There is no third claimant, no platform address, no dispute resolver and no Pairy signature anywhere in the settlement path. The Stellar network checks the conditions on every claim; Pairy only reads the result back.</p>
+<p><strong>Who signs what.</strong> The seller signs the lock. The buyer signs the claim. The seller signs the take-back. Each signature happens on that person's own device. Pairy's server never signs, never submits a transaction for anyone and never sees a private key. It reads finished transactions from Horizon and checks them before recording a step: the lock must have exactly these two claimants with exactly these conditions, or the server refuses it.</p>
+<p><strong>The honest limit.</strong> Pairy protects the buyer against a seller who takes the cash and never sends. It protects the seller only against a buyer who never claims, not against theft: once locked, the buyer can claim before handing over the cash. That is why the lock screen says so word for word and asks the seller to lock only at the meeting point. The cash itself never touches Pairy, and Pairy cannot see or verify it.</p>
+<p><strong>Check it yourself.</strong> Open any lock receipt on stellar.expert and find "created claimable balance". It must be claimable by exactly two accounts: the buyer "before 3 days from now" and the seller "after 3 days from now". If either says "unconditional", the lock is broken. Step-by-step instructions and every real transaction are in <a href="EVIDENCE.md">EVIDENCE.md</a>.</p>
+<hr>
+<h2>Keys stay on your phone</h2>
+<p>There are two ways to hold a wallet. Neither gives Pairy custody.</p>
+<ul>
+<li><strong>A key made on this device.</strong> The browser calls <code>Keypair.random()</code>, which draws from WebCrypto (<code>crypto.getRandomValues</code>). The key goes straight into SDF's <code>KeyManager</code> (<code>@stellar/typescript-wallet-sdk-km</code>): <code>ScryptEncrypter</code> locks it under a pincode you choose and <code>LocalStorageKeyStore</code> keeps only the ciphertext in the browser. Pairy writes no key-derivation or encryption code of its own.</li>
+<li><strong>Freighter</strong>, connected through <code>@creit.tech/stellar-wallets-kit</code>. Your key stays in Freighter.</li>
+</ul>
+<p>You sign in by signing a one-time message (<a href="https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md">SEP-53</a>) with your wallet. The key and the pincode never leave the device, and no API endpoint has a field that could accept either. The CI test <code>no-secret-fields</code> fails the build if one is ever added.</p>
+<p><strong>The tradeoff.</strong> Pairy keeps no copy, so losing the device or forgetting the pincode loses the wallet. You can export an encrypted backup file and restore it in another browser with the same pincode. There is no server-side recovery, because that would be custody.</p>
+<p><strong>The residual risk.</strong> The encrypted key lives in browser storage, so a cross-site scripting flaw on Pairy's own site could read the ciphertext. This is a testnet demo. Passkey-wrapped storage is planned for evaluation before any mainnet work.</p>
+<hr>
+<h2>What Pairy stores</h2>
+<p><strong>Stored:</strong> Stellar public keys, listing terms, the city each listing picked, claimable balance IDs and transaction hashes, trade state, and each trade's chat while the trade is live.</p>
+<p><strong>Deleted automatically:</strong> a trade's chat, the moment the trade is claimed, taken back or cancelled. The state change and the deletion happen in one database transaction, and the CI test <code>coordination-purge-on-terminal</code> checks it.</p>
+<p><strong>Never stored:</strong> private keys or anything a key could be derived from, pincodes, names, phone numbers, emails, identity documents, or a precise location. Listings are placed at a city's centre, chosen from a list of cities with 100,000+ people. The app never asks for your device location.</p>
+<hr>
+<h2>Architecture</h2>
+<div class="mermaid" data-processed="true"><svg id="mermaid-1792161686336" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="max-width: 1017.59375px;" viewBox="-8 -8 1017.59375 318.02911376953125" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1792161686336{font-family:Helvetica,Arial,sans-serif;font-size:16px;fill:#000000;}#mermaid-1792161686336 .error-icon{fill:#552222;}#mermaid-1792161686336 .error-text{fill:#552222;stroke:#552222;}#mermaid-1792161686336 .edge-thickness-normal{stroke-width:2px;}#mermaid-1792161686336 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1792161686336 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1792161686336 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1792161686336 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1792161686336 .marker{fill:#666;stroke:#666;}#mermaid-1792161686336 .marker.cross{stroke:#666;}#mermaid-1792161686336 svg{font-family:Helvetica,Arial,sans-serif;font-size:16px;}#mermaid-1792161686336 .label{font-family:Helvetica,Arial,sans-serif;color:#000000;}#mermaid-1792161686336 .cluster-label text{fill:#333;}#mermaid-1792161686336 .cluster-label span,#mermaid-1792161686336 p{color:#333;}#mermaid-1792161686336 .label text,#mermaid-1792161686336 span,#mermaid-1792161686336 p{fill:#000000;color:#000000;}#mermaid-1792161686336 .node rect,#mermaid-1792161686336 .node circle,#mermaid-1792161686336 .node ellipse,#mermaid-1792161686336 .node polygon,#mermaid-1792161686336 .node path{fill:#eee;stroke:#999;stroke-width:1px;}#mermaid-1792161686336 .flowchart-label text{text-anchor:middle;}#mermaid-1792161686336 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1792161686336 .node .label{text-align:center;}#mermaid-1792161686336 .node.clickable{cursor:pointer;}#mermaid-1792161686336 .arrowheadPath{fill:#333333;}#mermaid-1792161686336 .edgePath .path{stroke:#666;stroke-width:2.0px;}#mermaid-1792161686336 .flowchart-link{stroke:#666;fill:none;}#mermaid-1792161686336 .edgeLabel{background-color:white;text-align:center;}#mermaid-1792161686336 .edgeLabel rect{opacity:0.5;background-color:white;fill:white;}#mermaid-1792161686336 .labelBkg{background-color:rgba(255, 255, 255, 0.5);}#mermaid-1792161686336 .cluster rect{fill:hsl(0, 0%, 98.9215686275%);stroke:#707070;stroke-width:1px;}#mermaid-1792161686336 .cluster text{fill:#333;}#mermaid-1792161686336 .cluster span,#mermaid-1792161686336 p{color:#333;}#mermaid-1792161686336 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:Helvetica,Arial,sans-serif;font-size:12px;background:hsl(-160, 0%, 93.3333333333%);border:1px solid #707070;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1792161686336 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#000000;}#mermaid-1792161686336 :root{--mermaid-font-family:Helvetica,Arial,sans-serif;}</style><g><marker id="mermaid-1792161686336_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1792161686336_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1792161686336_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1792161686336_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1792161686336_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1792161686336_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"><g class="cluster default flowchart-label" id="Phone"><rect style="" rx="0" ry="0" x="0" y="0" width="663.5625" height="141.75"></rect><g class="cluster-label" transform="translate(331.78125, 0)"><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Your phone</tspan></text></g></g></g><g class="edgePaths"><path d="M205.406,70.635L226.691,68.779C247.977,66.923,290.547,63.212,332.234,61.356C373.921,59.5,414.724,59.5,435.126,59.5L455.528,59.5" id="L-UI-W-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-UI LE-W" style="fill:none;" marker-end="url(#mermaid-1792161686336_flowchart-pointEnd)"></path><path d="M638.563,59.5L642.729,59.5C646.896,59.5,655.229,59.5,673.79,59.5C692.352,59.5,721.141,59.5,753.468,65.733C785.795,71.967,821.66,84.434,839.593,90.667L857.525,96.9" id="L-W-H-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-W LE-H" style="fill:none;" marker-end="url(#mermaid-1792161686336_flowchart-pointEnd)"></path><path d="M205.406,86.365L226.691,88.221C247.977,90.077,290.547,93.788,341.059,115.101C391.572,136.413,450.026,175.326,479.253,194.783L508.48,214.239" id="L-UI-API-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-UI LE-API" style="fill:none;" marker-end="url(#mermaid-1792161686336_flowchart-pointEnd)"></path><path d="M609.875,249.34L618.823,250.479C627.771,251.619,645.667,253.897,669.009,255.037C692.352,256.176,721.141,256.176,749.046,256.176C776.952,256.176,803.974,256.176,817.486,256.176L830.997,256.176" id="L-API-DB-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-API LE-DB" style="fill:none;" marker-end="url(#mermaid-1792161686336_flowchart-pointEnd)"></path><path d="M596.055,217.176L607.306,211.23C618.557,205.284,641.06,193.392,666.706,187.446C692.352,181.5,721.141,181.5,753.475,174.787C785.809,168.073,821.688,154.646,839.628,147.933L857.567,141.219" id="L-API-H-0" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-API LE-H" style="fill:none;" marker-end="url(#mermaid-1792161686336_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(333.1171875, 59.5)"><g class="label" transform="translate(-25.3515625, -9)"><rect rx="0" ry="0" width="50.70755386352539" height="18.615392684936523"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">build tx</tspan></text></g></g><g class="edgeLabel" transform="translate(749.9296875, 59.5)"><g class="label" transform="translate(-32.0234375, -9)"><rect rx="0" ry="0" width="64.03889465332031" height="18.615392684936523"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">signed tx</tspan></text></g></g><g class="edgeLabel" transform="translate(333.1171875, 97.5)"><g class="label" transform="translate(-102.7109375, -9)"><rect rx="0" ry="0" width="205.4156951904297" height="18.615392684936523"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">public keys, terms, tx hashes</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel" transform="translate(749.9296875, 181.5)"><g class="label" transform="translate(-61.3671875, -9)"><rect rx="0" ry="0" width="122.72908782958984" height="18.615392684936523"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">read and verify tx</tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-UI-0" data-node="true" data-id="UI" transform="translate(115.203125, 78.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-90.203125" y="-24.5" width="180.40625" height="49"></rect><g class="label" style="" transform="translate(0, -17)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Pairy web app</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">map · trade room · chat</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-W-1" data-node="true" data-id="W" transform="translate(549.6953125, 59.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-88.8671875" y="-24.5" width="177.734375" height="49"></rect><g class="label" style="" transform="translate(0, -17)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Wallet</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">device key or Freighter</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-API-2" data-node="true" data-id="API" transform="translate(549.6953125, 241.6763687133789)"><rect class="basic label-container" style="" rx="0" ry="0" x="-60.1796875" y="-24.5" width="120.359375" height="49"></rect><g class="label" style="" transform="translate(0, -17)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Pairy API</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Next.js + tRPC</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-DB-3" data-node="true" data-id="DB" transform="translate(918.9453125, 256.1763687133789)"><path style="" d="M 0,14.23515797405673 a 82.6484375,14.23515797405673 0,0,0 165.296875 0 a 82.6484375,14.23515797405673 0,0,0 -165.296875 0 l 0,63.23515797405673 a 82.6484375,14.23515797405673 0,0,0 165.296875 0 l 0,-63.23515797405673" transform="translate(-82.6484375,-45.8527369610851)"></path><g class="label" style="" transform="translate(0, -17)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Postgres</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">listings · trades · chat</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-H-4" data-node="true" data-id="H" transform="translate(918.9453125, 118.25)"><rect class="basic label-container" style="" rx="0" ry="0" x="-56.4140625" y="-24.5" width="112.828125" height="49"></rect><g class="label" style="" transform="translate(0, -17)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Horizon</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">Stellar testnet</tspan></text></g></g></g></g></g></svg></div>
+<p>Transactions go from your wallet straight to Stellar. Pairy's API only ever receives public information and checks it against the chain.</p>
+<h3>Trade lifecycle</h3>
+<p><code>TradeStateMachine</code> (<a href="lib/trade/state-machine.ts">lib/trade/state-machine.ts</a>) records what the chain has already accepted. It never decides whether a claim is allowed; the network does.</p>
+<div class="mermaid" data-processed="true"><svg id="mermaid-1792161686378" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="statediagram" style="max-width: 521.78515625px;" viewBox="0 0 521.78515625 480" role="graphics-document document" aria-roledescription="stateDiagram"><style>#mermaid-1792161686378{font-family:Helvetica,Arial,sans-serif;font-size:16px;fill:#000000;}#mermaid-1792161686378 .error-icon{fill:#552222;}#mermaid-1792161686378 .error-text{fill:#552222;stroke:#552222;}#mermaid-1792161686378 .edge-thickness-normal{stroke-width:2px;}#mermaid-1792161686378 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1792161686378 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1792161686378 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1792161686378 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1792161686378 .marker{fill:#666;stroke:#666;}#mermaid-1792161686378 .marker.cross{stroke:#666;}#mermaid-1792161686378 svg{font-family:Helvetica,Arial,sans-serif;font-size:16px;}#mermaid-1792161686378 defs #statediagram-barbEnd{fill:#000;stroke:#000;}#mermaid-1792161686378 g.stateGroup text{fill:#999;stroke:none;font-size:10px;}#mermaid-1792161686378 g.stateGroup text{fill:#000000;stroke:none;font-size:10px;}#mermaid-1792161686378 g.stateGroup .state-title{font-weight:bolder;fill:#111111;}#mermaid-1792161686378 g.stateGroup rect{fill:#eee;stroke:#999;}#mermaid-1792161686378 g.stateGroup line{stroke:#666;stroke-width:1;}#mermaid-1792161686378 .transition{stroke:#000;stroke-width:1;fill:none;}#mermaid-1792161686378 .stateGroup .composit{fill:#ffffff;border-bottom:1px;}#mermaid-1792161686378 .stateGroup .alt-composit{fill:#e0e0e0;border-bottom:1px;}#mermaid-1792161686378 .state-note{stroke:#999;fill:#666;}#mermaid-1792161686378 .state-note text{fill:#fff;stroke:none;font-size:10px;}#mermaid-1792161686378 .stateLabel .box{stroke:none;stroke-width:0;fill:#eee;opacity:0.5;}#mermaid-1792161686378 .edgeLabel .label rect{fill:#eee;opacity:0.5;}#mermaid-1792161686378 .edgeLabel .label text{fill:#000000;}#mermaid-1792161686378 .label div .edgeLabel{color:#000000;}#mermaid-1792161686378 .stateLabel text{fill:#111111;font-size:10px;font-weight:bold;}#mermaid-1792161686378 .node circle.state-start{fill:#222;stroke:#222;}#mermaid-1792161686378 .node .fork-join{fill:#222;stroke:#222;}#mermaid-1792161686378 .node circle.state-end{fill:hsl(0, 0%, 83.3333333333%);stroke:#ffffff;stroke-width:1.5;}#mermaid-1792161686378 .end-state-inner{fill:#ffffff;stroke-width:1.5;}#mermaid-1792161686378 .node rect{fill:#eee;stroke:#000;stroke-width:1px;}#mermaid-1792161686378 .node polygon{fill:#eee;stroke:#000;stroke-width:1px;}#mermaid-1792161686378 #statediagram-barbEnd{fill:#666;}#mermaid-1792161686378 .statediagram-cluster rect{fill:#eee;stroke:#000;stroke-width:1px;}#mermaid-1792161686378 .cluster-label,#mermaid-1792161686378 .nodeLabel{color:#111111;}#mermaid-1792161686378 .statediagram-cluster rect.outer{rx:5px;ry:5px;}#mermaid-1792161686378 .statediagram-state .divider{stroke:#000;}#mermaid-1792161686378 .statediagram-state .title-state{rx:5px;ry:5px;}#mermaid-1792161686378 .statediagram-cluster.statediagram-cluster .inner{fill:#ffffff;}#mermaid-1792161686378 .statediagram-cluster.statediagram-cluster-alt .inner{fill:#f4f4f4;}#mermaid-1792161686378 .statediagram-cluster .inner{rx:0;ry:0;}#mermaid-1792161686378 .statediagram-state rect.basic{rx:5px;ry:5px;}#mermaid-1792161686378 .statediagram-state rect.divider{stroke-dasharray:10,10;fill:#f4f4f4;}#mermaid-1792161686378 .note-edge{stroke-dasharray:5;}#mermaid-1792161686378 .statediagram-note rect{fill:#666;stroke:#999;stroke-width:1px;rx:0;ry:0;}#mermaid-1792161686378 .statediagram-note rect{fill:#666;stroke:#999;stroke-width:1px;rx:0;ry:0;}#mermaid-1792161686378 .statediagram-note text{fill:#fff;}#mermaid-1792161686378 .statediagram-note .nodeLabel{color:#fff;}#mermaid-1792161686378 .statediagram .edgeLabel{color:red;}#mermaid-1792161686378 #dependencyStart,#mermaid-1792161686378 #dependencyEnd{fill:#666;stroke:#666;stroke-width:1;}#mermaid-1792161686378 .statediagramTitleText{text-anchor:middle;font-size:18px;fill:#000000;}#mermaid-1792161686378 :root{--mermaid-font-family:Helvetica,Arial,sans-serif;}</style><g><defs><marker id="mermaid-1792161686378_statediagram-barbEnd" refX="19" refY="7" markerWidth="20" markerHeight="14" markerUnits="strokeWidth" orient="auto"><path d="M 19,7 L9,13 L14,7 L9,1 Z"></path></marker></defs><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M304.582,22L304.582,26.167C304.582,30.333,304.582,38.667,304.582,47C304.582,55.333,304.582,63.667,304.582,67.833L304.582,72" id="edge0" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M289.035,105L283.696,110.667C278.357,116.333,267.678,127.667,262.339,139C257,150.333,257,161.667,257,167.333L257,173" id="edge1" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M330.762,95.605L357.411,102.837C384.061,110.07,437.361,124.535,464.01,140.184C490.66,155.833,490.66,172.667,490.66,189.5C490.66,206.333,490.66,223.167,488.241,237.25C485.821,251.333,480.982,262.667,478.562,268.333L476.143,274" id="edge2" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M237.388,206L230.653,211.667C223.918,217.333,210.447,228.667,203.712,240C196.977,251.333,196.977,262.667,196.977,268.333L196.977,274" id="edge3" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M289.414,199.45L311.431,206.208C333.448,212.967,377.482,226.483,404.838,238.908C432.194,251.333,442.873,262.667,448.212,268.333L453.551,274" id="edge4" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M166.352,305.428L154.189,311.357C142.026,317.285,117.701,329.143,105.538,340.738C93.375,352.333,93.375,363.667,93.375,369.333L93.375,375" id="edge5" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M227.602,305.428L239.764,311.357C251.927,317.285,276.253,329.143,288.415,340.738C300.578,352.333,300.578,363.667,300.578,369.333L300.578,375" id="edge6" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M93.375,408L93.375,412.167C93.375,416.333,93.375,424.667,126.756,433.989C160.137,443.311,226.898,453.621,260.279,458.776L293.66,463.932" id="edge7" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M300.578,408L300.578,412.167C300.578,416.333,300.578,424.667,300.578,433C300.578,441.333,300.578,449.667,300.578,453.833L300.578,458" id="edge8" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path><path d="M469.098,307L469.098,312.667C469.098,318.333,469.098,329.667,469.098,343.75C469.098,357.833,469.098,374.667,469.098,390C469.098,405.333,469.098,419.167,442.157,431.199C415.217,443.231,361.336,453.463,334.396,458.578L307.455,463.694" id="edge9" class="edge-thickness-normal transition" style="fill:none" marker-end="url(#mermaid-1792161686378_statediagram-barbEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel" transform="translate(257, 139)"><g class="label" transform="translate(-75.1640625, -9)"><rect rx="0" ry="0" width="150.2392578125" height="18.000585556030273"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">the other side agrees</tspan></text></g></g><g class="edgeLabel" transform="translate(490.66015625, 189.5)"><g class="label" transform="translate(-23.125, -9)"><rect rx="0" ry="0" width="46.235877990722656" height="18.000585556030273"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">cancel</tspan></text></g></g><g class="edgeLabel" transform="translate(196.9765625, 240)"><g class="label" transform="translate(-76.921875, -9)"><rect rx="0" ry="0" width="153.7550048828125" height="18.000585556030273"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">seller locks the crypto</tspan></text></g></g><g class="edgeLabel" transform="translate(421.515625, 240)"><g class="label" transform="translate(-23.125, -9)"><rect rx="0" ry="0" width="46.235877990722656" height="18.000585556030273"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">cancel</tspan></text></g></g><g class="edgeLabel" transform="translate(93.375, 341)"><g class="label" transform="translate(-85.375, -9)"><rect rx="0" ry="0" width="170.64617919921875" height="18.000585556030273"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">buyer claims, within 72h</tspan></text></g></g><g class="edgeLabel" transform="translate(300.578125, 341)"><g class="label" transform="translate(-101.828125, -9)"><rect rx="0" ry="0" width="203.53787231445312" height="18.000585556030273"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">seller takes it back, after 72h</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default" id="state-root_start-0" data-node="true" data-id="root_start" transform="translate(304.58203125, 15)"><circle class="state-start" r="7" width="14" height="14"></circle></g><g class="node  statediagram-state undefined" id="state-listed-2" data-node="true" data-id="listed" transform="translate(304.58203125, 88.5)"><rect class="basic label-container" style="" x="-26.1796875" y="-16.5" width="52.359375" height="33"></rect><g class="label" style="" transform="translate(-18.6796875, -9)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">listed</tspan></text></g></g><g class="node  statediagram-state undefined" id="state-agreed-4" data-node="true" data-id="agreed" transform="translate(257, 189.5)"><rect class="basic label-container" style="" x="-32.4140625" y="-16.5" width="64.828125" height="33"></rect><g class="label" style="" transform="translate(-24.9140625, -9)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">agreed</tspan></text></g></g><g class="node  statediagram-state undefined" id="state-cancelled-9" data-node="true" data-id="cancelled" transform="translate(469.09765625, 290.5)"><rect class="basic label-container" style="" x="-41.3046875" y="-16.5" width="82.609375" height="33"></rect><g class="label" style="" transform="translate(-33.8046875, -9)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">cancelled</tspan></text></g></g><g class="node  statediagram-state undefined" id="state-locked-6" data-node="true" data-id="locked" transform="translate(196.9765625, 290.5)"><rect class="basic label-container" style="" x="-30.625" y="-16.5" width="61.25" height="33"></rect><g class="label" style="" transform="translate(-23.125, -9)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">locked</tspan></text></g></g><g class="node  statediagram-state undefined" id="state-claimed-7" data-node="true" data-id="claimed" transform="translate(93.375, 391.5)"><rect class="basic label-container" style="" x="-35.0703125" y="-16.5" width="70.140625" height="33"></rect><g class="label" style="" transform="translate(-27.5703125, -9)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">claimed</tspan></text></g></g><g class="node  statediagram-state undefined" id="state-reclaimed-8" data-node="true" data-id="reclaimed" transform="translate(300.578125, 391.5)"><rect class="basic label-container" style="" x="-42.1796875" y="-16.5" width="84.359375" height="33"></rect><g class="label" style="" transform="translate(-34.6796875, -9)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">reclaimed</tspan></text></g></g><g class="node default" id="state-root_end-9" data-node="true" data-id="root_end" transform="translate(300.578125, 465)"><circle class="state-start" r="7" width="14" height="14"></circle><circle class="state-end" r="5" width="10" height="10"></circle></g></g></g></g></svg></div>
+<p>Once locked, a trade cannot be cancelled: the only ways out are claim and take-back. <code>disputed</code> is a flag, not a state. Either side can raise it on a live trade; it changes nothing today and is the hook a Phase 2 arbiter will plug into.</p>
+<p>Before the lock, the app checks what would otherwise fail later. For USDC, the buyer's wallet must accept USDC first (a trustline): the lock itself would succeed without it, but the buyer's claim would fail with <code>op_no_trust</code>. And the seller must hold the amount plus the network reserve (0.5 XLM per person on the lock), which comes back to the seller when the trade ends.</p>
+<h3>The reusable part</h3>
+<p><a href="lib/stellar/settlement.ts"><code>lib/stellar/settlement.ts</code></a> is the whole settlement surface, built only from stock SDK calls: <code>Claimant.predicateBeforeRelativeTime</code>, <code>Claimant.predicateNot</code>, <code>Operation.createClaimableBalance</code> and <code>Operation.claimClaimableBalance</code>. No contract, no predicate evaluation, no signing. Together with the state machine it is meant as a worked example any Stellar P2P app can fork for two-party CAP-23 settlement.</p>
 <hr>
 <h2>Tech stack</h2>
 <table>
 <thead>
-<tr><th>Layer</th><th>Choice</th></tr>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+</tr>
 </thead>
-<tbody>
-<tr><td>Framework</td><td>Next.js (App Router), React, TypeScript</td></tr>
-<tr><td>API</td><td>tRPC</td></tr>
-<tr><td>Stellar</td><td><code>@stellar/stellar-sdk</code>, Soroban RPC, Horizon</td></tr>
-<tr><td>Wallets</td><td>Privy (embedded Stellar) and Freighter</td></tr>
-<tr><td>Escrow</td><td>Soroban (Rust) or native claimable balances with multisig</td></tr>
-<tr><td>Database</td><td>Postgres with Drizzle ORM</td></tr>
-<tr><td>UI</td><td>Tailwind CSS, Radix UI</td></tr>
-<tr><td>Notifications</td><td>Web Push (VAPID)</td></tr>
-<tr><td>Hosting</td><td>Vercel</td></tr>
-</tbody>
-</table>
+<tbody><tr>
+<td>App</td>
+<td>Next.js 14 (App Router), React 18, TypeScript</td>
+</tr>
+<tr>
+<td>API</td>
+<td>tRPC 11, zod</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>Postgres with Drizzle ORM (Neon in production, PGlite in tests)</td>
+</tr>
+<tr>
+<td>Stellar</td>
+<td><code>@stellar/stellar-sdk</code> 17, Horizon testnet</td>
+</tr>
+<tr>
+<td>Wallets</td>
+<td><code>@stellar/typescript-wallet-sdk-km</code>, <code>@creit.tech/stellar-wallets-kit</code> (Freighter)</td>
+</tr>
+<tr>
+<td>Claim window</td>
+<td><code>stellar-resolve-claimant-predicates</code></td>
+</tr>
+<tr>
+<td>Map</td>
+<td>MapLibre GL with OpenFreeMap tiles (no API key), GeoNames cities</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Tailwind CSS, Radix UI, the <a href="docs/design.md">Pairy brand system</a></td>
+</tr>
+<tr>
+<td>Hosting</td>
+<td>Vercel (Frankfurt), next to the Neon database</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>Vitest, GitHub Actions</td>
+</tr>
+</tbody></table>
 <hr>
+<h2>Run it locally</h2>
+<p>You need Node 22 (see <code>.nvmrc</code>; the Stellar SDK requires <code>&gt;=22.12</code>), pnpm and Docker.</p>
+<pre><code class="language-bash">nvm use
+pnpm install
+docker compose up -d          # Postgres on localhost:35433
+cp .env.example .env          # DATABASE_URL and SESSION_SECRET
+pnpm db:migrate
+pnpm dev                      # http://localhost:3000
+</code></pre>
+<p><code>SESSION_SECRET</code> signs the login cookie. It is not a Stellar key.</p>
+<h2>Tests</h2>
+<pre><code class="language-bash">pnpm test           # unit and CI tests, no network needed
+pnpm test:testnet   # lock, claim and take-back on the live Stellar testnet
+</code></pre>
+<p>The testnet suite funds throwaway accounts and runs every path for XLM and USDC. The take-back test uses a 60-second window and waits it out, after checking that an early take-back is rejected by the network.</p>
+<p>Two tests come straight from the project's scope and run as their own CI steps:</p>
+<ul>
+<li><strong><code>no-secret-fields</code></strong> (<a href="tests/ci/no-secret-fields.test.ts">tests/ci/no-secret-fields.test.ts</a>) walks every API input and fails if any field could carry a secret key or a pincode.</li>
+<li><strong><code>coordination-purge-on-terminal</code></strong> (<a href="tests/ci/coordination-purge-on-terminal.test.ts">tests/ci/coordination-purge-on-terminal.test.ts</a>) drives trades to claimed, taken back and cancelled, and checks the chat is gone each time.</li>
+</ul>
+<hr>
+<h2>Scope</h2>
+<table>
+<thead>
+<tr>
+<th>Now</th>
+<th>Later</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Testnet XLM and testnet USDC</td>
+<td>More assets (Phase 2)</td>
+</tr>
+<tr>
+<td>Two-party lock, claim and take-back</td>
+<td>Dispute resolution with an arbiter, using Trustless Work's escrow once a resolver role is justified (Phase 2)</td>
+</tr>
+<tr>
+<td>Device keys and Freighter</td>
+<td>Passkey-wrapped keys, native apps (Phase 3)</td>
+</tr>
+<tr>
+<td>Testnet only</td>
+<td>Mainnet, real money, identity checks (Phase 3)</td>
+</tr>
+</tbody></table>
+<p>Pairy will not write a custom escrow contract in any phase. If the protocol primitive ever falls short, the gap gets documented and proposed upstream.</p>
 <h2>Status</h2>
-<p>Pre-development, targeting Stellar testnet. Nothing is live, no real money moves, and there are no users yet. This README describes the design and the build plan. Progress is tracked against the deliverables above and verified by testnet transaction hashes.</p>
-<h2>Contact</h2>
-<p>Questions and feedback: open an issue on this repository.</p>
+<p>A working demo on the Stellar testnet at <a href="https://pairy.org">pairy.org</a>. No real money moves, and Pairy has no users: it is a reference implementation, not a product in use. Every transaction, test run and recording that backs this README is listed in <a href="EVIDENCE.md">EVIDENCE.md</a>.</p>
 <h2>License</h2>
 <p><a href="LICENSE">MIT</a>.</p>
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script><script>mermaid.initialize({startOnLoad:true,theme:document.matchMedia&&document.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"neutral"});</script>
