@@ -38,10 +38,13 @@ const expected: ExpectedLock = {
 };
 
 // What Horizon would return for each hash; a missing hash is a 404.
-let ledger: Record<string, { successful: boolean; envelope_xdr: string }>;
+let ledger: Record<string, { successful: boolean; envelope_xdr: string; created_at: string }>;
+// Claimable balances that have already been claimed or reclaimed (gone from the ledger).
+let goneBalances: Set<string>;
 
 beforeEach(() => {
   ledger = {};
+  goneBalances = new Set();
   vi.spyOn(horizon, "transactions").mockReturnValue({
     transaction: (hash: string) => ({
       call: async () => {
@@ -50,15 +53,28 @@ beforeEach(() => {
       },
     }),
   } as never);
+  vi.spyOn(horizon, "claimableBalances").mockReturnValue({
+    claimableBalance: (id: string) => ({
+      call: async () => {
+        if (goneBalances.has(id)) throw new NotFoundError("Not Found", {});
+        return { id };
+      },
+    }),
+  } as never);
 });
 
 afterEach(() => vi.restoreAllMocks());
 
 /** Signs `tx` as the given wallet would and "lands" it on the mock ledger. */
-function land(tx: Transaction, signer: Keypair, successful = true): string {
+function land(
+  tx: Transaction,
+  signer: Keypair,
+  successful = true,
+  createdAt = new Date().toISOString(),
+): string {
   tx.sign(signer);
   const hash = Buffer.from(tx.hash()).toString("hex");
-  ledger[hash] = { successful, envelope_xdr: tx.toEnvelope().toXDR("base64") };
+  ledger[hash] = { successful, envelope_xdr: tx.toEnvelope().toXDR("base64"), created_at: createdAt };
   return hash;
 }
 
@@ -222,6 +238,32 @@ describe("verifyLockTx", () => {
     await expect(verifyLockTx(hash, expected)).rejects.toThrow(
       /buyer's claim condition/,
     );
+  });
+});
+
+describe("verifyLockTx against replayed or spent locks", () => {
+  it("rejects a lock that landed before the trade existed", async () => {
+    // A seller reuses the hash of an old, already-reclaimed lock to the same
+    // buyer for the same amount: the shape matches, the timing must not.
+    const hash = land(lockTx(), sellerKey, true, "2026-10-01T00:00:00Z");
+    await expect(
+      verifyLockTx(hash, { ...expected, notBefore: new Date("2026-10-16T00:00:00Z") }),
+    ).rejects.toThrow(/before this trade/);
+  });
+
+  it("rejects a lock whose balance is no longer on the ledger", async () => {
+    const tx = lockTx();
+    const hash = land(tx, sellerKey);
+    goneBalances.add(lockBalanceId(tx));
+    await expect(verifyLockTx(hash, expected)).rejects.toThrow(/no longer/);
+  });
+
+  it("still accepts a fresh, live lock that landed after the trade opened", async () => {
+    const tx = lockTx();
+    const hash = land(tx, sellerKey, true, "2026-10-16T12:00:00Z");
+    await expect(
+      verifyLockTx(hash, { ...expected, notBefore: new Date("2026-10-16T11:00:00Z") }),
+    ).resolves.toEqual({ balanceId: lockBalanceId(tx) });
   });
 });
 

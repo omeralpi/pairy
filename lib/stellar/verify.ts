@@ -27,9 +27,14 @@ export type ExpectedLock = {
   /** Decimal string as stored on the trade, e.g. "25.5000000". */
   amount: string;
   windowSeconds: number;
+  /**
+   * The lock must have landed at or after this moment (the trade's creation).
+   * Stops a seller replaying an older lock with the same parties and amount.
+   */
+  notBefore?: Date;
 };
 
-async function loadSuccessfulTx(hash: string): Promise<Transaction> {
+async function loadSuccessfulTx(hash: string): Promise<{ tx: Transaction; createdAt: Date }> {
   let record;
   try {
     record = await horizon.transactions().transaction(hash).call();
@@ -47,9 +52,8 @@ async function loadSuccessfulTx(hash: string): Promise<Transaction> {
     NETWORK_PASSPHRASE,
   );
   // A fee bump changes who pays the fee, not what the inner transaction does.
-  return envelope instanceof FeeBumpTransaction
-    ? envelope.innerTransaction
-    : envelope;
+  const tx = envelope instanceof FeeBumpTransaction ? envelope.innerTransaction : envelope;
+  return { tx, createdAt: new Date(record.created_at) };
 }
 
 function onlyOperation(tx: Transaction, hash: string): OperationRecord {
@@ -70,7 +74,10 @@ export async function verifyLockTx(
   hash: string,
   expected: ExpectedLock,
 ): Promise<{ balanceId: string }> {
-  const tx = await loadSuccessfulTx(hash);
+  const { tx, createdAt } = await loadSuccessfulTx(hash);
+  if (expected.notBefore && createdAt < expected.notBefore) {
+    throw new Error(`The lock in ${hash} landed before this trade was opened; lock again for this trade.`);
+  }
   const op = onlyOperation(tx, hash);
   if (op.type !== "createClaimableBalance") {
     throw new Error(
@@ -125,7 +132,43 @@ export async function verifyLockTx(
     }
   });
 
-  return { balanceId: lockBalanceId(tx) };
+  // A lock that has already been claimed or taken back cannot back a new trade.
+  const balanceId = lockBalanceId(tx);
+  try {
+    await horizon.claimableBalances().claimableBalance(balanceId).call();
+  } catch (e) {
+    if (e instanceof NotFoundError) {
+      throw new Error(`The lock in ${hash} is no longer on the ledger; it was already claimed or taken back.`);
+    }
+    throw e;
+  }
+  return { balanceId };
+}
+
+/**
+ * True when a lock for exactly this trade (same seller, buyer, asset and
+ * amount, landed after `notBefore`) is still on the ledger. Used to refuse a
+ * cancel that would race a lock already on-chain.
+ */
+export async function hasLiveLock(expected: ExpectedLock & { notBefore: Date }): Promise<boolean> {
+  const asset = toAsset(expected.asset);
+  const want = Operation.fromXDRObject<Operation.CreateClaimableBalance>(
+    lockOperation({ ...expected, asset }),
+  );
+  const page = await horizon
+    .claimableBalances()
+    .claimant(expected.buyer)
+    .sponsor(expected.seller)
+    .limit(200)
+    .call();
+  return page.records.some(
+    (b) =>
+      b.asset === (asset.isNative() ? "native" : `${asset.getCode()}:${asset.getIssuer()}`) &&
+      b.amount === want.amount &&
+      // Horizon returns last_modified_time (a balance never changes after it
+      // is created, so this is its creation time); the SDK type omits it.
+      new Date((b as { last_modified_time?: string }).last_modified_time ?? 0) >= expected.notBefore,
+  );
 }
 
 /**
@@ -136,7 +179,7 @@ export async function verifyClaimTx(
   hash: string,
   balanceId: string,
 ): Promise<{ claimant: string }> {
-  const tx = await loadSuccessfulTx(hash);
+  const { tx } = await loadSuccessfulTx(hash);
   const op = onlyOperation(tx, hash);
   if (op.type !== "claimClaimableBalance") {
     throw new Error(

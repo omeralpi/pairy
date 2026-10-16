@@ -6,7 +6,7 @@ import { z } from "zod";
 import { listings, tradeEvents, trades, users } from "@/lib/db/schema";
 import { CLAIM_WINDOW_SECONDS } from "@/lib/stellar/settlement";
 import { explorerAccountUrl, explorerTxUrl, horizon, loadAccount } from "@/lib/stellar/horizon";
-import { verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
+import { hasLiveLock, verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
 import { amountInput, fiatTotal, toStroops, trimAmount } from "@/lib/trade/amount";
 import { claimWindow } from "@/lib/trade/claim-window";
 import { tradeForParticipant, transitionTrade, type TradeRow } from "@/lib/trade/persist";
@@ -90,7 +90,25 @@ export const tradeRouter = createTRPCRouter({
   }),
 
   cancel: protectedProcedure.input(tradeIdInput).mutation(async ({ ctx, input }) => {
-    const { role } = await tradeForParticipant(ctx.db, input.tradeId, ctx.session.publicKey);
+    const { trade, role } = await tradeForParticipant(ctx.db, input.tradeId, ctx.session.publicKey);
+    // The seller may already have locked on-chain while the record is in
+    // flight; cancelling then would leave a live lock the app calls cancelled.
+    if (
+      trade.state === "agreed" &&
+      (await hasLiveLock({
+        seller: trade.seller,
+        buyer: trade.buyer,
+        asset: trade.asset,
+        amount: trade.amount,
+        windowSeconds: trade.windowSeconds,
+        notBefore: trade.createdAt,
+      }))
+    ) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "The seller has already locked this trade on Stellar, so it can't be cancelled. The buyer can claim it, or the seller takes it back after the window.",
+      });
+    }
     return transitionTrade(ctx.db, input.tradeId, { type: "cancel", by: role });
   }),
 
@@ -115,6 +133,7 @@ export const tradeRouter = createTRPCRouter({
         asset: trade.asset,
         amount: trade.amount,
         windowSeconds: trade.windowSeconds,
+        notBefore: trade.createdAt,
       }),
     );
     // One on-chain lock backs one trade: the same parties and amount on a

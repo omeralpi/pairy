@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { tradeEvents } from "@/lib/db/schema";
-import { verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
+import { hasLiveLock, verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
 import { TX, tradeFixture } from "@/lib/trade/test-helpers";
 
-vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn() }));
+vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), hasLiveLock: vi.fn(async () => false) }));
 
 const BALANCE = "00000000" + "d".repeat(64);
 
@@ -84,6 +84,8 @@ describe("trade flow", () => {
       asset: "XLM",
       amount: "25.5000000",
       windowSeconds: 259_200,
+      // Older locks with the same parties and amount must not count.
+      notBefore: t.createdAt,
     });
 
     vi.mocked(verifyClaimTx).mockResolvedValue({ claimant: f.taker });
@@ -165,6 +167,15 @@ describe("role and state rules", () => {
       await expect(f.as(who).trade.cancel({ tradeId: t.id })).rejects.toThrow(/only ways out are claim and reclaim/);
     }
     expect((await f.as(f.owner).trade.byId({ id: t.id })).state).toBe("locked");
+  });
+
+  it("refuses to cancel an agreed trade once the seller's lock is on the ledger", async () => {
+    // The buyer cancels while the seller's lock is landing: the chain would
+    // hold a live lock that the app shows as cancelled.
+    const t = await openTrade();
+    await f.as(f.owner).trade.agree({ tradeId: t.id });
+    vi.mocked(hasLiveLock).mockResolvedValueOnce(true);
+    await expect(f.as(f.taker).trade.cancel({ tradeId: t.id })).rejects.toThrow(/already locked/);
   });
 
   it("lets either party cancel before the lock", async () => {

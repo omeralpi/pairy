@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { tradeFixture } from "@/lib/trade/test-helpers";
 
-vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn() }));
+vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), hasLiveLock: vi.fn(async () => false) }));
 
 let f: Awaited<ReturnType<typeof tradeFixture>>;
 let tradeId: string;

@@ -10,7 +10,7 @@ import { chatMessages } from "@/lib/db/schema";
 import { verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
 import { TX, tradeFixture } from "@/lib/trade/test-helpers";
 
-vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn() }));
+vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), hasLiveLock: vi.fn(async () => false) }));
 
 let f: Awaited<ReturnType<typeof tradeFixture>>;
 
