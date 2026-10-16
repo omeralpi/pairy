@@ -44,7 +44,7 @@ describe("TradeStateMachine", () => {
     const m = lockedTrade().apply({ type: "flagDispute", by: "buyer" });
     expect(m.state).toBe("locked");
     expect(m.snapshot.disputed).toBe(true);
-    // Claim still works — the flag is a hook for Phase 2, not a freeze.
+    // Claim still works: the flag is a hook for Phase 2, not a freeze.
     expect(m.apply({ type: "claim", by: "buyer", txHash: "c" }).state).toBe("claimed");
   });
 

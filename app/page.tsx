@@ -22,23 +22,23 @@ const STEPS = [
   },
   {
     title: "Cash, then claim.",
-    body: "Hand over the cash. The buyer claims it on their own phone. Settled.",
+    body: "Hand over the cash. The buyer claims it on their own phone.",
   },
 ];
 
 const WHY = [
   {
-    title: "No more hoping.",
-    body: "Cash deals on Telegram and WhatsApp have no recourse: if the other side never sends, the money is gone. Pairy is the in-person version, with a lock only the two of you control.",
+    title: "Cash deals today have no recourse.",
+    body: "On Telegram or WhatsApp, if the other side never sends, the money is gone. Pairy keeps the meeting in person and adds a lock that only the two of you can open.",
   },
   {
-    title: "No Pairy fee.",
-    body: "The only cost is the Stellar network fee on each step.",
+    title: "Pairy takes no cut.",
+    body: "Each step costs the Stellar network fee and nothing else.",
     figure: "100 stroops ≈ 0.00001 XLM",
   },
   {
-    title: "No sign-up.",
-    body: "No account, no name, no phone number. Just a key on your phone.",
+    title: "You don't sign up.",
+    body: "Pairy never asks who you are. The key on your phone is the whole account.",
   },
 ];
 
@@ -144,8 +144,7 @@ export default function Home() {
 
             <div className="space-y-6 text-lg leading-relaxed text-paper/80">
               <p>
-                No third party, no platform key, nobody who can redirect the funds. Pairy holds no key and cannot move
-                the money.
+                Nobody else is on the lock. Pairy has no key to it and cannot move the money.
               </p>
               <p>
                 Your key is made on your phone and never leaves it. If you use Freighter, it stays in Freighter.
@@ -200,7 +199,7 @@ export default function Home() {
           <div className="flex flex-col gap-10 md:flex-row md:items-end md:justify-between">
             <div>
               <Lockup />
-              <p className="mt-3 font-serif text-2xl italic">— Trade in person.</p>
+              <p className="mt-3 font-serif text-2xl italic">Trade in person.</p>
             </div>
             <ul className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
               <li>

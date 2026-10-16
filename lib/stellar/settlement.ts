@@ -11,8 +11,8 @@
 // (Freighter or the device key) signs; Horizon reports the result.
 //
 // The lock has exactly two claimants and no third role:
-//   buyer  — BEFORE_RELATIVE_TIME(window)        claims at the meeting
-//   seller — NOT(BEFORE_RELATIVE_TIME(window))   reclaims once the window closes
+//   buyer:  BEFORE_RELATIVE_TIME(window)        claims at the meeting
+//   seller: NOT(BEFORE_RELATIVE_TIME(window))   reclaims once the window closes
 
 import {
   Asset,

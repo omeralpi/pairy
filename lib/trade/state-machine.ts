@@ -1,4 +1,4 @@
-// TradeStateMachine — the off-chain record of a trade's progress.
+// TradeStateMachine: the off-chain record of a trade's progress.
 //
 //   listed ──agree──► agreed ──lock──► locked ──claim───► claimed
 //     │                 │                 └────reclaim──► reclaimed
@@ -6,7 +6,7 @@
 //
 // `disputed` is a flag, not a state: either party can raise it on a live
 // trade and the machine records it without acting on it. The Phase 2 arbiter
-// plugs into that flag. Nothing here evaluates claim predicates — whether a
+// plugs into that flag. Nothing here evaluates claim predicates. Whether a
 // claim or reclaim is allowed is decided on-chain; this machine only records
 // what the chain already accepted.
 

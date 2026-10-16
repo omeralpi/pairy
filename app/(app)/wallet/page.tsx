@@ -258,7 +258,7 @@ function Balance({ code, amount }: { code: string; amount: string | null }) {
         title={amount ?? undefined}
       >
         {amount === null
-          ? "—"
+          ? "None"
           : Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </p>
       {amount === null && <p className="text-xs text-slate">Not added yet</p>}

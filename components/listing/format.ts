@@ -19,7 +19,7 @@ export function trimAmount(v: string): string {
 export function amountRange(l: Pick<Listing, "minAmount" | "maxAmount" | "asset">): string {
   const min = trimAmount(l.minAmount);
   const max = trimAmount(l.maxAmount);
-  return min === max ? `${min} ${l.asset}` : `${min}–${max} ${l.asset}`;
+  return min === max ? `${min} ${l.asset}` : `${min} to ${max} ${l.asset}`;
 }
 
 export function rateLabel(l: Pick<Listing, "rate" | "fiatCode" | "asset">): string {

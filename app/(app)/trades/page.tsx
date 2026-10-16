@@ -22,7 +22,7 @@ export default function TradesPage() {
     <div className="mx-auto max-w-2xl px-4 py-10 md:py-16">
       <p className="eyebrow">Your trades</p>
       <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-        Every trade, <em className="font-serif font-normal">in one place.</em>
+        Your <em className="font-serif font-normal">trades.</em>
       </h1>
 
       <div className="mt-12 space-y-12">

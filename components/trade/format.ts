@@ -69,7 +69,7 @@ export function countdown(ms: number): string {
 /** Cash per one unit of the asset, e.g. "12.5". */
 export function rateOf(amount: string, fiatAmount: string): string {
   const a = Number(amount);
-  return a > 0 ? (Number(fiatAmount) / a).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "–";
+  return a > 0 ? (Number(fiatAmount) / a).toLocaleString("en-US", { maximumFractionDigits: 4 }) : "0";
 }
 
 /** "16 Oct, 14:05" */
