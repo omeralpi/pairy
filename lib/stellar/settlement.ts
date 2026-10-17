@@ -16,7 +16,6 @@
 
 import {
   Asset,
-  BASE_FEE,
   Claimant,
   Networks,
   Operation,
@@ -29,6 +28,14 @@ import {
 export const CLAIM_WINDOW_SECONDS = 259_200;
 
 export const NETWORK_PASSPHRASE = Networks.TESTNET;
+
+/**
+ * The most a lock, claim or reclaim may pay in fees, in stroops. The network
+ * charges what the ledger needs (the 100-stroop base fee when it is quiet), so
+ * this only matters in a fee surge, where a base-fee bid would be shut out
+ * while the buyer's claim window runs.
+ */
+export const SETTLEMENT_FEE_BID = "10000";
 
 /** How long a built transaction stays valid for signing + submission. */
 const TX_TIMEOUT_SECONDS = 300;
@@ -72,41 +79,44 @@ export function claimOperation(balanceId: string) {
   return Operation.claimClaimableBalance({ balanceId });
 }
 
-/** Unsigned lock transaction, sourced from the seller's account. */
+/**
+ * Unsigned lock transaction, sourced from the seller's account. `notAfter`
+ * (unix seconds, on the network's clock) becomes its maxTime, so a device
+ * clock running slow cannot expire it before it is sent; without it, the
+ * usual 300 s timeout from this device's now applies.
+ */
 export function buildLockTransaction(
   sellerAccount: Account,
   params: Omit<LockParams, "seller">,
+  notAfter?: number,
 ): Transaction {
-  return new TransactionBuilder(sellerAccount, {
-    fee: BASE_FEE,
+  const builder = new TransactionBuilder(sellerAccount, {
+    fee: SETTLEMENT_FEE_BID,
     networkPassphrase: NETWORK_PASSPHRASE,
-  })
-    .addOperation(
-      lockOperation({ ...params, seller: sellerAccount.accountId() }),
-    )
-    .setTimeout(TX_TIMEOUT_SECONDS)
-    .build();
-}
-
-/** Unsigned claim (buyer) or reclaim (seller) transaction. */
-export function buildClaimTransaction(
-  claimantAccount: Account,
-  balanceId: string,
-): Transaction {
-  return new TransactionBuilder(claimantAccount, {
-    fee: BASE_FEE,
-    networkPassphrase: NETWORK_PASSPHRASE,
-  })
-    .addOperation(claimOperation(balanceId))
-    .setTimeout(TX_TIMEOUT_SECONDS)
-    .build();
+    ...(notAfter === undefined ? {} : { timebounds: { minTime: 0, maxTime: notAfter } }),
+  }).addOperation(
+    lockOperation({ ...params, seller: sellerAccount.accountId() }),
+  );
+  return (notAfter === undefined ? builder.setTimeout(TX_TIMEOUT_SECONDS) : builder).build();
 }
 
 /**
- * The ID of the balance a lock transaction creates. The lock is always the
- * transaction's only operation, so this is the SDK's own computation for
- * operation 0.
+ * Unsigned claim (buyer) or reclaim (seller) transaction. `notAfter` (unix
+ * seconds, on the network's clock) becomes the transaction's maxTime as is,
+ * so this device's clock plays no part: a claim that reaches the network
+ * later is refused as tx_too_late, which charges no fee, instead of failing
+ * on the predicate in a ledger, which does. Without it, the usual 300 s
+ * timeout from now applies.
  */
-export function lockBalanceId(lockTx: Transaction): string {
-  return lockTx.getClaimableBalanceId(0);
+export function buildClaimTransaction(
+  claimantAccount: Account,
+  balanceId: string,
+  notAfter?: number,
+): Transaction {
+  const builder = new TransactionBuilder(claimantAccount, {
+    fee: SETTLEMENT_FEE_BID,
+    networkPassphrase: NETWORK_PASSPHRASE,
+    ...(notAfter === undefined ? {} : { timebounds: { minTime: 0, maxTime: notAfter } }),
+  }).addOperation(claimOperation(balanceId));
+  return (notAfter === undefined ? builder.setTimeout(TX_TIMEOUT_SECONDS) : builder).build();
 }

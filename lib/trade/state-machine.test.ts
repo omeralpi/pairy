@@ -62,6 +62,40 @@ describe("TradeStateMachine", () => {
     }
   });
 
+  it("records a lock found on the ledger even if the app thought the trade was cancelled", () => {
+    // The chain outranks the app: a lock that landed while the buyer cancelled is real.
+    const cancelled = TradeStateMachine.open("buyer")
+      .apply({ type: "agree", by: "seller" })
+      .apply({ type: "cancel", by: "buyer" });
+    expect(cancelled.can(lock)).toBe(false);
+    const m = cancelled.apply({ ...lock, reconcile: true });
+    expect(m.state).toBe("locked");
+    expect(m.snapshot.lockTx).toBe("lockhash");
+  });
+
+  it("records a reconciled lock from listed, but never from a settled trade", () => {
+    expect(TradeStateMachine.open("buyer").apply({ ...lock, reconcile: true }).state).toBe("locked");
+    const claimed = lockedTrade().apply({ type: "claim", by: "buyer", txHash: "c" });
+    expect(claimed.can({ ...lock, reconcile: true })).toBe(false);
+    expect(lockedTrade().can({ ...lock, by: "buyer", reconcile: true })).toBe(false);
+  });
+
+  it("lets the system expire an idle trade before the lock, never after", () => {
+    const expire = { type: "expire", by: "system" } as const;
+    expect(TradeStateMachine.open("buyer").apply(expire).state).toBe("cancelled");
+    expect(TradeStateMachine.open("buyer").apply({ type: "agree", by: "seller" }).apply(expire).state).toBe("cancelled");
+    expect(lockedTrade().can(expire)).toBe(false);
+  });
+
+  it("closes any unfinished trade after a testnet reset, but never a settled one", () => {
+    const reset = { type: "reset", by: "system" } as const;
+    expect(TradeStateMachine.open("buyer").apply(reset).state).toBe("cancelled");
+    const wiped = lockedTrade().apply(reset);
+    expect(wiped.state).toBe("cancelled");
+    expect(wiped.snapshot.lockTx).toBe("lockhash"); // the record of the lock stays
+    expect(lockedTrade().apply({ type: "claim", by: "buyer", txHash: "c" }).can(reset)).toBe(false);
+  });
+
   it("never mutates the original snapshot", () => {
     const listed = TradeStateMachine.open("buyer");
     listed.apply({ type: "agree", by: "seller" });

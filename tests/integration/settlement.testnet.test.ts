@@ -9,9 +9,8 @@ import type { AssetCode } from "../../lib/stellar/assets";
 import {
   buildClaimTransaction,
   buildLockTransaction,
-  lockBalanceId,
 } from "../../lib/stellar/settlement";
-import { verifyClaimTx, verifyLockTx } from "../../lib/stellar/verify";
+import { lockBalanceId, verifyClaimTx, verifyLockTx } from "../../lib/stellar/verify";
 import {
   USDC,
   addUsdcTrustline,
@@ -158,11 +157,19 @@ describe("XLM settlement on testnet", () => {
 });
 
 const usdcQuote = await quoteUsdc("50");
+// Set by testnet.yml on manual runs, so a skipped USDC suite cannot pass silently there.
+const requireUsdc = process.env.REQUIRE_USDC === "1";
 if (!usdcQuote) {
   console.warn(
-    "Skipping USDC testnet tests: the testnet DEX has no XLM→USDC path, so there is no way to fund a seller without Circle's manual faucet.",
+    `WARNING: USDC testnet tests SKIPPED: the testnet DEX has no XLM→USDC path, so there is no way to fund a seller without Circle's manual faucet.${requireUsdc ? " REQUIRE_USDC=1, so this run fails." : ""}`,
   );
 }
+
+describe.runIf(!usdcQuote && requireUsdc)("USDC settlement on testnet (REQUIRE_USDC=1)", () => {
+  it("has a testnet DEX quote to fund a USDC seller", () => {
+    expect.fail("The testnet DEX has no XLM→USDC path, so the USDC suite could not run");
+  });
+});
 
 describe.skipIf(!usdcQuote)("USDC settlement on testnet", () => {
   async function usdcPair(): Promise<[Keypair, Keypair]> {

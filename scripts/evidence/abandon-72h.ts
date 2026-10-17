@@ -12,9 +12,8 @@ import { toAsset, type AssetCode } from "../../lib/stellar/assets";
 import {
   CLAIM_WINDOW_SECONDS,
   buildLockTransaction,
-  lockBalanceId,
 } from "../../lib/stellar/settlement";
-import { verifyLockTx } from "../../lib/stellar/verify";
+import { lockBalanceId, verifyLockTx } from "../../lib/stellar/verify";
 import {
   addUsdcTrustline,
   buyUsdc,

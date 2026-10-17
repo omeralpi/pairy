@@ -13,6 +13,8 @@ function account(opts: {
   sponsoring?: number;
   sponsored?: number;
   xlmSelling?: string;
+  usdcLimit?: string;
+  usdcAuthorized?: boolean;
 }): Horizon.AccountResponse {
   const balances: object[] = [
     { asset_type: "native", balance: opts.xlm, selling_liabilities: opts.xlmSelling ?? "0.0000000" },
@@ -23,7 +25,10 @@ function account(opts: {
       asset_code: "USDC",
       asset_issuer: TESTNET_USDC_ISSUER,
       balance: opts.usdc,
+      limit: opts.usdcLimit ?? "922337203685.4775807",
+      is_authorized: opts.usdcAuthorized ?? true,
       selling_liabilities: "0.0000000",
+      buying_liabilities: "0.0000000",
     });
   }
   return {
@@ -43,10 +48,33 @@ describe("minimumBalance", () => {
   });
 });
 
+describe("checkLock before the buyer can actually receive (S-5, N-3, T-4)", () => {
+  const seller = account({ xlm: "10", usdc: "100" });
+
+  it("blocks when the issuer has not authorized the buyer's USDC trustline", () => {
+    const r = checkLock({ asset: "USDC", amount: "25", seller, buyer: account({ xlm: "5", usdc: "0", usdcAuthorized: false }) });
+    expect(r.ok).toBe(false);
+    expect(r.blockedReason).toMatch(/not authorized/);
+  });
+
+  it("blocks when the buyer's trustline limit leaves no room for the amount", () => {
+    const r = checkLock({ asset: "USDC", amount: "25", seller, buyer: account({ xlm: "5", usdc: "0", usdcLimit: "1" }) });
+    expect(r.ok).toBe(false);
+    expect(r.blockedReason).toMatch(/limit/);
+  });
+
+  it("blocks a second lock when one for this trade is already on Stellar", () => {
+    const r = checkLock({ asset: "XLM", amount: "1", seller: account({ xlm: "50" }), buyer: account({ xlm: "5" }), existingLock: true });
+    expect(r.ok).toBe(false);
+    expect(r.checks[0]).toMatchObject({ id: "noExistingLock", ok: false });
+  });
+});
+
 describe("checkLock", () => {
   it("passes an XLM lock the seller can afford with the reserve and fee on top", () => {
-    // min 1 XLM + 25 XLM + 1 XLM reserve (2 claimants) + 100 stroops fee
-    const r = checkLock({ asset: "XLM", amount: "25", seller: account({ xlm: "27.0000100" }), buyer: account({ xlm: "5" }) });
+    // min 1 XLM + 25 XLM + 1 XLM reserve (2 claimants) + the 10,000-stroop fee
+    // bid twice: the lock now, and the take-back if the buyer never claims.
+    const r = checkLock({ asset: "XLM", amount: "25", seller: account({ xlm: "27.0020000" }), buyer: account({ xlm: "5" }) });
     expect(r).toMatchObject({ ok: true, blockedReason: null });
     expect(ids(r)).toEqual([
       ["buyerAccount", true],
@@ -56,9 +84,9 @@ describe("checkLock", () => {
   });
 
   it("blocks an XLM lock one stroop short, counting offers' selling liabilities", () => {
-    const short = checkLock({ asset: "XLM", amount: "25", seller: account({ xlm: "27.0000099" }), buyer: account({ xlm: "5" }) });
+    const short = checkLock({ asset: "XLM", amount: "25", seller: account({ xlm: "27.0019999" }), buyer: account({ xlm: "5" }) });
     expect(short.ok).toBe(false);
-    expect(short.blockedReason).toMatch(/You need 26.00001 XLM above your 1 XLM minimum balance/);
+    expect(short.blockedReason).toMatch(/You need 26.002 XLM above your 1 XLM minimum balance/);
 
     const offers = checkLock({
       asset: "XLM",

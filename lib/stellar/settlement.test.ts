@@ -1,14 +1,14 @@
 import { Account, Asset, Keypair, type Operation } from "@stellar/stellar-sdk";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { TESTNET_USDC_ISSUER } from "./assets";
 import {
   CLAIM_WINDOW_SECONDS,
   buildClaimTransaction,
   buildLockTransaction,
-  lockBalanceId,
   lockClaimants,
 } from "./settlement";
+import { lockBalanceId } from "./verify";
 
 const buyer = Keypair.random().publicKey();
 const seller = Keypair.random().publicKey();
@@ -84,5 +84,44 @@ describe("buildClaimTransaction", () => {
       type: "claimClaimableBalance",
       balanceId,
     });
+  });
+
+  it("stops at notAfter so a late claim is refused before it can cost a fee (F2)", () => {
+    const balanceId = `00000000${"ab".repeat(32)}`;
+    const now = Math.floor(Date.now() / 1000);
+    const capped = buildClaimTransaction(new Account(buyer, "3"), balanceId, now + 40);
+    expect(capped.timeBounds).toEqual({ minTime: "0", maxTime: String(now + 40) });
+    // A cutoff hours away is used as is, not shortened to this device's now + 300.
+    const far = buildClaimTransaction(new Account(buyer, "3"), balanceId, now + 86_400);
+    expect(far.timeBounds!.maxTime).toBe(String(now + 86_400));
+    const plain = Number(buildClaimTransaction(new Account(buyer, "3"), balanceId).timeBounds!.maxTime);
+    expect(plain - now).toBeGreaterThanOrEqual(300);
+    expect(plain - now).toBeLessThanOrEqual(301);
+  });
+
+  it("does not depend on the device clock when notAfter is given (round 2 F2)", () => {
+    vi.useFakeTimers();
+    try {
+      const real = 1_800_000_000; // the network's now, unix seconds
+      vi.setSystemTime((real - 600) * 1000); // this device runs 10 minutes slow
+      const notAfter = real + 3_600; // the claim cutoff, an hour away on the network
+      const tx = buildClaimTransaction(new Account(buyer, "3"), `00000000${"ab".repeat(32)}`, notAfter);
+      expect(Number(tx.timeBounds!.maxTime)).toBe(notAfter);
+      expect(Number(tx.timeBounds!.maxTime)).toBeGreaterThan(real);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("fee bid", () => {
+  it("bids up to 10,000 stroops on a lock and a claim, so a fee surge cannot shut them out", () => {
+    // The network charges what the ledger needs (100 stroops when it is quiet),
+    // never more than the bid.
+    const seller = new Account(Keypair.random().publicKey(), "1");
+    const lock = buildLockTransaction(seller, { asset: Asset.native(), amount: "10", buyer: Keypair.random().publicKey() });
+    const claim = buildClaimTransaction(new Account(Keypair.random().publicKey(), "1"), "00000000" + "a".repeat(64));
+    expect(lock.fee).toBe("10000");
+    expect(claim.fee).toBe("10000");
   });
 });

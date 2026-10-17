@@ -3,6 +3,9 @@
 //   listed ──agree──► agreed ──lock──► locked ──claim───► claimed
 //     │                 │                 └────reclaim──► reclaimed
 //     └──cancel─────────┴──cancel──► cancelled
+//        (or expire: no activity for a week, by the daily cleanup)
+//   and, from any unfinished state, reset ──► cancelled when a testnet reset
+//   wiped the accounts and the lock (scripts/ops/testnet-reset.ts)
 //
 // `disputed` is a flag, not a state: either party can raise it on a live
 // trade and the machine records it without acting on it. The Phase 2 arbiter
@@ -30,10 +33,27 @@ export type TradeRole = "seller" | "buyer";
 
 export type TradeEvent =
   | { type: "agree"; by: TradeRole }
-  | { type: "lock"; by: TradeRole; balanceId: string; txHash: string }
+  | {
+      type: "lock";
+      by: TradeRole;
+      balanceId: string;
+      txHash: string;
+      /**
+       * The lock was found on the ledger rather than reported in the normal
+       * flow. The chain outranks the app, so it is recorded even if the app
+       * had the trade as listed or cancelled.
+       */
+      reconcile?: boolean;
+      /** When the lock landed on the ledger; starts the claim window. */
+      lockedAt?: Date;
+    }
   | { type: "claim"; by: TradeRole; txHash: string }
   | { type: "reclaim"; by: TradeRole; txHash: string }
   | { type: "cancel"; by: TradeRole }
+  /** The daily cleanup ending a trade with no activity for a week (lib/trade/expire.ts). */
+  | { type: "expire"; by: "system" }
+  /** A testnet reset wiped the accounts and any lock (lib/trade/testnet-reset.ts). */
+  | { type: "reset"; by: "system" }
   | { type: "flagDispute"; by: TradeRole };
 
 export type TradeSnapshot = {
@@ -94,9 +114,10 @@ export class TradeStateMachine {
         if (event.by === openedBy) return "the party that opened the trade cannot agree to it";
         return null;
       case "lock":
-        if (state !== "agreed") return "only an agreed trade can be locked";
         if (event.by !== "seller") return "only the seller locks";
-        return null;
+        if (state === "agreed") return null;
+        if (event.reconcile && (state === "listed" || state === "cancelled")) return null;
+        return "only an agreed trade can be locked";
       case "claim":
         if (state !== "locked") return "only a locked trade can be claimed";
         if (event.by !== "buyer") return "only the buyer claims";
@@ -106,10 +127,12 @@ export class TradeStateMachine {
         if (event.by !== "seller") return "only the seller reclaims";
         return null;
       case "cancel":
+      case "expire":
         if (state !== "listed" && state !== "agreed") {
           return "once locked, the only ways out are claim and reclaim";
         }
         return null;
+      case "reset":
       case "flagDispute":
         if (isTerminal(state)) return "the trade is already settled";
         return null;
@@ -141,6 +164,9 @@ export class TradeStateMachine {
       case "reclaim":
         return new TradeStateMachine({ ...s, state: "reclaimed", reclaimTx: event.txHash });
       case "cancel":
+      case "expire":
+      // The lock record stays: it is what the chain had before the reset.
+      case "reset":
         return new TradeStateMachine({ ...s, state: "cancelled" });
       case "flagDispute":
         return new TradeStateMachine({ ...s, disputed: true });

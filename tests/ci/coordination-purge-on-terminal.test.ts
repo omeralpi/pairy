@@ -10,7 +10,7 @@ import { chatMessages } from "@/lib/db/schema";
 import { verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
 import { TX, tradeFixture } from "@/lib/trade/test-helpers";
 
-vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), hasLiveLock: vi.fn(async () => false) }));
+vi.mock("@/lib/stellar/verify", async (orig) => ({ ...(await orig<typeof import("@/lib/stellar/verify")>()), verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), findLockTx: vi.fn(async () => null), findClaimTx: vi.fn(async () => null) }));
 
 let f: Awaited<ReturnType<typeof tradeFixture>>;
 
@@ -36,7 +36,7 @@ async function tradeWithChat(): Promise<string> {
 }
 
 async function lock(tradeId: string, balanceId: string) {
-  vi.mocked(verifyLockTx).mockResolvedValueOnce({ balanceId });
+  vi.mocked(verifyLockTx).mockResolvedValueOnce({ balanceId, createdAt: new Date() });
   await f.as(f.owner).trade.agree({ tradeId });
   await f.as(f.owner).trade.recordLock({ tradeId, txHash: balanceId.slice(-64) });
 }

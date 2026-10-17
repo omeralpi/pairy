@@ -64,7 +64,7 @@ export async function transitionTrade(
       const next = machineFor(row).apply(event).snapshot;
       const [updated] = await tx
         .update(trades)
-        .set({ ...next, updatedAt: new Date() })
+        .set({ ...next, updatedAt: new Date(), ...(event.type === "lock" ? { lockedAt: event.lockedAt ?? null } : {}) })
         .where(eq(trades.id, tradeId))
         .returning();
       await tx.insert(tradeEvents).values({
@@ -82,6 +82,17 @@ export async function transitionTrade(
     if (e instanceof TradeTransitionError) {
       throw new TRPCError({ code: "BAD_REQUEST", message: e.message, cause: e });
     }
+    // trades_balance_id_idx: two trades raced to record the same lock.
+    if (isUniqueViolation(e) && event.type === "lock") {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "That lock already belongs to another trade", cause: e });
+    }
     throw e;
   }
+}
+
+function isUniqueViolation(e: unknown): boolean {
+  for (let c = e; c instanceof Object; c = (c as { cause?: unknown }).cause) {
+    if ((c as { code?: unknown }).code === "23505") return true;
+  }
+  return false;
 }

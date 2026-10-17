@@ -13,9 +13,8 @@ import {
   CLAIM_WINDOW_SECONDS,
   buildClaimTransaction,
   buildLockTransaction,
-  lockBalanceId,
 } from "../../lib/stellar/settlement";
-import { verifyClaimTx, verifyLockTx } from "../../lib/stellar/verify";
+import { lockBalanceId, verifyClaimTx, verifyLockTx } from "../../lib/stellar/verify";
 import {
   addUsdcTrustline,
   buyUsdc,

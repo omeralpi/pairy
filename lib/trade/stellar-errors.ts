@@ -13,7 +13,8 @@ const MESSAGES: Record<string, string> = {
   op_line_full: "The receiving USDC trustline's limit is too low for this amount.",
   op_not_authorized: "The USDC issuer has not authorized this account's trustline.",
   tx_bad_seq: "The account's sequence number changed before submission. Try again.",
-  tx_too_late: "The signed transaction expired before it reached the network. Try again.",
+  tx_too_late:
+    "The signed transaction expired before it reached the network, so nothing was charged. Try again if the claim window is still open.",
   tx_insufficient_balance: "The account cannot pay the network fee.",
   tx_insufficient_fee: "The network is busy and the fee was too low. Try again.",
   tx_bad_auth: "The transaction was not signed by the account it came from.",

@@ -7,6 +7,8 @@ import { TESTNET_USDC_ISSUER, type AssetCode } from "./assets";
 
 export const HORIZON_URL = "https://horizon-testnet.stellar.org";
 export const FRIENDBOT_URL = "https://friendbot.stellar.org";
+/** Stellar Lab's testnet funding page: another way in when Friendbot is down for Pairy. */
+export const LAB_FUND_URL = "https://lab.stellar.org/account/fund";
 
 export const horizon = new Horizon.Server(HORIZON_URL);
 
@@ -22,9 +24,12 @@ export async function loadAccount(publicKey: string) {
 
 /** Creates and funds a new testnet account. Pairy never funds accounts itself. */
 export async function fundWithFriendbot(publicKey: string): Promise<void> {
-  const res = await fetch(`${FRIENDBOT_URL}?addr=${encodeURIComponent(publicKey)}`);
-  if (!res.ok) {
-    throw new Error(`Friendbot failed (${res.status}): ${await res.text()}`);
+  const res = await fetch(`${FRIENDBOT_URL}?addr=${encodeURIComponent(publicKey)}`).catch(() => null);
+  if (!res?.ok) {
+    // Its error body is a raw JSON problem document; the status is enough.
+    throw new Error(
+      `Friendbot, the testnet faucet, didn't fund this account${res ? ` (HTTP ${res.status})` : ""}. It is sometimes down for a while. Try again in a few minutes, or fund the address from Stellar Lab.`,
+    );
   }
 }
 
@@ -48,6 +53,16 @@ export function balanceOf(account: Horizon.AccountResponse, code: AssetCode): st
       : "asset_code" in b && b.asset_code === code && b.asset_issuer === TESTNET_USDC_ISSUER,
   );
   return line?.balance ?? "0";
+}
+
+/**
+ * Unix seconds `seconds` from now on Horizon's clock (its Date header), for a
+ * transaction's maxTime. setTimeout counts from this device's clock instead,
+ * and a device running more than that slow builds transactions the network
+ * refuses as tx_too_late every time.
+ */
+export async function networkDeadline(seconds: number): Promise<number> {
+  return Number((await horizon.fetchTimebounds(seconds)).maxTime);
 }
 
 export async function submit(tx: Transaction) {
