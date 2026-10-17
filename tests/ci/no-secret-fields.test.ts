@@ -99,6 +99,31 @@ function filesUnder(dir: string): string[] {
 const root = process.cwd();
 const rel = (f: string) => path.relative(root, f).split(path.sep).join("/");
 
+/**
+ * What a route reads from its request beyond the Authorization header, and
+ * any export other than a plain GET function. Comments are ignored.
+ */
+function routeInputProblems(source: string): string[] {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const problems: string[] = [];
+  const exported = [...code.matchAll(/export\s+(?:async\s+)?(?:function|const|let|var|class)\s+(\w+)/g)].map((m) => m[1]);
+  if (exported.join() !== "GET") problems.push(`exports ${exported.join(", ") || "nothing"}, not just GET`);
+  if (/export\s*(\{|default|\*)/.test(code)) problems.push("re-exports or default export");
+  if (/export\s+const\s+GET/.test(code)) problems.push("GET must be a plain function declaration");
+  if (/\}\s*:\s*Request\b/.test(code)) problems.push("destructures the request");
+  const names = [...code.matchAll(/(\w+)\s*:\s*Request\b/g)].map((m) => m[1]);
+  for (const name of new Set(names)) {
+    for (const m of code.matchAll(new RegExp(`\\b${name}\\b(?=(.{0,40}))`, "g"))) {
+      const after = m[1];
+      if (/^\s*:\s*Request\b/.test(after)) continue; // the parameter itself
+      if (/^\s*\)/.test(after)) continue; // passed on whole, e.g. authorized(req)
+      if (/^\.headers\.get\("authorization"\)/.test(after)) continue;
+      problems.push(`reads ${name}${after.slice(0, 20)}`);
+    }
+  }
+  return problems;
+}
+
 describe("no-secret-fields", () => {
   it("the walker catches planted secret fields, however deeply nested", () => {
     const planted = z.object({
@@ -142,13 +167,35 @@ describe("no-secret-fields", () => {
     expect(problems).toEqual([]);
   });
 
-  it("the only API route under app/ is app/api/trpc/[trpc]/route.ts", () => {
+  it("the only API routes under app/ are tRPC and the input-less cleanup job", () => {
     const routes = filesUnder(path.join(root, "app"))
       .filter((f) => /(^|\/)route\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f))
-      .map(rel);
-    expect(routes).toEqual(["app/api/trpc/[trpc]/route.ts"]);
+      .map(rel)
+      .sort();
+    expect(routes).toEqual(["app/api/cron/expire-trades/route.ts", "app/api/trpc/[trpc]/route.ts"]);
+    // The cleanup job reads nothing from the request but its Authorization header.
+    const cron = readFileSync(path.join(root, "app/api/cron/expire-trades/route.ts"), "utf8");
+    expect(routeInputProblems(cron)).toEqual([]);
     expect(filesUnder(path.join(root, "pages", "api")).map(rel)).toEqual([]);
     expect(filesUnder(path.join(root, "src")).map(rel)).toEqual([]);
+  });
+
+  it("the input check on the cleanup job catches every way a route could read input", () => {
+    const ok = `function authorized(req: Request) { return req.headers.get("authorization") === "x"; }
+export async function GET(req: Request) { if (!authorized(req)) return new Response(""); return Response.json({}); }`;
+    expect(routeInputProblems(ok)).toEqual([]);
+    for (const bad of [
+      `export async function POST(request: Request) { await request.json(); }`,
+      `export async function GET(request: Request) { await request.json(); }`,
+      `export async function GET({ headers, json }: Request) { await json(); }`,
+      `export async function GET(req: Request) { const pin = req.headers.get("x-pincode"); }`,
+      `export async function GET(req: Request) { await req["json"](); }`,
+      `export async function GET(req: Request) { return new URL(req.url).searchParams; }`,
+      `export const GET = async (req: Request) => req.text();`,
+      `export { handler as GET };`,
+    ]) {
+      expect(routeInputProblems(bad), bad).not.toEqual([]);
+    }
   });
 
   it("no server actions exist (they would be a second, unchecked input surface)", () => {
