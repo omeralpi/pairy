@@ -4,8 +4,8 @@ import { Keypair } from "@stellar/stellar-sdk";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { readSessionToken } from "@/lib/auth/session";
-import { authChallenges, users } from "@/lib/db/schema";
+import { loadSession, readSessionToken } from "@/lib/auth/session";
+import { authChallenges, sessions, users } from "@/lib/db/schema";
 import { createTestDb, type TestDb } from "@/lib/db/test-setup";
 import { createCallerFactory } from "@/server/api/trpc";
 
@@ -34,7 +34,8 @@ describe("auth", () => {
 
     const cookie = resHeaders.get("set-cookie")!;
     const token = /pairy_session=([^;]+)/.exec(cookie)![1];
-    expect(readSessionToken(token)).toBe(kp.publicKey());
+    expect(readSessionToken(token)?.publicKey).toBe(kp.publicKey());
+    expect(await loadSession(db, token)).toMatchObject({ publicKey: kp.publicKey() });
     expect(await db.select().from(users).where(eq(users.publicKey, kp.publicKey()))).toHaveLength(1);
     expect(await db.select().from(authChallenges)).toHaveLength(0);
   });
@@ -81,6 +82,13 @@ describe("auth", () => {
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
+  it("rejects a nonce with a NUL character as a bad request, not a database error", async () => {
+    const kp = Keypair.random();
+    await expect(caller().verify({ publicKey: kp.publicKey(), nonce: "a\u0000", signature: "AA==" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+  });
+
   it("rejects an expired nonce", async () => {
     const kp = Keypair.random();
     const { nonce } = await caller().challenge({ publicKey: kp.publicKey() });
@@ -97,5 +105,43 @@ describe("auth", () => {
     const resHeaders = new Headers();
     await caller({ publicKey: "GABC" }, resHeaders).logout();
     expect(resHeaders.get("set-cookie")).toMatch(/pairy_session=;.*Max-Age=0/);
+  });
+});
+
+describe("session revocation (P-1)", () => {
+  async function login() {
+    const kp = Keypair.random();
+    const { nonce, message } = await caller().challenge({ publicKey: kp.publicKey() });
+    const resHeaders = new Headers();
+    await caller(null, resHeaders).verify({ publicKey: kp.publicKey(), nonce, signature: sign(kp, message) });
+    return { kp, token: /pairy_session=([^;]+)/.exec(resHeaders.get("set-cookie")!)![1] };
+  }
+
+  it("a token stops working once its holder logs out, even if replayed", async () => {
+    const { kp, token } = await login();
+    const session = await loadSession(db, token);
+    expect(session).toMatchObject({ publicKey: kp.publicKey() });
+    await caller(session).logout();
+    expect(await loadSession(db, token)).toBeNull();
+  });
+
+  it("logging out one session leaves the user's other sessions alone", async () => {
+    const a = await login();
+    const { token: other } = await login();
+    await caller(await loadSession(db, a.token)).logout();
+    expect(await loadSession(db, other)).not.toBeNull();
+  });
+
+  it("rejects a validly signed token with no session row, and an expired row", async () => {
+    const { token } = await login();
+    await db.update(sessions).set({ expiresAt: new Date(Date.now() - 1000) });
+    expect(await loadSession(db, token)).toBeNull();
+    await db.delete(sessions);
+    expect(await loadSession(db, token)).toBeNull();
+  });
+
+  it("rejects garbage without touching the database", async () => {
+    expect(await loadSession(db, undefined)).toBeNull();
+    expect(await loadSession(db, "a.b.c.d")).toBeNull();
   });
 });

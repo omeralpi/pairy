@@ -1,5 +1,7 @@
 'use client';
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { api } from "@/lib/api";
 import { useWalletContext, type Wallet } from "@/lib/wallet/use-wallet";
 
@@ -9,6 +11,7 @@ import { useWalletContext, type Wallet } from "@/lib/wallet/use-wallet";
  */
 export function useLogin() {
   const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const { signMessage } = useWalletContext();
   const challenge = api.auth.challenge.useMutation();
   const verify = api.auth.verify.useMutation();
@@ -24,7 +27,10 @@ export function useLogin() {
     },
     logout: async () => {
       await logout.mutateAsync();
-      await utils.auth.me.invalidate();
+      // Logout is a client-side navigation, so the cache outlives it: drop this
+      // account's trades, listings and chat before anyone else signs in here.
+      // Active queries (auth.me) refetch as logged out.
+      await queryClient.resetQueries();
     },
     pending: challenge.isPending || verify.isPending,
   };

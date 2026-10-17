@@ -9,8 +9,8 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, lt } from "drizzle-orm";
 import { z } from "zod";
 
-import { clearSessionCookieHeader, createSessionToken, sessionCookieHeader } from "@/lib/auth/session";
-import { authChallenges, users } from "@/lib/db/schema";
+import { clearSessionCookieHeader, createSession, sessionCookieHeader } from "@/lib/auth/session";
+import { authChallenges, sessions, users } from "@/lib/db/schema";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 
 export const CHALLENGE_TTL_MS = 5 * 60 * 1000;
@@ -46,7 +46,9 @@ export const authRouter = createTRPCRouter({
     .input(
       z.object({
         publicKey,
-        nonce: z.string().min(1).max(100),
+        // The base64url nonce challenge() issued. Anything else (a NUL above all)
+        // would only reach the database to fail there.
+        nonce: z.string().regex(/^[A-Za-z0-9_-]{1,100}$/),
         /** Base64 64-byte ed25519 signature over the SEP-53 hash of the message. */
         signature: z.string().min(1).max(200),
       }),
@@ -65,13 +67,17 @@ export const authRouter = createTRPCRouter({
       if (!ok) throw unauthorized("Signature does not match this account.");
 
       await ctx.db.insert(users).values({ publicKey: row.publicKey }).onConflictDoNothing();
-      ctx.resHeaders.append("Set-Cookie", sessionCookieHeader(createSessionToken(row.publicKey)));
+      await ctx.db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
+      ctx.resHeaders.append("Set-Cookie", sessionCookieHeader(await createSession(ctx.db, row.publicKey)));
       return { publicKey: row.publicKey };
     }),
 
   me: publicProcedure.query(({ ctx }) => (ctx.session ? { publicKey: ctx.session.publicKey } : null)),
 
-  logout: publicProcedure.mutation(({ ctx }) => {
+  logout: publicProcedure.mutation(async ({ ctx }) => {
+    if (ctx.session?.sessionId) {
+      await ctx.db.delete(sessions).where(eq(sessions.id, ctx.session.sessionId));
+    }
     ctx.resHeaders.append("Set-Cookie", clearSessionCookieHeader());
     return { ok: true };
   }),
