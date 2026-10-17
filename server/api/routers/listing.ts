@@ -10,17 +10,22 @@ import { MAX_STROOPS, fiatTotal } from "@/lib/trade/amount";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 
 // Stellar amounts carry at most 7 decimals; 13 integer digits fits numeric(20, 7).
+const AMOUNT = /^\d{1,13}(\.\d{1,7})?$/;
+// numeric(20, 4)
+const RATE = /^\d{1,16}(\.\d{1,4})?$/;
+
+// zod runs refinements even when the regex failed, so every refine first checks
+// the regex matched: BigInt() would throw, and one message per field is enough.
 const amount = z
   .string()
-  .regex(/^\d{1,13}(\.\d{1,7})?$/, "Amount must be a number with at most 7 decimals")
-  .refine((v) => Number(v) > 0, "Amount must be greater than zero")
-  .refine((v) => toStroops(v) <= MAX_STROOPS, "Amount is larger than a Stellar transaction can carry");
+  .regex(AMOUNT, "Amount must be a number with at most 7 decimals")
+  .refine((v) => !AMOUNT.test(v) || Number(v) > 0, "Amount must be greater than zero")
+  .refine((v) => !AMOUNT.test(v) || toStroops(v) <= MAX_STROOPS, "Amount is larger than a Stellar transaction can carry");
 
-// numeric(20, 4)
 const rate = z
   .string()
-  .regex(/^\d{1,16}(\.\d{1,4})?$/, "Rate must be a number with at most 4 decimals")
-  .refine((v) => Number(v) > 0, "Rate must be greater than zero");
+  .regex(RATE, "Rate must be a number with at most 4 decimals")
+  .refine((v) => !RATE.test(v) || Number(v) > 0, "Rate must be greater than zero");
 
 /** Exact decimal → integer stroops, so min ≤ max is compared without float rounding. */
 function toStroops(v: string): bigint {
@@ -38,15 +43,27 @@ const createInput = z
     rate,
     // Only a city id: the server looks up the coordinates in its own table.
     cityId: z.string().regex(/^\d{1,12}$/),
-    note: z.string().trim().max(280).optional(),
+    // Postgres text cannot hold U+0000; without this the insert fails as a 500.
+    note: z
+      .string()
+      .trim()
+      .max(280)
+      .refine((s) => !s.includes("\0"), "Note contains a character that can't be saved")
+      .optional(),
   })
   .strict()
-  .refine((v) => toStroops(v.minAmount) <= toStroops(v.maxAmount), {
+  .refine((v) => !AMOUNT.test(v.minAmount) || !AMOUNT.test(v.maxAmount) || toStroops(v.minAmount) <= toStroops(v.maxAmount), {
     message: "Minimum must not exceed maximum",
     path: ["minAmount"],
   })
+  // trade.open refuses a trade whose cash total rounds to 0.00; every amount at
+  // or above the minimum must be one it accepts.
+  .refine((v) => !AMOUNT.test(v.minAmount) || !RATE.test(v.rate) || fiatTotal(v.minAmount, v.rate) !== "0.00", {
+    message: "At this rate the minimum amount comes to less than 0.01 in cash",
+    path: ["minAmount"],
+  })
   // A trade's cash total is stored as numeric(20, 2): at most 18 integer digits.
-  .refine((v) => fiatTotal(v.maxAmount, v.rate).split(".")[0].length <= 18, {
+  .refine((v) => !AMOUNT.test(v.maxAmount) || !RATE.test(v.rate) || fiatTotal(v.maxAmount, v.rate).split(".")[0].length <= 18, {
     message: "Rate is too high for the maximum amount",
     path: ["rate"],
   });

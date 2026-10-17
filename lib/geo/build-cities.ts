@@ -32,6 +32,9 @@ const admin1 = new Map(
 );
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+// GeoNames writes some compound names with an en dash ("North Ossetia\u2013Alania");
+// names are copied into listings, so keep them to a plain hyphen.
+const dehyphen = (s: string) => s.replace(/[\u2013\u2014]/g, "-");
 
 const rows = readFileSync(input, "utf8")
   .split("\n")
@@ -39,10 +42,10 @@ const rows = readFileSync(input, "utf8")
   .map((line) => line.split("\t"))
   .map((f) => ({
     id: f[0],
-    name: f[1],
+    name: dehyphen(f[1]),
     ascii: f[2],
     cc: f[8],
-    region: admin1.get(`${f[8]}.${f[10]}`) ?? "",
+    region: dehyphen(admin1.get(`${f[8]}.${f[10]}`) ?? ""),
     lat: round2(Number(f[4])),
     lng: round2(Number(f[5])),
     population: Number(f[14]),

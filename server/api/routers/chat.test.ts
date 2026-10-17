@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { tradeFixture } from "@/lib/trade/test-helpers";
 
-vi.mock("@/lib/stellar/verify", () => ({ verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), hasLiveLock: vi.fn(async () => false) }));
+vi.mock("@/lib/stellar/verify", async (orig) => ({ ...(await orig<typeof import("@/lib/stellar/verify")>()), verifyLockTx: vi.fn(), verifyClaimTx: vi.fn(), findLockTx: vi.fn(async () => null), findClaimTx: vi.fn(async () => null) }));
 
 let f: Awaited<ReturnType<typeof tradeFixture>>;
 let tradeId: string;
@@ -23,18 +23,15 @@ describe("chat", () => {
     ]);
   });
 
-  it("returns only messages after `after`", async () => {
-    const first = await f.as(f.taker).chat.send({ tradeId, body: "one" });
-    await new Promise((r) => setTimeout(r, 5));
-    await f.as(f.owner).chat.send({ tradeId, body: "two" });
-    const newer = await f.as(f.taker).chat.list({ tradeId, after: first.createdAt });
-    expect(newer.map((m) => m.body)).toEqual(["two"]);
-  });
-
   it("enforces the 1000-character limit and rejects empty messages", async () => {
     await expect(f.as(f.taker).chat.send({ tradeId, body: "x".repeat(1001) })).rejects.toThrow();
     await expect(f.as(f.taker).chat.send({ tradeId, body: "   " })).rejects.toThrow();
     expect((await f.as(f.taker).chat.send({ tradeId, body: "x".repeat(1000) })).body).toHaveLength(1000);
+  });
+
+  it("rejects a NUL character as a bad request, not a database error", async () => {
+    await expect(f.as(f.taker).chat.send({ tradeId, body: "meet at\u0000 noon" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await f.as(f.taker).chat.list({ tradeId })).toEqual([]);
   });
 
   it("is closed to non-participants", async () => {

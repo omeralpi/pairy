@@ -66,6 +66,21 @@ describe("listing.create", () => {
     await rejects(as(ALICE).create({ ...valid, maxAmount: "900000000000", rate: "9999999999999999" }), "BAD_REQUEST");
   });
 
+  it("rejects a NUL character in the note as a bad request, not a database error", async () => {
+    await rejects(as(ALICE).create({ ...valid, note: "cash only\u0000" }), "BAD_REQUEST");
+  });
+
+  it("rejects a minimum amount whose cash total rounds to nothing", async () => {
+    // 0.001 x 1 = 0.001 TRY, which rounds to 0.00: trade.open refuses every
+    // such trade, so with min = max the listing could never be traded.
+    await expect(as(ALICE).create({ ...valid, minAmount: "0.001", maxAmount: "0.001", rate: "1" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      cause: { issues: [{ path: ["minAmount"], message: "At this rate the minimum amount comes to less than 0.01 in cash" }] },
+    });
+    await rejects(as(ALICE).create({ ...valid, minAmount: "10", maxAmount: "10", rate: "0.0001" }), "BAD_REQUEST");
+    expect((await as(ALICE).create({ ...valid, minAmount: "50", maxAmount: "50", rate: "0.0001" })).minAmount).toBe("50.0000000");
+  });
+
   it("rejects an unknown city", async () => {
     await rejects(as(ALICE).create({ ...valid, cityId: "999999999" }), "BAD_REQUEST");
   });
@@ -87,6 +102,17 @@ describe("listing.create", () => {
     ["note over 280 chars", { note: "x".repeat(281) }],
   ])("rejects %s", async (_label, patch) => {
     await rejects(as(ALICE).create({ ...valid, ...patch } as never), "BAD_REQUEST");
+  });
+
+  it.each([
+    ["minAmount", { minAmount: "abc" }, "Amount must be a number with at most 7 decimals"],
+    ["maxAmount", { maxAmount: "1e3" }, "Amount must be a number with at most 7 decimals"],
+    ["rate", { rate: "1,5" }, "Rate must be a number with at most 4 decimals"],
+  ])("gives the form message, not a BigInt error, for a non-numeric %s", async (field, patch, message) => {
+    await expect(as(ALICE).create({ ...valid, ...patch })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      cause: { issues: [{ path: [field], message }] },
+    });
   });
 
   it("accepts min equal to max with 7 decimals", async () => {

@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, gt } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { chatMessages, trades } from "@/lib/db/schema";
@@ -18,23 +18,29 @@ const columns = {
 // state (see lib/trade/persist.ts). Clients poll `list` every 3 s.
 export const chatRouter = createTRPCRouter({
   list: protectedProcedure
-    .input(z.object({ tradeId: z.string().uuid(), after: z.date().optional() }))
+    .input(z.object({ tradeId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       await tradeForParticipant(ctx.db, input.tradeId, ctx.session.publicKey);
       return ctx.db
         .select(columns)
         .from(chatMessages)
-        .where(
-          and(
-            eq(chatMessages.tradeId, input.tradeId),
-            input.after ? gt(chatMessages.createdAt, input.after) : undefined,
-          ),
-        )
+        .where(eq(chatMessages.tradeId, input.tradeId))
         .orderBy(asc(chatMessages.createdAt));
     }),
 
   send: protectedProcedure
-    .input(z.object({ tradeId: z.string().uuid(), body: z.string().trim().min(1).max(1000) }))
+    .input(
+      z.object({
+        tradeId: z.string().uuid(),
+        body: z
+          .string()
+          .trim()
+          .min(1)
+          .max(1000)
+          // Postgres text cannot hold U+0000; without this the insert fails as a 500.
+          .refine((s) => !s.includes("\0"), "Message contains a character that can't be saved"),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session.publicKey;
       await tradeForParticipant(ctx.db, input.tradeId, me);

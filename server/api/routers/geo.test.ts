@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CITIES } from "@/lib/geo/cities";
+import { CITIES, cityById } from "@/lib/geo/cities";
 import { createCallerFactory } from "@/server/api/trpc";
 
 import { geoRouter } from "./geo";
@@ -32,5 +32,11 @@ describe("cities.json", () => {
       expect(Math.round(c.lat * 100) / 100).toBe(c.lat);
       expect(Math.round(c.lng * 100) / 100).toBe(c.lng);
     }
+  });
+
+  it("has no en or em dash in a name or region (they are copied into listings)", () => {
+    const dashed = CITIES.filter((c) => /[\u2013\u2014]/.test(c.name + c.ascii + c.region));
+    expect(dashed.map((c) => c.id)).toEqual([]);
+    expect(cityById("473249")?.region).toBe("North Ossetia-Alania");
   });
 });
