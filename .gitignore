@@ -32,3 +32,6 @@ next-env.d.ts
 
 # copied from node_modules by the predev/prebuild scripts
 /public/maplibre-gl-worker.mjs
+
+# Local README render, not part of the repo.
+preview.html

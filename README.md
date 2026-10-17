@@ -80,9 +80,11 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 
 **Stored:** Stellar public keys, listing terms, the city each listing picked, claimable balance IDs and transaction hashes, trade state, an optional public note on each listing, and each trade's chat while the trade is live.
 
-**Deleted automatically:** a trade's chat, as soon as Pairy records the claim, the take-back or the cancel. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it.
+**Deleted automatically:** a trade's chat, as soon as Pairy records the claim, the take-back or the cancel. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it. A daily job ends trades nobody uses: a trade not yet locked with no activity for a week is cancelled (its chat goes with it), and a locked trade's chat is deleted a week after the buyer's claim window closed.
 
 **Never stored:** private keys or anything a key could be derived from, pincodes, identity documents, or a precise location. Pairy has no field for names, phone numbers or emails; the listing note and the chat are free text, so don't put them there. Listings are placed at a city's centre, chosen from a list of cities with 100,000+ people. The app never asks for your device location.
+
+**Seen outside Pairy's database:** your browser loads map tiles from OpenFreeMap and talks to Stellar's testnet Horizon (and Friendbot, when you fund a wallet) directly, so those services see your IP address, and Horizon sees which account it is asked about. Everything on Stellar, including who locked funds for whom, is public on the ledger. Pairy's host (Vercel) and database provider (Neon) keep their own request logs and backups for their retention periods, so a deleted chat can outlive the deletion there until those expire.
 
 ---
 
@@ -118,20 +120,20 @@ stateDiagram-v2
     listed --> cancelled: cancel
     agreed --> locked: seller locks the crypto
     agreed --> cancelled: cancel
+    cancelled --> locked: a lock signed before the cancel lands
     locked --> claimed: buyer claims, within 72h
     locked --> reclaimed: seller takes it back, after 72h
     claimed --> [*]
     reclaimed --> [*]
-    cancelled --> [*]
 ```
 
-Once locked, a trade cannot be cancelled: the only ways out are claim and take-back. `disputed` is a flag, not a state. Either side can raise it on a live trade; it changes nothing today and is the hook a Phase 2 arbiter will plug into.
+Once locked, a trade cannot be cancelled: the only ways out are claim and take-back. The chain outranks the app: if the seller's lock lands just after a cancel, the trade is recorded as locked rather than left showing "cancelled" over money that is on the ledger. `disputed` is a flag, not a state. Either side can raise it on a live trade; it changes nothing today and is the hook a Phase 2 arbiter will plug into.
 
 Before the lock, the app checks what would otherwise fail later. For USDC, the buyer's wallet must accept USDC first (a trustline): the lock itself would succeed without it, but the buyer's claim would fail with `op_no_trust`. And the seller must hold the amount plus the network reserve (0.5 XLM per person on the lock), which comes back to the seller when the trade ends.
 
 ### The reusable part
 
-[`lib/stellar/settlement.ts`](lib/stellar/settlement.ts) is the whole settlement surface, built only from stock SDK calls: `Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance` and `Operation.claimClaimableBalance`, wrapped in `TransactionBuilder`, with the balance ID taken from the SDK's own `getClaimableBalanceId`. No contract, no predicate evaluation, no signing. Together with the state machine it is meant as a worked example any Stellar P2P app can fork for two-party CAP-23 settlement.
+[`lib/stellar/settlement.ts`](lib/stellar/settlement.ts) is the whole settlement surface, built only from stock SDK calls: `Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance` and `Operation.claimClaimableBalance`, wrapped in `TransactionBuilder`. No contract, no predicate evaluation, no balance-ID derivation, no signing. The server reads a lock's balance ID back with the SDK's own `getClaimableBalanceId` when it verifies the lock ([`lib/stellar/verify.ts`](lib/stellar/verify.ts)). Together with the state machine it is meant as a worked example any Stellar P2P app can fork for two-party CAP-23 settlement.
 
 ---
 
@@ -165,7 +167,7 @@ pnpm db:migrate
 pnpm dev                      # http://localhost:3000
 ```
 
-`SESSION_SECRET` signs the login cookie. It is not a Stellar key.
+`SESSION_SECRET` signs the login cookie. It is not a Stellar key. In production, set `CRON_SECRET` (32+ random characters) too: Vercel Cron sends it to the daily cleanup job, which refuses every call without it. Run `pnpm db:migrate` against the production database before deploying code that needs a new migration. After a testnet reset, `pnpm tsx scripts/ops/testnet-reset.ts --before=<reset time>` lists the trades the reset wiped; `--apply` closes them.
 
 ## Tests
 
@@ -178,7 +180,7 @@ The testnet suite funds throwaway accounts and runs every path for XLM and, when
 
 Two tests come straight from the project's scope and run as their own CI steps:
 
-- **`no-secret-fields`** ([tests/ci/no-secret-fields.test.ts](tests/ci/no-secret-fields.test.ts)) walks every API input and fails if any field could carry a secret key or a pincode.
+- **`no-secret-fields`** ([tests/ci/no-secret-fields.test.ts](tests/ci/no-secret-fields.test.ts)) walks every API input and fails if any field is meant for, or named like, a secret key or a pincode.
 - **`coordination-purge-on-terminal`** ([tests/ci/coordination-purge-on-terminal.test.ts](tests/ci/coordination-purge-on-terminal.test.ts)) drives trades to claimed, taken back and cancelled, and checks the chat is gone each time.
 
 ---

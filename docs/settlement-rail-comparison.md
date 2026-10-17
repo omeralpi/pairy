@@ -98,7 +98,7 @@ buyer:  BEFORE_RELATIVE_TIME(259200)        // can claim during the first 72 hou
 seller: NOT(BEFORE_RELATIVE_TIME(259200))   // can reclaim from hour 72 onward
 ```
 
-It is built with four stock SDK calls (`Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance`, `Operation.claimClaimableBalance`) in [`lib/stellar/settlement.ts`](../lib/stellar/settlement.ts).
+It is built from four stock SDK calls, assembled with `TransactionBuilder` (`Claimant.predicateBeforeRelativeTime`, `Claimant.predicateNot`, `Operation.createClaimableBalance`, `Operation.claimClaimableBalance`) in [`lib/stellar/settlement.ts`](../lib/stellar/settlement.ts).
 
 ## Side by side, for this trade
 

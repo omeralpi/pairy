@@ -1,6 +1,6 @@
 # Pairy v1 evidence
 
-This file collects the evidence promised in section 6.1 of the Pairy Instaward SOW, one section per deliverable. Every link here points to something public: a transaction on the Stellar testnet explorer, a CI run on GitHub, a recording or the live demo.
+This file collects the evidence promised in section 6.1 of the Pairy Instaward SOW, one section per deliverable. Links point to a transaction on the Stellar testnet explorer, a CI run on GitHub, a recording, the live demo or a file in this repository.
 
 **Status:** in progress. Anything marked `PENDING` does not exist yet. It will be replaced by a real link when it is produced, never by a placeholder that only looks real.
 
@@ -35,7 +35,7 @@ Evidence type: public GitHub repo, green CI run, transaction hashes on stellar.e
 | Item | Link | Status |
 |---|---|---|
 | Public repository | PENDING (repo not yet public) | PENDING |
-| `lib/stellar/settlement.ts` (the entire settlement surface: stock SDK calls only) | [lib/stellar/settlement.ts](lib/stellar/settlement.ts) | Written; not yet published |
+| `lib/stellar/settlement.ts` (the settlement surface: the four stock SDK calls, assembled with `TransactionBuilder`) | [lib/stellar/settlement.ts](lib/stellar/settlement.ts) | Written; not yet published |
 | `lib/trade/state-machine.ts` (TradeStateMachine) | [lib/trade/state-machine.ts](lib/trade/state-machine.ts) | Written; not yet published |
 | Green CI run on the public repo | PENDING | PENDING |
 
@@ -89,7 +89,7 @@ Evidence type: transaction hash on stellar.expert, screen recordings, green CI r
 
 | Item | What it shows | Link | Status |
 |---|---|---|---|
-| Transaction signed by a device-generated wallet | A testnet transaction signed by a key that was generated in the user's own browser and never left it | Lock [`c0c9e6c2…64c8`](https://stellar.expert/explorer/testnet/tx/c0c9e6c29dc15f6112afbc97fc2110f8bc1a37275ca0684ea649590805a164c8) and claim [`bc74206a…3d6b`](https://stellar.expert/explorer/testnet/tx/bc74206a5780adf6bbf35b24450ef53c548588014078c628e9db21a7b1223d6b), each signed in the browser by a device-generated wallet during a local end-to-end trade on 2026-10-15 (seller and buyer on two separate browser origins) | Done for device ↔ device |
+| Transaction signed by a device-generated wallet | A testnet transaction signed by a key generated in the user's own browser by the device wallet, which sends Pairy only public keys and signatures | Lock [`c0c9e6c2…64c8`](https://stellar.expert/explorer/testnet/tx/c0c9e6c29dc15f6112afbc97fc2110f8bc1a37275ca0684ea649590805a164c8) and claim [`bc74206a…3d6b`](https://stellar.expert/explorer/testnet/tx/bc74206a5780adf6bbf35b24450ef53c548588014078c628e9db21a7b1223d6b), each signed in the browser by a device-generated wallet during a local end-to-end trade on 2026-10-15 (seller and buyer on two separate browser origins) | Done for device ↔ device |
 | Export / re-import recording | A key exported from one browser, re-imported in a second browser profile, then used to sign a testnet transaction | PENDING | PENDING |
 | Re-imported key's signing transaction | The transaction signed in the second browser profile | PENDING | PENDING |
 | Two-wallet-type end-to-end run: recording | Two test users, one on Freighter and one on a device-generated wallet, completing a trade end to end | PENDING | PENDING |
