@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": "22.x"
   },
@@ -71,5 +72,21 @@
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@reown/appkit",
+      "@stellar/stellar-sdk",
+      "blake-hash",
+      "bufferutil",
+      "esbuild",
+      "protobufjs",
+      "secp256k1",
+      "sodium-native",
+      "tiny-secp256k1",
+      "unrs-resolver",
+      "usb",
+      "utf-8-validate"
+    ]
   }
 }
