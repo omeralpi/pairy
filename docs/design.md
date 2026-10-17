@@ -1,6 +1,6 @@
 # Pairy design guide
 
-How the app applies the Pairy brand system v0.1 (the brand book). If this file and the brand book disagree, the brand book wins.
+How the app applies the Pairy brand system v0.1, a separate brand book that is not part of this repository. If this file and the brand book disagree, the brand book wins.
 
 ## Feel
 

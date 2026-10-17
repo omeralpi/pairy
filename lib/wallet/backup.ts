@@ -36,5 +36,5 @@ export function isBackedUp(publicKey: string, store = storage()): boolean {
  */
 export function lockBackupProblem(wallet: { kind: string; publicKey: string } | null, store = storage()): string | null {
   if (wallet?.kind !== "device" || isBackedUp(wallet.publicKey, store)) return null;
-  return "Export a backup of your key first. Taking the lock back later needs this key, and the browser can delete it: Safari does after 7 days of use without opening Pairy, a private window when it closes.";
+  return "Export a backup of your key first. Taking the lock back later needs this key, and the browser can delete it (Safari does after 7 days of use without opening Pairy, and a private window does when it closes).";
 }

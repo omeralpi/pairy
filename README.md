@@ -31,9 +31,9 @@ Stellar already has the primitive this needs. A claimable balance (CAP-23) can n
 
 ## How it works
 
-Liam is visiting İstanbul. He has 200 test USDC and needs lira for the week. Deniz lives in Kadıköy, has cash and wants USDC.
+Liam is visiting Istanbul. He has 200 test USDC and needs lira for the week. Deniz lives in Kadıköy, has cash and wants USDC.
 
-1. **Find a peer.** Liam opens the map and sees Deniz's listing pinned on İstanbul: buying USDC at 41.50 TRY each. The pin marks the city, never a person or an address.
+1. **Find a peer.** Liam opens the map and sees Deniz's listing pinned on Istanbul: buying USDC at 41.50 TRY each. The pin marks the city, never a person or an address.
 2. **Agree the terms.** Liam opens a trade for 200 USDC. They use the trade's own chat to pick a café near the Moda pier. Nothing moves yet.
 3. **Meet, then lock.** At the café, Liam locks the 200 USDC. The lock screen tells him plainly: from this moment Deniz can claim at any time in the next 72 hours, cash or not, so lock only when you are both there. Liam signs on his own phone.
 4. **Cash, then claim.** Deniz hands over 8,300 TRY. Deniz taps **Claim** and signs on their own phone. The USDC is in Deniz's wallet. The trade is settled and its chat is deleted.
@@ -61,7 +61,7 @@ The two windows meet at exactly 72 hours and never overlap. There is no third cl
 
 ---
 
-## Keys stay on your phone
+## Keys stay with you
 
 There are two ways to hold a wallet. Neither gives Pairy custody.
 
@@ -80,7 +80,7 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 
 **Stored:** Stellar public keys, listing terms, the city each listing picked, claimable balance IDs and transaction hashes, trade state, an optional public note on each listing, and each trade's chat while the trade is live.
 
-**Deleted automatically:** a trade's chat, as soon as Pairy records the claim, the take-back or the cancel. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it. A daily job ends trades nobody uses: a trade not yet locked with no activity for a week is cancelled (its chat goes with it), and a locked trade's chat is deleted a week after the buyer's claim window closed.
+**Deleted automatically:** a trade's chat, as soon as Pairy records the claim, the take-back or the cancel. The state change and the deletion happen in one database transaction, and the CI test `coordination-purge-on-terminal` checks it. A daily job ends trades nobody uses: a trade not yet locked with no activity for a week is cancelled (its chat goes with it), and a locked trade's chat is deleted a week after the buyer's claim window closed. A trade flagged with a problem is the exception: its chat is kept as the record a Phase 2 arbiter would read.
 
 **Never stored:** private keys or anything a key could be derived from, pincodes, identity documents, or a precise location. Pairy has no field for names, phone numbers or emails; the listing note and the chat are free text, so don't put them there. Listings are placed at a city's centre, chosen from a list of cities with 100,000+ people. The app never asks for your device location.
 
@@ -117,17 +117,18 @@ Transactions go from your wallet straight to Stellar. Pairy's API only ever rece
 stateDiagram-v2
     [*] --> listed
     listed --> agreed: the other side agrees
-    listed --> cancelled: cancel
+    listed --> cancelled: cancel, or a week idle
     agreed --> locked: seller locks the crypto
-    agreed --> cancelled: cancel
+    agreed --> cancelled: cancel, or a week idle
     cancelled --> locked: a lock signed before the cancel lands
     locked --> claimed: buyer claims, within 72h
     locked --> reclaimed: seller takes it back, after 72h
+    locked --> cancelled: a testnet reset wiped the lock
     claimed --> [*]
     reclaimed --> [*]
 ```
 
-Once locked, a trade cannot be cancelled: the only ways out are claim and take-back. The chain outranks the app: if the seller's lock lands just after a cancel, the trade is recorded as locked rather than left showing "cancelled" over money that is on the ledger. `disputed` is a flag, not a state. Either side can raise it on a live trade; it changes nothing today and is the hook a Phase 2 arbiter will plug into.
+Once locked, a trade cannot be cancelled: the only ways out are claim and take-back. The one exception is a Stellar testnet reset, which wipes every account and lock; a script then closes those trades (see [Run it locally](#run-it-locally)). The chain outranks the app: if the seller's lock lands just after a cancel, the trade is recorded as locked rather than left showing "cancelled" over money that is on the ledger. A trade not yet locked that sees no activity for a week is cancelled by a daily job. `disputed` is a flag, not a state. Either side can raise it on a live trade; it moves no money and is the hook a Phase 2 arbiter will plug into. The daily job leaves flagged trades and their chat alone.
 
 Before the lock, the app checks what would otherwise fail later. For USDC, the buyer's wallet must accept USDC first (a trustline): the lock itself would succeed without it, but the buyer's claim would fail with `op_no_trust`. And the seller must hold the amount plus the network reserve (0.5 XLM per person on the lock), which comes back to the seller when the trade ends.
 
@@ -162,12 +163,12 @@ You need Node 22 (see `.nvmrc`; the Stellar SDK requires `>=22.12`), pnpm and Do
 nvm use
 pnpm install
 docker compose up -d          # Postgres on localhost:35433
-cp .env.example .env          # DATABASE_URL and SESSION_SECRET
+cp .env.example .env          # then set SESSION_SECRET (32+ random characters)
 pnpm db:migrate
 pnpm dev                      # http://localhost:3000
 ```
 
-`SESSION_SECRET` signs the login cookie. It is not a Stellar key. In production, set `CRON_SECRET` (32+ random characters) too: Vercel Cron sends it to the daily cleanup job, which refuses every call without it. Run `pnpm db:migrate` against the production database before deploying code that needs a new migration. After a testnet reset, `pnpm tsx scripts/ops/testnet-reset.ts --before=<reset time>` lists the trades the reset wiped; `--apply` closes them.
+`SESSION_SECRET` signs the login cookie. It is not a Stellar key. In production, set `CRON_SECRET` (32+ random characters) too: Vercel Cron sends it to the daily cleanup job, which refuses every call without it. Run `pnpm db:migrate` against the production database before deploying code that needs a new migration. After a testnet reset, `DATABASE_URL=... pnpm tsx scripts/ops/testnet-reset.ts --before=<reset time>` lists the trades the reset wiped; `--apply` closes them.
 
 ## Tests
 

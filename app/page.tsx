@@ -33,12 +33,12 @@ const WHY = [
   },
   {
     title: "Pairy takes no cut.",
-    body: "Each step costs the Stellar network fee, plus a small reserve that comes back to you.",
-    figure: "100 stroops ≈ 0.00001 XLM",
+    body: "Each step costs the Stellar network fee. The seller also sets aside a small reserve, which comes back when the trade ends.",
+    figure: "100 stroops = 0.00001 XLM",
   },
   {
     title: "You don't sign up.",
-    body: "Pairy never asks who you are. The key on your phone is the whole account.",
+    body: "Pairy never asks who you are. Your key is the whole account.",
   },
 ];
 
@@ -147,7 +147,7 @@ export default function Home() {
                 Nobody else is on the lock. Pairy has no key to it and cannot move the money.
               </p>
               <p>
-                Your key is made on your phone and is never sent to Pairy. If you use Freighter, it stays in Freighter.
+                Your key is made on your device and is never sent to Pairy. If you use Freighter, it stays in Freighter.
               </p>
             </div>
           </div>

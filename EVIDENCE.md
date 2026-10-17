@@ -1,10 +1,12 @@
 # Pairy v1 evidence
 
-This file collects the evidence promised in section 6.1 of the Pairy Instaward SOW, one section per deliverable. Links point to a transaction on the Stellar testnet explorer, a CI run on GitHub, a recording, the live demo or a file in this repository.
+This file collects the evidence promised in section 6.1 of the statement of work (SOW) for the Stellar Community Fund InstaWards grant that funds this version of Pairy, one section per deliverable. Links point to a transaction on the Stellar testnet explorer, a CI run on GitHub, a recording, the live demo or a file in this repository.
 
 **Status:** in progress. Anything marked `PENDING` does not exist yet. It will be replaced by a real link when it is produced, never by a placeholder that only looks real.
 
 Pairy runs on the Stellar **testnet** only. No real money is involved anywhere. Pairy has zero users; it is a testnet reference implementation, not a product in use.
+
+**Where the transactions come from.** Most transactions below were produced by the scripts in [`scripts/evidence/`](scripts/evidence/), and their recorded outputs are in [`scripts/evidence/out/`](scripts/evidence/out/). Six were not. The two early reclaim attempts on the real 72-hour locks and the hosted-demo smoke test's claim came from one-off scripts kept out of the repository because they read testnet keys. The smoke test's lock and the device-wallet lock and claim were signed by hand in a browser. Every hash can still be checked on stellar.expert.
 
 ---
 
@@ -63,7 +65,7 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 | Fee charged, lock transaction | base fee 100 per operation | 100 (every lock above, Horizon `fee_charged`) |
 | Fee charged, claim transaction | base fee 100 per operation | 100, paid by the buyer |
 | Fee charged, reclaim transaction | base fee 100 per operation | 100. A rejected early reclaim is also charged 100 |
-| Reserve locked against the seller while the balance exists (one base reserve per claimant, two claimants) | base reserve 5,000,000 per claimant, so 10,000,000 for two | 10,000,000. The seller's `num_sponsoring` goes 0 → 2 and minimum balance 10,000,000 → 20,000,000. The reserve is not deducted from the balance; it raises the minimum the seller must keep. XLM seller balance 100,000,000,000 → 99,949,999,900 = the 50,000,000 locked + the 100 fee |
+| Reserve locked against the seller while the balance exists (one base reserve per claimant, two claimants) | base reserve 5,000,000 per claimant, so 10,000,000 for two | 10,000,000. The seller's `num_sponsoring` goes 0 → 2 and minimum balance 10,000,000 → 20,000,000. The reserve is not deducted from the balance; it raises the minimum the seller must keep, so it cannot be spent until the lock ends. XLM seller balance 100,000,000,000 → 99,949,999,900 = the 50,000,000 locked + the 100 fee |
 | Reserve returned to the seller on claim or reclaim | same amount, returned to the creator ([Stellar docs](https://developers.stellar.org/docs/build/guides/transactions/sponsored-reserves)) | Returned to the seller: after the buyer's claim the seller's `num_sponsoring` is back to 0 and minimum balance back to 10,000,000, while the buyer's stays 0. The buyer receives the amount (+49,999,900 = 5 XLM − their own 100 fee), not the reserve |
 
 ### Trustless Work comparison and upstream issue
