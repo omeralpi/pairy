@@ -76,9 +76,11 @@ const config: Config = {
 					700: "#C3361B",
 					800: "#8A2814",
 				},
-				success: "#1F8A5B",
-				warning: "#D49F1F",
-				danger: "#C7402D",
+				// Darkened from #1F8A5B, #D49F1F and #C7402D so text in these
+				// colours meets WCAG AA (4.5:1) on paper and on sand.
+				success: "#1A7550",
+				warning: "#86620F",
+				danger: "#B5382A",
 			},
 			keyframes: {
 				'accordion-down': {

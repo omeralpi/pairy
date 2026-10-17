@@ -73,10 +73,10 @@ export function ListingsMap({
       const el = document.createElement("div");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.setAttribute("aria-label", `${pin.cityName}: ${pin.listings.length} listings`);
+      btn.setAttribute("aria-label", `${pin.cityName}: ${pin.listings.length} ${pin.listings.length === 1 ? "listing" : "listings"}`);
       btn.className = [
         // Beacon belongs here and only here: it means a peer is near.
-        "grid h-8 min-w-8 place-items-center rounded-full bg-beacon px-2 font-mono text-xs font-medium text-white shadow-sm ring-[3px] transition-transform hover:scale-110",
+        "grid h-8 min-w-8 place-items-center rounded-full bg-beacon-700 px-2 font-mono text-xs font-medium text-white shadow-sm ring-[3px] transition-transform hover:scale-110",
         pin.cityId === selectedCityId ? "scale-110 ring-ink" : "ring-paper",
       ].join(" ");
       btn.textContent = String(pin.listings.length);

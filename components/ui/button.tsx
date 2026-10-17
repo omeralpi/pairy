@@ -12,7 +12,8 @@ const buttonVariants = cva(
       // moves a trade forward (agree, lock, claim) and should be rare.
       variant: {
         default: "bg-ink text-paper hover:bg-deep",
-        beacon: "bg-beacon text-white hover:bg-beacon-600",
+        // beacon-700: white on the brighter default beacon is only 3.3:1.
+        beacon: "bg-beacon-700 text-white hover:bg-beacon-800",
         destructive: "bg-danger text-white hover:bg-danger/90",
         outline: "border border-ink/15 bg-transparent text-ink hover:bg-sand",
         secondary: "bg-sand text-ink hover:bg-line",
