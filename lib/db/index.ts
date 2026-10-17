@@ -16,6 +16,12 @@ export const pool = new Pool({
   ssl: isLocal ? false : true,
 });
 
+// Neon closes idle connections (compute suspend, pooler restart). The pool then
+// emits "error" for that idle client, and with no listener that error crashes
+// the process. The pool has already dropped the client; the next query
+// connects again.
+pool.on("error", (err) => console.error("Postgres closed an idle connection:", err.message));
+
 export const db = drizzle({ client: pool, schema });
 
 export type Db = typeof db;

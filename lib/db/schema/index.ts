@@ -4,8 +4,10 @@
 // numbers, no identity documents. Per-deal chat lives only until the trade
 // reaches a terminal state.
 
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   numeric,
@@ -39,6 +41,15 @@ export const authChallenges = pgTable("auth_challenges", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
+/** Live login sessions; logout deletes the row, so a replayed cookie stops working. */
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(),
+  publicKey: text("public_key")
+    .notNull()
+    .references(() => users.publicKey),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
 export const listings = pgTable(
   "listings",
   {
@@ -61,7 +72,12 @@ export const listings = pgTable(
     status: listingStatus("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("listings_status_idx").on(t.status)],
+  (t) => [
+    index("listings_status_idx").on(t.status),
+    check("listings_min_amount_positive", sql`${t.minAmount} > 0`),
+    check("listings_max_amount_gte_min", sql`${t.maxAmount} >= ${t.minAmount}`),
+    check("listings_rate_positive", sql`${t.rate} > 0`),
+  ],
 );
 
 export const trades = pgTable(
@@ -83,6 +99,10 @@ export const trades = pgTable(
     lockTx: text("lock_tx"),
     claimTx: text("claim_tx"),
     reclaimTx: text("reclaim_tx"),
+    /** Ledger close time of the lock, when known. */
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    /** Last trade.sync search of Horizon; throttles polling. */
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -91,6 +111,17 @@ export const trades = pgTable(
     index("trades_buyer_idx").on(t.buyer),
     // One on-chain lock backs at most one trade.
     uniqueIndex("trades_balance_id_idx").on(t.balanceId),
+    check("trades_seller_not_buyer", sql`${t.seller} <> ${t.buyer}`),
+    check("trades_amount_positive", sql`${t.amount} > 0`),
+    check("trades_fiat_amount_nonnegative", sql`${t.fiatAmount} >= 0`),
+    // Every state past agreed is backed by an on-chain lock, and each terminal
+    // settlement by the transaction that made it.
+    check(
+      "trades_lock_recorded",
+      sql`${t.state} NOT IN ('locked', 'claimed', 'reclaimed') OR (${t.balanceId} IS NOT NULL AND ${t.lockTx} IS NOT NULL)`,
+    ),
+    check("trades_claim_recorded", sql`${t.state} <> 'claimed' OR ${t.claimTx} IS NOT NULL`),
+    check("trades_reclaim_recorded", sql`${t.state} <> 'reclaimed' OR ${t.reclaimTx} IS NOT NULL`),
   ],
 );
 

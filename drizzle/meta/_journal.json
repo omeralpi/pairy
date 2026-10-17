@@ -15,6 +15,34 @@
       "when": 1792047897047,
       "tag": "0001_trades_balance_id_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792169896188,
+      "tag": "0002_trade_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792171002865,
+      "tag": "0003_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792171967130,
+      "tag": "0004_trade_last_synced",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792172940276,
+      "tag": "0005_trade_locked_at",
+      "breakpoints": true
     }
   ]
 }
