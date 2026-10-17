@@ -17,6 +17,12 @@ type Selection = { kind: WalletKind; publicKey: string };
 type PincodeRequest = {
   title: string;
   description: string;
+  /**
+   * What is being signed: the caller's line when it gives one (a claim, whose
+   * operation holds only a balance id, is described from the trade record),
+   * otherwise decoded from the transaction.
+   */
+  summary?: string;
   run: (pincode: string) => Promise<void>;
   cancel: () => void;
 };
@@ -54,21 +60,37 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   /** Opens the pincode dialog and resolves with whatever `fn` returns once a pincode works. */
   const withPincode = useCallback(
-    <T,>(title: string, description: string, fn: (pincode: string) => Promise<T>) =>
+    <T,>(
+      title: string,
+      description: string,
+      fn: (pincode: string) => Promise<T>,
+      opts: { summary?: string; signal?: AbortSignal } = {},
+    ) =>
       new Promise<T>((resolve, reject) => {
         if (busy.current) return reject(new Error("Another signing request is already open."));
+        if (opts.signal?.aborted) return reject(new Error("Signing cancelled."));
         busy.current = true;
+        // The screen that asked for this signature went away (e.g. the trade
+        // was cancelled): close the dialog so a late pincode signs nothing.
+        const onAbort = () => {
+          done();
+          reject(new Error("Signing cancelled."));
+        };
         const done = () => {
           busy.current = false;
+          opts.signal?.removeEventListener("abort", onAbort);
           setRequest(null);
         };
+        opts.signal?.addEventListener("abort", onAbort);
         setRequest({
           title,
           description,
+          summary: opts.summary,
           run: async (pincode) => {
             const { WrongPincodeError } = await deviceWallet();
             try {
               const result = await fn(pincode);
+              if (opts.signal?.aborted) return;
               done();
               resolve(result);
             } catch (e) {
@@ -92,9 +114,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       publicKey,
       signTransaction:
         kind === "device"
-          ? (xdr) =>
-              withPincode("Sign transaction", "Enter your pincode to sign this testnet transaction on this device.", async (pin) =>
-                (await deviceWallet()).signTransactionWithDeviceWallet(publicKey, xdr, pin),
+          ? async (xdr, opts) =>
+              withPincode(
+                "Sign transaction",
+                "Enter your pincode to sign this testnet transaction on this device.",
+                async (pin) => (await deviceWallet()).signTransactionWithDeviceWallet(publicKey, xdr, pin),
+                {
+                  summary: opts?.summary ?? (await import("@/components/wallet/tx-summary")).describeTransaction(xdr),
+                  signal: opts?.signal,
+                },
               )
           : async (xdr) => (await freighter()).signTransactionWithFreighter(publicKey, xdr),
     }),
@@ -125,6 +153,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         return choose({ kind: "device", publicKey });
       },
 
+      replaceDeviceWallet: async (backup, pincode) => {
+        // The key this page showed as the one being removed.
+        const shown = deviceWalletPublicKey ?? undefined;
+        const publicKey = await (await deviceWallet()).replaceDeviceWallet(backup, pincode, localStorage, shown);
+        setDeviceWalletPublicKey(publicKey);
+        return choose({ kind: "device", publicKey });
+      },
+
       selectDeviceWallet: () => {
         if (!deviceWalletPublicKey) throw new Error("No wallet is stored in this browser.");
         return choose({ kind: "device", publicKey: deviceWalletPublicKey });
@@ -148,8 +184,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         const a = document.createElement("a");
         a.href = url;
         a.download = `pairy-testnet-wallet-${deviceWalletPublicKey.slice(0, 8)}.json`;
+        // Attached and revoked a tick later: iOS Safari and older Firefox drop
+        // the download when the link is detached or the URL is already gone.
+        document.body.append(a);
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          a.remove();
+        }, 0);
       },
 
       disconnect: async () => {
@@ -166,6 +208,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         open={request !== null}
         title={request?.title ?? ""}
         description={request?.description ?? ""}
+        summary={request?.summary}
         onSubmit={(pin) => request!.run(pin)}
         onCancel={() => request?.cancel()}
       />

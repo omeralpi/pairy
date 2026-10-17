@@ -10,9 +10,10 @@ export type Wallet = {
   /**
    * Signs a base64 transaction XDR on this device and returns the signed XDR.
    * For the device wallet this prompts for the pincode; for Freighter it opens
-   * the extension. Never sends anything to the Pairy server.
+   * the extension. Never sends anything to the Pairy server. `summary` is
+   * shown in the pincode dialog; aborting `signal` closes that dialog.
    */
-  signTransaction: (xdr: string) => Promise<string>;
+  signTransaction: (xdr: string, opts?: { signal?: AbortSignal; summary?: string }) => Promise<string>;
 };
 
 /** Everything the onboarding and wallet screens need beyond `useWallet()`. */
@@ -24,6 +25,8 @@ export type WalletContextValue = {
   connectFreighter: () => Promise<Wallet>;
   createDeviceWallet: (pincode: string) => Promise<Wallet>;
   importDeviceWallet: (backup: unknown, pincode: string) => Promise<Wallet>;
+  /** Replaces the key stored in this browser with the one in `backup`. */
+  replaceDeviceWallet: (backup: unknown, pincode: string) => Promise<Wallet>;
   /** Selects the wallet already stored in this browser. */
   selectDeviceWallet: () => Wallet;
   /**

@@ -33,9 +33,15 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/** Shown when the extension is missing; the onboarding screen links freighter.app. */
+export const FREIGHTER_MISSING =
+  "Freighter isn't available in this browser. Install the extension from freighter.app, or make a key on this device instead.";
+
 /** Asks Freighter for access and returns the account's public key. */
 export async function connectFreighter(): Promise<string> {
   const k = await kit();
+  // The kit's own message for this is "Freighter is not connected".
+  if (!(await k.selectedModule.isAvailable())) throw new Error(FREIGHTER_MISSING);
   const { address } = await call(() => k.fetchAddress());
   const { networkPassphrase } = await call(() => k.getNetwork());
   if (networkPassphrase !== Networks.TESTNET) {

@@ -8,21 +8,25 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { balanceLabel } from "@/components/listing/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLogin } from "@/lib/auth/use-login";
 import { useSession } from "@/lib/auth/use-session";
 import {
+  LAB_FUND_URL,
   balanceOf,
   explorerAccountUrl,
   explorerTxUrl,
   fundWithFriendbot,
   hasTrustline,
   loadAccount,
+  networkDeadline,
   submit,
 } from "@/lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "@/lib/stellar/settlement";
 import { buildUsdcTrustlineTransaction } from "@/lib/stellar/trustline";
+import { describeStellarError } from "@/lib/trade/stellar-errors";
 import { useWalletContext } from "@/lib/wallet/use-wallet";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
@@ -37,6 +41,7 @@ export default function WalletPage() {
   const { logout } = useLogin();
   const [busy, setBusy] = useState<null | "fund" | "trust" | "logout">(null);
   const [justCreated, setJustCreated] = useState(false);
+  const [fundError, setFundError] = useState<string | null>(null);
 
   useEffect(() => {
     setJustCreated(new URLSearchParams(window.location.search).has("new"));
@@ -75,24 +80,35 @@ export default function WalletPage() {
     try {
       await fn();
     } catch (e) {
-      toast.error(message(e));
+      // Horizon's "400 Bad Request" says nothing; the result code does (Q-10).
+      toast.error(describeStellarError(e));
     } finally {
       setBusy(null);
     }
   };
 
-  const fund = () =>
-    act("fund", async () => {
-      await fundWithFriendbot(wallet.publicKey);
+  const fund = () => {
+    setFundError(null);
+    return act("fund", async () => {
+      try {
+        await fundWithFriendbot(wallet.publicKey);
+      } catch (e) {
+        setFundError(message(e));
+        return;
+      }
       await account.refetch();
       toast.success("Friendbot sent 10,000 test XLM.");
     });
+  };
 
   const addTrustline = () =>
     act("trust", async () => {
       const current = await loadAccount(wallet.publicKey);
       if (!current) throw new Error("Get test XLM first.");
-      const tx = buildUsdcTrustlineTransaction(new Account(current.accountId(), current.sequenceNumber()));
+      const tx = buildUsdcTrustlineTransaction(
+        new Account(current.accountId(), current.sequenceNumber()),
+        await networkDeadline(300),
+      );
       const signed = await wallet.signTransaction(tx.toXDR());
       const res = await submit(TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE) as Transaction);
       await account.refetch();
@@ -169,6 +185,20 @@ export default function WalletPage() {
             <Button className="w-full" disabled={busy !== null} onClick={fund}>
               {busy === "fund" ? "Asking Friendbot…" : "Get 10,000 test XLM"}
             </Button>
+            {fundError && (
+              <div role="alert" className="space-y-1 border-l-2 border-danger pl-4 text-sm">
+                <p className="text-ink">{fundError}</p>
+                <a
+                  href={LAB_FUND_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+                >
+                  Fund it on Stellar Lab
+                  <ArrowUpRight strokeWidth={1.5} className="size-4" />
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -234,10 +264,12 @@ function BackupPanel({ title, onExport }: { title: string; onExport: () => void 
         <h2 className="font-semibold">{title}</h2>
         <p className="text-sm text-ink">
           This key lives only in this browser and Pairy keeps no copy. If you lose this device or forget the pincode
-          without a backup, the wallet is gone.
+          without a backup, the wallet is gone. Safari also deletes it after 7 days of use without opening Pairy.
         </p>
         <p className="text-sm text-slate">
-          The file is locked with your pincode, so keep both. Use it to restore the wallet in another browser.
+          The file is locked with your pincode, so keep both. Use it to restore the wallet in another browser, or in
+          Pairy added to your Home Screen, which keeps its own storage. Together they open the wallet: never send them
+          to anyone. Pairy will never ask for them.
         </p>
       </div>
       <Button className="w-full" onClick={onExport}>
@@ -252,14 +284,12 @@ function Balance({ code, amount }: { code: string; amount: string | null }) {
   return (
     <div className="space-y-2 px-4 first:pl-0 last:pr-0">
       <p className="eyebrow">{code}</p>
-      {/* en-US so "9,979.99" never reads as a Turkish 9.979,99; the full 7-decimal balance is in the title. */}
+      {/* Comma grouping so "9,979.99" never reads as a Turkish 9.979,99; cut, not rounded, to cents; the full 7-decimal balance is in the title. */}
       <p
         className="whitespace-nowrap font-mono text-2xl tabular-nums text-ink sm:text-3xl"
         title={amount ?? undefined}
       >
-        {amount === null
-          ? "None"
-          : Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {amount === null ? "None" : balanceLabel(amount)}
       </p>
       {amount === null && <p className="text-xs text-slate">Not added yet</p>}
     </div>

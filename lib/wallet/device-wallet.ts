@@ -1,6 +1,6 @@
 // The device wallet (SOW D2). The keypair is made here by Keypair.random(),
 // whose entropy comes from WebCrypto (`crypto.getRandomValues`, via
-// @noble/ed25519 inside stellar-sdk 17), and is handed straight to SDF's
+// @noble/curves inside stellar-sdk 17), and is handed straight to SDF's
 // KeyManager, which encrypts it under the user's pincode with ScryptEncrypter
 // and writes only the ciphertext to localStorage. We write no KDF or
 // encryption code. Nothing in this module talks to the Pairy server.
@@ -14,6 +14,7 @@ import {
 } from "@stellar/typescript-wallet-sdk-km";
 import { Keypair, Networks, StrKey, TransactionBuilder, type Transaction } from "@stellar/stellar-sdk";
 
+import { markBackedUp } from "./backup";
 import { pincodeProblem } from "./pincode";
 
 const STORAGE_PREFIX = "pairy-keys";
@@ -67,17 +68,36 @@ export async function createDeviceWallet(pincode: string, storage: Storage = loc
       type: KeyType.plaintextKey,
       network: Networks.TESTNET,
     },
-    password: pincode,
+    password: pincode.normalize("NFC"),
     encrypterName: ScryptEncrypter.name,
   });
   return publicKey;
 }
 
-async function unlock(publicKey: string, pincode: string, storage: Storage) {
-  try {
-    return await keyManager(storage).loadKey(publicKey, pincode);
-  } catch {
-    throw new WrongPincodeError();
+/**
+ * Runs `use` with the pincode in NFC, the form createDeviceWallet stores, so an
+ * accented pincode typed or pasted with decomposed accents still matches. Then
+ * as typed and in NFD, for a wallet stored before pincodes were normalized.
+ */
+async function withPincode<T>(pincode: string, use: (password: string) => Promise<T>): Promise<T> {
+  for (const password of new Set([pincode.normalize("NFC"), pincode, pincode.normalize("NFD")])) {
+    try {
+      return await use(password);
+    } catch {
+      // Wrong for this form; try the next.
+    }
+  }
+  throw new WrongPincodeError();
+}
+
+function unlock(publicKey: string, pincode: string, storage: Storage) {
+  return withPincode(pincode, (password) => keyManager(storage).loadKey(publicKey, password));
+}
+
+/** So a missing key (storage cleared, or replaced in another tab) isn't reported as a wrong pincode. */
+async function assertKeyStored(publicKey: string, storage: Storage) {
+  if (!(await keyStore(storage).loadKey(publicKey).catch(() => undefined))) {
+    throw new Error("The key is no longer in this browser, so it can't sign. Restore your backup file to continue.");
   }
 }
 
@@ -89,20 +109,17 @@ export async function signTransactionWithDeviceWallet(
   storage: Storage = localStorage,
 ): Promise<string> {
   const transaction = TransactionBuilder.fromXDR(xdr, Networks.TESTNET) as Transaction;
-  await exportDeviceWallet(publicKey, storage); // so a missing key isn't reported as a wrong pincode
-  let signed: { toXDR(): string };
-  try {
-    // KM decrypts, signs and drops the key; shouldCache is off by default.
-    signed = await keyManager(storage).signTransaction({
+  await assertKeyStored(publicKey, storage);
+  // KM decrypts, signs and drops the key; shouldCache is off by default.
+  const signed: { toXDR(): string } = await withPincode(pincode, (password) =>
+    keyManager(storage).signTransaction({
       // KM bundles its own stellar-sdk copy; the handler only calls
       // getKeypairSignature/addSignature, which our Transaction provides.
       transaction: transaction as never,
       id: publicKey,
-      password: pincode,
-    });
-  } catch {
-    throw new WrongPincodeError();
-  }
+      password,
+    }),
+  );
   return signed.toXDR();
 }
 
@@ -117,6 +134,7 @@ export async function signMessageWithDeviceWallet(
   pincode: string,
   storage: Storage = localStorage,
 ): Promise<string> {
+  await assertKeyStored(publicKey, storage);
   const key = await unlock(publicKey, pincode, storage);
   const signature = Keypair.fromSecret(key.privateKey).signMessage(message);
   return btoa(String.fromCharCode(...signature));
@@ -126,6 +144,7 @@ export async function signMessageWithDeviceWallet(
 export async function exportDeviceWallet(publicKey: string, storage: Storage = localStorage): Promise<EncryptedKey> {
   const entry = await keyStore(storage).loadKey(publicKey).catch(() => undefined);
   if (!entry) throw new Error("No wallet on this device to export.");
+  markBackedUp(publicKey, storage);
   return entry;
 }
 
@@ -153,7 +172,11 @@ export async function importDeviceWallet(
 ): Promise<string> {
   if (!isEncryptedKey(backup)) throw new Error("That file isn't a Pairy wallet backup.");
   await assertNoWallet(storage);
+  return storeVerified(backup, pincode, storage);
+}
 
+/** Stores `backup` only if `pincode` decrypts it to the key its id names. */
+async function storeVerified(backup: EncryptedKey, pincode: string, storage: Storage): Promise<string> {
   const store = keyStore(storage);
   await store.storeKeys([backup]);
   try {
@@ -165,5 +188,31 @@ export async function importDeviceWallet(
     await store.removeKey(backup.id);
     throw e;
   }
+  // Restored from a file, so that file is its backup.
+  markBackedUp(backup.id, storage);
   return backup.id;
+}
+
+/**
+ * Swaps the key in this browser for the one in `backup`. The new key is
+ * stored and checked against its pincode first; the old one is removed only
+ * after that works, so a wrong pincode or a bad file leaves it untouched.
+ * `shown` is the key the user was told would be removed; if another tab has
+ * changed the stored key since, nothing is replaced.
+ */
+export async function replaceDeviceWallet(
+  backup: unknown,
+  pincode: string,
+  storage: Storage = localStorage,
+  shown?: string,
+): Promise<string> {
+  if (!isEncryptedKey(backup)) throw new Error("That file isn't a Pairy wallet backup.");
+  const current = await getDeviceWalletPublicKey(storage);
+  if (shown !== undefined && current !== shown) {
+    throw new Error("The key in this browser was changed in another tab, so nothing was replaced. Reload this page and check which key you are replacing.");
+  }
+  if (current === backup.id) throw new Error("That backup is the key already in this browser.");
+  const publicKey = await storeVerified(backup, pincode, storage);
+  if (current) await keyStore(storage).removeKey(current);
+  return publicKey;
 }
