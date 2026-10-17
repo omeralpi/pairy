@@ -78,7 +78,7 @@ function settlementSuite(code: AssetCode, asset: Asset, setup: () => Promise<[Ke
         amount,
         windowSeconds: 259_200,
       }),
-    ).resolves.toEqual({ balanceId: locked.balanceId });
+    ).resolves.toMatchObject({ balanceId: locked.balanceId, createdAt: expect.any(Date) });
 
     const claimed = await claim(buyer, locked.balanceId);
     expect(claimed.ok).toBe(true);
@@ -115,7 +115,7 @@ function settlementSuite(code: AssetCode, asset: Asset, setup: () => Promise<[Ke
         amount,
         windowSeconds: 60,
       }),
-    ).resolves.toEqual({ balanceId: locked.balanceId });
+    ).resolves.toMatchObject({ balanceId: locked.balanceId, createdAt: expect.any(Date) });
 
     const early = await claim(seller, locked.balanceId);
     expect(early).toMatchObject({ ok: false, codes: ["tx_failed", "op_cannot_claim"] });
