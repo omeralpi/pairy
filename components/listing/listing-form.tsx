@@ -12,20 +12,23 @@ import { FIAT_CODES } from "@/lib/fiat";
 import { cn } from "@/lib/utils";
 
 import { CityPicker, type PickedCity } from "./city-picker";
+import { normalizeDecimal } from "./format";
 
 type CreateInput = RouterInputs["listing"]["create"];
 
 function Segmented<T extends string>({
+  labelledBy,
   value,
   options,
   onChange,
 }: {
+  labelledBy: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="grid grid-flow-col auto-cols-fr rounded-full border border-line p-1">
+    <div role="group" aria-labelledby={labelledBy} className="grid grid-flow-col auto-cols-fr rounded-full border border-line p-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -51,8 +54,12 @@ function FieldError({ messages }: { messages?: string[] }) {
 
 // Label ships text-sm/font-medium as utilities, which beat .eyebrow; override them here.
 const LABEL = "eyebrow text-[11px] font-normal";
-const FIELD = "border-line bg-paper text-ink placeholder:text-mist focus-visible:ring-ink";
+const FIELD = "border-line bg-paper text-ink placeholder:text-slate focus-visible:ring-ink";
 const NUMBER = cn(FIELD, "font-mono text-lg tabular-nums");
+
+/** "1,000" or "1 000" is not taken as a number; say why before the server does. */
+const dotHint = (v: string) =>
+  /[,\s]/.test(normalizeDecimal(v)) ? ["Use a dot for decimals and no thousands separators, e.g. 1000.5."] : undefined;
 
 export function ListingForm() {
   const router = useRouter();
@@ -80,12 +87,22 @@ export function ListingForm() {
       onSubmit={(e) => {
         e.preventDefault();
         if (!city) return;
-        create.mutate({ side, asset, minAmount, maxAmount, fiatCode, rate, cityId: city.id, note: note || undefined });
+        create.mutate({
+          side,
+          asset,
+          minAmount: normalizeDecimal(minAmount),
+          maxAmount: normalizeDecimal(maxAmount),
+          fiatCode,
+          rate: normalizeDecimal(rate),
+          cityId: city.id,
+          note: note || undefined,
+        });
       }}
     >
       <div className="space-y-2">
-        <Label className={LABEL}>I want to</Label>
+        <Label id="side-label" className={LABEL}>I want to</Label>
         <Segmented
+          labelledBy="side-label"
           value={side}
           onChange={setSide}
           options={[
@@ -96,8 +113,9 @@ export function ListingForm() {
       </div>
 
       <div className="space-y-2">
-        <Label className={LABEL}>Asset · testnet</Label>
+        <Label id="asset-label" className={LABEL}>Asset · testnet</Label>
         <Segmented
+          labelledBy="asset-label"
           value={asset}
           onChange={setAsset}
           options={[
@@ -111,12 +129,12 @@ export function ListingForm() {
         <div className="space-y-2">
           <Label htmlFor="min" className={LABEL}>Min {asset}</Label>
           <Input id="min" className={NUMBER} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
-          <FieldError messages={fieldErrors.minAmount} />
+          <FieldError messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="max" className={LABEL}>Max {asset}</Label>
           <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
-          <FieldError messages={fieldErrors.maxAmount} />
+          <FieldError messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
         </div>
       </div>
 
@@ -124,7 +142,7 @@ export function ListingForm() {
         <div className="space-y-2">
           <Label htmlFor="rate" className={LABEL}>Rate · cash per 1 {asset}</Label>
           <Input id="rate" className={NUMBER} inputMode="decimal" required placeholder="41.50" value={rate} onChange={(e) => setRate(e.target.value.trim())} />
-          <FieldError messages={fieldErrors.rate} />
+          <FieldError messages={dotHint(rate) ?? fieldErrors.rate} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="fiat" className={LABEL}>Cash</Label>
@@ -144,15 +162,15 @@ export function ListingForm() {
       </div>
 
       <div className="space-y-2">
-        <Label className={LABEL}>City</Label>
-        <CityPicker value={city} onChange={setCity} />
+        <Label htmlFor="city" className={LABEL}>City</Label>
+        <CityPicker id="city" value={city} onChange={setCity} />
         <p className="text-sm text-slate">
           The pin shows the city, not you. Agree the meeting point in the chat.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="note" className={LABEL}>Note · optional</Label>
+        <Label htmlFor="note" className={LABEL}>Public note · optional</Label>
         <Textarea
           id="note"
           className={cn(FIELD, "text-base shadow-none md:text-base")}

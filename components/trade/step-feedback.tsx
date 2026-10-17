@@ -36,7 +36,7 @@ export function StepFeedback({ step }: { step: ReturnType<typeof useChainStep> }
   if (!step.error) return null;
   return (
     <div role="alert" className="space-y-3 rounded-xl border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
-      <p>{step.error}</p>
+      <p className="[overflow-wrap:anywhere]">{step.error}</p>
       {step.unreported && (
         <div className="flex flex-wrap items-center gap-4">
           <a

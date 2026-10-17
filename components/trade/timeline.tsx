@@ -16,6 +16,10 @@ function sentence(type: string, by: string, mine: boolean, asset: string): strin
       return `${who} took the ${asset} back.`;
     case "cancel":
       return `${who} cancelled.`;
+    case "expire":
+      return "Cancelled automatically after a week without activity.";
+    case "reset":
+      return "Closed: Stellar testnet was reset.";
     case "flagDispute":
       return `${who} flagged a problem.`;
     default:

@@ -20,7 +20,15 @@ import { countryName } from "./format";
 export type PickedCity = RouterOutputs["geo"]["searchCities"][number];
 
 /** Picks a city by name. Only its id is ever sent to the server; no device location is read. */
-export function CityPicker({ value, onChange }: { value: PickedCity | null; onChange: (c: PickedCity) => void }) {
+export function CityPicker({
+  id,
+  value,
+  onChange,
+}: {
+  id?: string;
+  value: PickedCity | null;
+  onChange: (c: PickedCity) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -39,6 +47,7 @@ export function CityPicker({ value, onChange }: { value: PickedCity | null; onCh
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
+          id={id}
           type="button"
           className="flex h-14 w-full items-center gap-2.5 rounded-md border border-line bg-paper px-4 text-left text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ink"
         >
@@ -51,7 +60,7 @@ export function CityPicker({ value, onChange }: { value: PickedCity | null; onCh
               </span>
             </span>
           ) : (
-            <span className="text-mist">Search a city</span>
+            <span className="text-slate">Search a city</span>
           )}
           <ChevronsUpDown className="ml-auto size-4 shrink-0 text-slate" strokeWidth={1.5} />
         </button>

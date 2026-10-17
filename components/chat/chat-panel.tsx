@@ -34,14 +34,17 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
       <header className="space-y-1.5 border-b border-line p-5">
         <h2 className="text-base font-semibold">Chat</h2>
         <p className="text-sm leading-relaxed text-slate">
-          Only you and your peer see this. It&apos;s deleted when the trade ends. Agree the meeting point here; skip
-          personal details.
+          Messages are stored on Pairy&apos;s server until the trade ends, then deleted. Only you and your peer can open
+          them here. Agree the meeting point; skip personal details. Pairy never writes here and never asks for your
+          pincode or backup file.
         </p>
       </header>
 
       <div className="max-h-[28rem] min-h-48 space-y-3 overflow-y-auto p-5">
         {closed ? (
           <p className="text-sm text-slate">This trade has ended, so its chat was deleted.</p>
+        ) : messages.error && !messages.data ? (
+          <p className="text-sm text-slate">Couldn&apos;t load the chat. Trying again…</p>
         ) : count === 0 ? (
           <p className="text-sm text-slate">No messages yet. Start with where to meet.</p>
         ) : (
@@ -77,10 +80,12 @@ export function ChatPanel({ tradeId, me, closed }: { tradeId: string; me: string
               maxLength={MAX}
               value={body}
               placeholder="Write a message"
+              aria-label="Message"
               className="resize-none rounded-xl border-line bg-paper shadow-none"
               onChange={(e) => setBody(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                // On touch keyboards Enter is the only way to start a new line.
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && matchMedia("(pointer: fine)").matches) {
                   e.preventDefault();
                   e.currentTarget.form?.requestSubmit();
                 }

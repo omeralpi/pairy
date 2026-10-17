@@ -1,19 +1,24 @@
 'use client';
 
-import { Check, X } from "lucide-react";
-import { useState } from "react";
+import { Check, Download, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { shortAddress, trimAmount } from "@/components/listing/format";
 import { windowLabel, type TradeView } from "@/components/trade/format";
+import { lockGuard, unrecordedLock } from "@/components/trade/guards";
 import { StepFeedback, WalletHint, walletProblem } from "@/components/trade/step-feedback";
 import { useChainStep } from "@/components/trade/use-chain-step";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { toAsset } from "@/lib/stellar/assets";
+import { networkDeadline } from "@/lib/stellar/horizon";
 import { buildLockTransaction } from "@/lib/stellar/settlement";
+import { readPendingTx } from "@/lib/trade/pending-tx";
 import type { PreflightCheck } from "@/lib/trade/preflight";
 import { loadSourceAccount } from "@/lib/trade/sign-and-submit";
-import { useWallet } from "@/lib/wallet/use-wallet";
+import { lockBackupProblem } from "@/lib/wallet/backup";
+import { useWalletContext } from "@/lib/wallet/use-wallet";
 
 /** Plain words for a check; the trustline one would otherwise say "op_no_trust". */
 function checkText(c: PreflightCheck, asset: string): string {
@@ -26,34 +31,59 @@ function checkText(c: PreflightCheck, asset: string): string {
 /** The seller's lock screen (state agreed). */
 export function LockPanel({ trade }: { trade: TradeView }) {
   const utils = api.useUtils();
-  const { wallet, ready } = useWallet();
+  const { wallet, ready, exportBackup } = useWalletContext();
   const [ack, setAck] = useState(false);
+  const [exported, setExported] = useState(false);
   const preflight = api.trade.lockPreflight.useQuery({ tradeId: trade.id }, { refetchInterval: 15_000 });
   const recordLock = api.trade.recordLock.useMutation();
-  const step = useChainStep(async (txHash) => {
-    await recordLock.mutateAsync({ tradeId: trade.id, txHash });
-    await utils.trade.invalidate();
-  });
+  const { mutate: sync } = api.trade.sync.useMutation({ onSuccess: () => utils.trade.invalidate() });
+  const step = useChainStep(
+    async (txHash) => {
+      try {
+        await recordLock.mutateAsync({ tradeId: trade.id, txHash });
+      } catch (e) {
+        // The background sync may have recorded this very lock first.
+        const now = await utils.trade.byId.fetch({ id: trade.id }, { staleTime: 0 });
+        if (now.lockTx !== txHash) throw e;
+      }
+      await utils.trade.invalidate();
+    },
+    { tradeId: trade.id, kind: "lock" },
+  );
+  const alreadyLocked = preflight.data?.checks.find((c) => c.id === "noExistingLock" && !c.ok);
+
+  // A lock is on Stellar that this trade has not recorded: record it now.
+  useEffect(() => {
+    if (alreadyLocked) sync({ tradeId: trade.id });
+  }, [alreadyLocked, sync, trade.id]);
 
   const amount = `${trimAmount(trade.amount)} ${trade.asset}`;
   const window = windowLabel(trade.windowSeconds);
   const problem = walletProblem(wallet, ready, trade.seller);
-  const blocked = preflight.isLoading
-    ? "Checking both wallets on Stellar testnet…"
-    : preflight.error
-      ? preflight.error.message
-      : preflight.data?.blockedReason
-        ? "Sort out the item above, then lock."
-        : !ack
-          ? "Tick the box above to continue."
-          : problem;
+  // Reclaim after the window needs this key; the browser may not keep it that long.
+  const backupProblem = exported ? null : lockBackupProblem(wallet);
+  // A lock already sent from here must be recorded, never sent twice (round 2 F1).
+  const sent = unrecordedLock(step.unreported, readPendingTx(trade.id));
+  const blocked = sent
+    ? sent
+    : preflight.isLoading
+      ? "Checking both wallets on Stellar testnet…"
+      : preflight.error
+        ? preflight.error.message
+        : alreadyLocked
+          ? (alreadyLocked.detail ?? alreadyLocked.label)
+          : preflight.data?.blockedReason
+            ? "Sort out the item above, then lock."
+            : !ack
+              ? "Tick the box above to continue."
+              : (problem ?? backupProblem);
 
   return (
     <section className="space-y-10" aria-labelledby="lock-heading">
       <div className="space-y-5">
         <p className="eyebrow">Before you lock</p>
         <h2 id="lock-heading" className="text-3xl font-semibold tracking-tight">
-          Lock <span className="font-mono font-medium">{amount}</span> for the buyer.
+          Lock <span className="font-mono font-medium [overflow-wrap:anywhere]">{amount}</span> for the buyer.
         </h2>
         <p className="border-l-2 border-ink pl-5 text-lg leading-relaxed text-ink">
           Once you lock, the buyer can claim the {amount} at any moment in the next {window}, whether or not they have
@@ -124,24 +154,63 @@ export function LockPanel({ trade }: { trade: TradeView }) {
         <Button
           variant="beacon"
           size="lg"
-          className="w-full"
+          className="h-auto min-h-14 w-full whitespace-normal py-3 [overflow-wrap:anywhere]"
           disabled={!!blocked || step.busy}
           onClick={() =>
             wallet &&
-            step.run(wallet, async () => {
-              return buildLockTransaction(await loadSourceAccount(wallet.publicKey), {
-                asset: toAsset(trade.asset),
-                amount: trade.amount,
-                buyer: trade.buyer,
-                windowSeconds: trade.windowSeconds,
-              });
-            })
+            step.run(
+              wallet,
+              async () => {
+                return buildLockTransaction(
+                  await loadSourceAccount(wallet.publicKey),
+                  {
+                    asset: toAsset(trade.asset),
+                    amount: trade.amount,
+                    buyer: trade.buyer,
+                    windowSeconds: trade.windowSeconds,
+                  },
+                  // On Horizon's clock, so a slow device clock can't expire it.
+                  await networkDeadline(300),
+                );
+              },
+              {
+                // The buyer may have cancelled, or another tab locked, while
+                // the signing prompt was open (Q-3).
+                beforeSubmit: async () => {
+                  const [now, checks] = await Promise.all([
+                    utils.trade.byId.fetch({ id: trade.id }, { staleTime: 0 }),
+                    utils.trade.lockPreflight.fetch({ tradeId: trade.id }, { staleTime: 0 }),
+                  ]);
+                  const stop = lockGuard(now.state, checks.checks);
+                  if (stop) {
+                    void utils.trade.invalidate();
+                    throw new Error(stop);
+                  }
+                },
+              },
+            )
           }
         >
           {step.busy ? "Signing and sending…" : `Lock ${amount}`}
         </Button>
         {blocked && blocked === problem ? (
           <WalletHint problem={problem} />
+        ) : blocked && blocked === backupProblem ? (
+          <div className="space-y-3">
+            <p className="text-sm text-slate">{backupProblem}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportBackup()
+                  .then(() => setExported(true))
+                  .catch((e) => toast.error(e instanceof Error ? e.message : "Something went wrong."))
+              }
+            >
+              <Download strokeWidth={1.5} />
+              Export backup
+            </Button>
+          </div>
         ) : (
           blocked && <p className="text-sm text-slate">{blocked}</p>
         )}

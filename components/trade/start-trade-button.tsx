@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { trimAmount } from "@/components/listing/format";
+import { friendlyError } from "@/components/friendly-error";
+import { normalizeDecimal, trimAmount } from "@/components/listing/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -34,7 +35,10 @@ export function StartTradeButton({ listingId }: { listingId: string }) {
 
   const min = trimAmount(listing.minAmount);
   const max = trimAmount(listing.maxAmount);
-  const parsed = amountInput.safeParse(amount);
+  // Normalized on use, not while typing: "1," must not turn into "1." before
+  // the user has typed the "000" that makes it a thousands separator.
+  const value = normalizeDecimal(amount);
+  const parsed = amountInput.safeParse(value);
   const inBounds =
     parsed.success &&
     toStroops(parsed.data) >= toStroops(listing.minAmount) &&
@@ -46,7 +50,7 @@ export function StartTradeButton({ listingId }: { listingId: string }) {
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        if (inBounds) open.mutate({ listingId, amount: amount.trim() });
+        if (inBounds) open.mutate({ listingId, amount: value });
       }}
     >
       <label htmlFor="trade-amount" className="eyebrow block">
@@ -59,16 +63,20 @@ export function StartTradeButton({ listingId }: { listingId: string }) {
         className="font-mono"
         value={amount}
         onChange={(e) => setAmount(e.target.value.trim())}
+        aria-invalid={!!amount && !inBounds}
+        aria-describedby="trade-amount-hint"
       />
-      <p className="text-sm text-slate">
+      <p id="trade-amount-hint" className="text-sm text-slate">
         {inBounds
-          ? `${fiatTotal(amount, listing.rate)} ${listing.fiatCode} in cash. `
-          : amount
-            ? `Enter an amount between ${min} and ${max} ${listing.asset}. `
-            : ""}
+          ? `${fiatTotal(value, listing.rate)} ${listing.fiatCode} in cash. `
+          : /[,\s]/.test(value)
+            ? "Use a dot for decimals and no thousands separators, e.g. 1000.5. "
+            : amount
+              ? `Enter an amount between ${min} and ${max} ${listing.asset}. `
+              : ""}
         You will be the {youAre}. Opening a trade moves no money; your peer has to agree first.
       </p>
-      {open.error && <p className="text-sm text-danger">{open.error.message}</p>}
+      {open.error && <p className="text-sm text-danger [overflow-wrap:anywhere]">{friendlyError(open.error)}</p>}
       <Button type="submit" disabled={!inBounds || open.isPending}>
         {open.isPending ? "Opening…" : "Start trade"}
       </Button>

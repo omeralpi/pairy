@@ -2,9 +2,11 @@
 
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
+import { friendlyError, isUnauthorized } from "@/components/friendly-error";
 import { shortAddress, trimAmount } from "@/components/listing/format";
-import { STATE_LABEL, statusSentence } from "@/components/trade/format";
+import { STATE_LABEL, lockWindowClosed, statusSentence } from "@/components/trade/format";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth/use-session";
 import type { TradeState } from "@/lib/trade/state-machine";
@@ -15,8 +17,13 @@ const ORDER: TradeState[] = ["locked", "agreed", "listed", "claimed", "reclaimed
 const linkClass = "font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink";
 
 export default function TradesPage() {
+  const utils = api.useUtils();
   const { publicKey, loading } = useSession();
   const { data, isLoading, error } = api.trade.mine.useQuery(undefined, { enabled: !!publicKey, refetchInterval: 10_000 });
+  const expired = isUnauthorized(error);
+  useEffect(() => {
+    if (expired) void utils.auth.me.invalidate();
+  }, [expired, utils]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 md:py-16">
@@ -36,7 +43,7 @@ export default function TradesPage() {
         ) : isLoading ? (
           <p className="text-sm text-slate">Loading…</p>
         ) : error ? (
-          <p className="text-sm text-danger">{error.message}</p>
+          <p className="text-sm text-danger">{friendlyError(error)}</p>
         ) : data?.length === 0 ? (
           <p className="text-lg text-slate">
             No trades yet.{" "}
@@ -65,7 +72,7 @@ export default function TradesPage() {
                               → {trimAmount(t.fiatAmount)} {t.fiatCode}
                             </span>
                           </p>
-                          <p className="text-sm text-ink">{statusSentence(t)}</p>
+                          <p className="text-sm text-ink">{statusSentence(t, { state: lockWindowClosed(t) ? "closed" : "unchecked" })}</p>
                           <p className="text-xs text-slate">
                             {t.role === "seller" ? "Selling" : "Buying"} · with{" "}
                             <span className="font-mono">{shortAddress(t.counterparty)}</span> · {t.cityName}
