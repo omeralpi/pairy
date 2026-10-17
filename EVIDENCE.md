@@ -36,10 +36,10 @@ Evidence type: public GitHub repo, green CI run, transaction hashes on stellar.e
 
 | Item | Link | Status |
 |---|---|---|
-| Public repository | PENDING (repo not yet public) | PENDING |
-| `lib/stellar/settlement.ts` (the settlement surface: the four stock SDK calls, assembled with `TransactionBuilder`) | [lib/stellar/settlement.ts](lib/stellar/settlement.ts) | Written; not yet published |
-| `lib/trade/state-machine.ts` (TradeStateMachine) | [lib/trade/state-machine.ts](lib/trade/state-machine.ts) | Written; not yet published |
-| Green CI run on the public repo | PENDING | PENDING |
+| Public repository | [https://github.com/omeralpi/pairy](https://github.com/omeralpi/pairy) | Public since 2026-10-17 |
+| `lib/stellar/settlement.ts` (the settlement surface: the four stock SDK calls, assembled with `TransactionBuilder`) | [lib/stellar/settlement.ts](lib/stellar/settlement.ts) | Published |
+| `lib/trade/state-machine.ts` (TradeStateMachine) | [lib/trade/state-machine.ts](lib/trade/state-machine.ts) | Published |
+| Green CI run on the public repo | [CI run 39028728435](https://github.com/omeralpi/pairy/actions/runs/39028728435) (lint, typecheck, unit tests, both scope tests, build) and [testnet run 39028729204](https://github.com/omeralpi/pairy/actions/runs/39028729204) (XLM and USDC lock, claim, early reclaim rejected, reclaim after a 60-second window, op_no_trust) | Green on commit `a15c81d`, 2026-10-17 |
 
 ### Testnet transactions
 
@@ -97,8 +97,8 @@ Evidence type: transaction hash on stellar.expert, screen recordings, green CI r
 | Two-wallet-type end-to-end run: recording | Two test users, one on Freighter and one on a device-generated wallet, completing a trade end to end | PENDING | PENDING |
 | Two-wallet-type end-to-end run: lock hash | The lock from that run | PENDING | PENDING |
 | Two-wallet-type end-to-end run: claim hash | The claim from that run | PENDING | PENDING |
-| CI test `no-secret-fields` (passing run) | Fails the build if any API endpoint ever accepts a secret key or a pincode | PENDING | Test written ([tests/ci/no-secret-fields.test.ts](tests/ci/no-secret-fields.test.ts)); no public CI run yet |
-| CI test `coordination-purge-on-terminal` (passing run) | Asserts that a trade's chat messages are deleted once the trade is claimed, reclaimed or cancelled | PENDING | Test written ([tests/ci/coordination-purge-on-terminal.test.ts](tests/ci/coordination-purge-on-terminal.test.ts)); no public CI run yet |
+| CI test `no-secret-fields` (passing run) | Fails the build if any API endpoint ever accepts a secret key or a pincode | [CI run 39028728435](https://github.com/omeralpi/pairy/actions/runs/39028728435), step `no-secret-fields` | Passing ([tests/ci/no-secret-fields.test.ts](tests/ci/no-secret-fields.test.ts)) |
+| CI test `coordination-purge-on-terminal` (passing run) | Asserts that a trade's chat messages are deleted once the trade is claimed, reclaimed or cancelled | [CI run 39028728435](https://github.com/omeralpi/pairy/actions/runs/39028728435), step `coordination-purge-on-terminal` | Passing ([tests/ci/coordination-purge-on-terminal.test.ts](tests/ci/coordination-purge-on-terminal.test.ts)) |
 
 ---
 
@@ -109,7 +109,7 @@ Evidence type: live demo URL, public repo, walkthrough video.
 | Item | What it shows | Link | Status |
 |---|---|---|---|
 | Live demo URL (testnet) | Listings on the map, at the city level each user chose | https://pairy.org | Live since 2026-10-15 UTC (also at https://pairy-seven.vercel.app). Smoke-tested end to end on the hosted demo: a seller using a device-generated wallet in the browser listed 1 to 20 XLM in Istanbul, a scripted buyer using the same public API and sign-in opened a 10 XLM trade, the seller agreed and locked [`e8a800ad…4151`](https://stellar.expert/explorer/testnet/tx/e8a800ad91e2121d5beb7f55172ca46af801ec36967a9e923a4853fa53634151) (buyer `rel_before 259200`, seller `not rel_before 259200`), the buyer claimed [`83087e00…4d9a`](https://stellar.expert/explorer/testnet/tx/83087e00e84c10e2cda251f632a26e013b612f7cb0bd5f2cd8b9e68c95a54d9a), the trade reached `claimed` and its chat went from 1 message to 0 |
-| Public repository | Source for everything above | PENDING | PENDING |
+| Public repository | Source for everything above | [https://github.com/omeralpi/pairy](https://github.com/omeralpi/pairy) | Public since 2026-10-17 |
 | 2-minute walkthrough video | The full flow, including the lock screen stating the buyer-claim bound | PENDING | PENDING |
 | Settlement steps on stellar.expert | Every lock, claim and reclaim made in the demo, reachable through the links in Deliverable 1 and 2 | Hosted demo lock and claim in the row above; all others in Deliverable 1 | Partial |
 
