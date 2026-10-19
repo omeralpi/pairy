@@ -1,0 +1,84 @@
+[
+  {
+    "asset": "XLM",
+    "seller": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+    "buyer": "GCNK7UEFCKJQGL2LIDCR53OT6UBHQJRCYI2UVEROOBNJZLPZOQ2GIQWF",
+    "balanceId": "000000005d65616c9282d13c9f910c0c3c4d3978f610b5f18b3ba93818b4cd92fc6fe6b6",
+    "lockHash": "02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598",
+    "createdAt": "2026-10-15T06:54:57Z",
+    "maturesAt": "2026-10-18T06:54:57.000Z",
+    "reclaimHash": "4d2afb7697587517bc2f3e5a78f705de8f0ff303786bcef15aacc97286ca6963",
+    "reclaim": {
+      "step": "seller reclaims after 72 hours",
+      "hash": "4d2afb7697587517bc2f3e5a78f705de8f0ff303786bcef15aacc97286ca6963",
+      "url": "https://stellar.expert/explorer/testnet/tx/4d2afb7697587517bc2f3e5a78f705de8f0ff303786bcef15aacc97286ca6963",
+      "successful": true,
+      "resultCodes": null,
+      "ledger": 5274630,
+      "closedAt": "2026-10-19T07:58:57Z",
+      "feeChargedStroops": "100",
+      "snapshots": [
+        {
+          "label": "seller before reclaim",
+          "account": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+          "at": "2026-10-19T07:58:47Z",
+          "xlmBalanceStroops": "99949999800",
+          "numSponsoring": 2,
+          "baseReserveStroops": "5000000",
+          "minimumBalanceStroops": "20000000"
+        },
+        {
+          "label": "seller after reclaim",
+          "account": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+          "at": "2026-10-19T07:58:57Z",
+          "xlmBalanceStroops": "99999999700",
+          "numSponsoring": 0,
+          "baseReserveStroops": "5000000",
+          "minimumBalanceStroops": "10000000"
+        }
+      ]
+    }
+  },
+  {
+    "asset": "USDC",
+    "seller": "GD7VYTY7V5ET23SRDCW7LNR6W4GY7EF5EIGTOXDTEI7EQPIZ2EVZXH6M",
+    "buyer": "GDME7UVELMTOH7HGPW7ZZGKJSGMXYU7VZAHU4R6KEXTMW4MBWUVWSXFL",
+    "balanceId": "00000000c976e34d1a518862e232e2e6bd6fe5d0f0605b180b77df8c1c4c9e0ffb539000",
+    "lockHash": "340d915d875621a6c86075840c7cfa0a624a286c090c8055275cd4b2dcde62a9",
+    "createdAt": "2026-10-15T06:55:27Z",
+    "maturesAt": "2026-10-18T06:55:27.000Z",
+    "reclaimHash": "dafe4fe17dd82967d182471007c1e479ae97523d1204b0f76c5fae425d386db0",
+    "reclaim": {
+      "step": "seller reclaims after 72 hours",
+      "hash": "dafe4fe17dd82967d182471007c1e479ae97523d1204b0f76c5fae425d386db0",
+      "url": "https://stellar.expert/explorer/testnet/tx/dafe4fe17dd82967d182471007c1e479ae97523d1204b0f76c5fae425d386db0",
+      "successful": true,
+      "resultCodes": null,
+      "ledger": 5274632,
+      "closedAt": "2026-10-19T07:59:07Z",
+      "feeChargedStroops": "100",
+      "snapshots": [
+        {
+          "label": "seller before reclaim",
+          "account": "GD7VYTY7V5ET23SRDCW7LNR6W4GY7EF5EIGTOXDTEI7EQPIZ2EVZXH6M",
+          "at": "2026-10-19T07:58:57Z",
+          "xlmBalanceStroops": "99499999600",
+          "USDCBalanceStroops": "396680415",
+          "numSponsoring": 2,
+          "baseReserveStroops": "5000000",
+          "minimumBalanceStroops": "25000000"
+        },
+        {
+          "label": "seller after reclaim",
+          "account": "GD7VYTY7V5ET23SRDCW7LNR6W4GY7EF5EIGTOXDTEI7EQPIZ2EVZXH6M",
+          "at": "2026-10-19T07:59:07Z",
+          "xlmBalanceStroops": "99499999500",
+          "USDCBalanceStroops": "446680415",
+          "numSponsoring": 0,
+          "baseReserveStroops": "5000000",
+          "minimumBalanceStroops": "15000000"
+        }
+      ]
+    }
+  }
+]

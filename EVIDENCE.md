@@ -54,7 +54,7 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 | Reclaim by the seller after 60 seconds | [`45e5053f…81b8`](https://stellar.expert/explorer/testnet/tx/45e5053f106f2cc66dcb7a79aa041472957cc5688aea205b7596528ad8fc81b8) | [`c1ade40e…8b78`](https://stellar.expert/explorer/testnet/tx/c1ade40ea7126f6f8435356bb51323e2daf2a10c8cc9d29a92094c30153e8b78) |
 | Lock deliberately abandoned (72-hour window), opened 2026-10-15 ~06:55 UTC, matures 2026-10-18 ~06:55 UTC | [`02b073e7…0598`](https://stellar.expert/explorer/testnet/tx/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598) | [`340d915d…62a9`](https://stellar.expert/explorer/testnet/tx/340d915d875621a6c86075840c7cfa0a624a286c090c8055275cd4b2dcde62a9) |
 | Early reclaim attempt on that real 72-hour lock, before it matured (rejected on-chain with `op_cannot_claim`: the window is enforced) | [`a8bb0db5…9c00`](https://stellar.expert/explorer/testnet/tx/a8bb0db50e6ab7e56c344b6aa9b4cc90219c24e30e582fdeabea40a125f49c00) | [`0079ce6f…ae7c`](https://stellar.expert/explorer/testnet/tx/0079ce6fe6a1895a5c12239c96ce8f0381f8db15e97f86e8d91d8392d75cae7c) |
-| Reclaim by the seller after the real 72 hours matured | Scheduled: the XLM lock matures 2026-10-18 06:54:57 UTC | Scheduled: the USDC lock matures 2026-10-18 06:55:27 UTC |
+| Reclaim by the seller after the real 72 hours matured | [`4d2afb76…6963`](https://stellar.expert/explorer/testnet/tx/4d2afb7697587517bc2f3e5a78f705de8f0ff303786bcef15aacc97286ca6963) (2026-10-19 07:58:57 UTC; matured 2026-10-18 06:54:57 UTC) | [`dafe4fe1…6db0`](https://stellar.expert/explorer/testnet/tx/dafe4fe17dd82967d182471007c1e479ae97523d1204b0f76c5fae425d386db0) (2026-10-19 07:59:07 UTC; matured 2026-10-18 06:55:27 UTC) |
 
 ### Measured fees and reserves (stroops)
 
@@ -81,7 +81,7 @@ Each row is one transaction on stellar.expert. The 60-second reclaim uses a test
 | Item | Link | Status |
 |---|---|---|
 | Full written comparison, with quotes and sources | [docs/settlement-rail-comparison.md](docs/settlement-rail-comparison.md) | Written |
-| Upstream issue (Trustless Work: optional on-chain deadline with a funder refund path) | PENDING (to be filed on [Trustless-Work/trustlesswork-smart-contract-stellar](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues)) | PENDING |
+| Upstream issue (Trustless Work: optional on-chain deadline with a funder refund path) | [Trustless-Work/trustlesswork-smart-contract-stellar#132](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues/132) | Filed 2026-10-17, open |
 
 ---
 

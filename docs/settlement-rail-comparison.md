@@ -139,4 +139,4 @@ This probe is not deliverable evidence. Nobody reclaims it, so it matures on 202
 
 ## Upstream
 
-The SOW commits to proposing gaps upstream rather than forking a contract. The upstream issue asks Trustless Work for an optional on-chain deadline after which the funder can recover the funds without a resolver. With that, a two-party trade like this one would not need a third address. The issue has **not been filed yet**; its link goes into EVIDENCE.md once it is.
+The SOW commits to proposing gaps upstream rather than forking a contract. The upstream issue asks Trustless Work for an optional on-chain deadline after which the funder can recover the funds without a resolver. With that, a two-party trade like this one would not need a third address. The issue is filed as [Trustless-Work/trustlesswork-smart-contract-stellar#132](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues/132).
