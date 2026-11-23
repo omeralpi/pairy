@@ -77,7 +77,11 @@ Next, independent signers are added on testnet (3-of-5, then a 10-person council
 
 If either signer key is lost, a disputed trade cannot be settled and its USDC stays locked in the escrow. There is deliberately no one-person recovery key.
 
-- **Arbiter account:** not created yet. Its address and its stellar.expert link (signers and thresholds) are added here when it is created, before any protected trade. <!-- TODO(WP-05): arbiter account G-address + https://stellar.expert/explorer/testnet/account/<G...> -->
+- **Arbiter account:** [`GCAQSD3CRZVO34O7AJJWVIRKI6HGTOKLG5WSX4WJJTNG3QQ6ZWPAXCPH`](https://stellar.expert/explorer/testnet/account/GCAQSD3CRZVO34O7AJJWVIRKI6HGTOKLG5WSX4WJJTNG3QQ6ZWPAXCPH). Its signers, each at weight 1:
+  - Ömer Alpi: `GDRJ7JMJPBAGHKLP5JZJ6S6CP3OZ2ZURM23RBHR2N56MDOFSOOLQLD5Q`
+  - Ensar Mert Günay: `GDH2MGKJYMEZEHR62RRFYGHHK74AQ2AFZKUEP6GWCK5BRFB2A3T2N6J7`
+
+  Its own key is at weight 0 and its low, medium and high thresholds are all 2. One transaction set all of this when the account was created ([setup transaction](https://stellar.expert/explorer/testnet/tx/3dfce09cfba34eb32679fd64f7a91fb5ba16575ccbdbabbde7417ba3b4aa5bd8), 2026-11-23).
 - **Platform account:** [`GAHSTUWNAQ2HJ6FPKEY6OJP6RAX4PHEEAOTB7EAZR4A2KBDGVVK3ISFW`](https://stellar.expert/explorer/testnet/account/GAHSTUWNAQ2HJ6FPKEY6OJP6RAX4PHEEAOTB7EAZR4A2KBDGVVK3ISFW). Every escrow names it as the platform, with a fee of 0. Nothing can sign for it: its own key was set to weight 0 in the same transaction that added its USDC trustline, and it has no other signer ([setup transaction](https://stellar.expert/explorer/testnet/tx/c8dcfad48bcb13679990b72228111697410b5511ed6970f4c1a187e7310ea9f8), 2026-11-23).
 
 ## The acceptance screen, word for word
