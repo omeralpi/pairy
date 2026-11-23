@@ -89,6 +89,7 @@ const publicColumns = {
   asset: listings.asset,
   minAmount: listings.minAmount,
   maxAmount: listings.maxAmount,
+  remainingAmount: listings.remainingAmount,
   fiatCode: listings.fiatCode,
   rate: listings.rate,
   cityId: listings.cityId,
@@ -124,6 +125,7 @@ export const listingRouter = createTRPCRouter({
         asset: input.asset,
         minAmount: input.minAmount,
         maxAmount: input.maxAmount,
+        remainingAmount: input.maxAmount,
         fiatCode: input.fiatCode,
         rate: input.rate,
         cityId: city.id,
@@ -137,9 +139,11 @@ export const listingRouter = createTRPCRouter({
     return toPublic(row);
   }),
 
-  /** Active listings, newest first. */
+  /** Active listings with at least their minimum left, newest first. */
   list: publicProcedure.input(listInput).query(async ({ ctx, input }) => {
-    const where: (SQL | undefined)[] = [eq(listings.status, "active")];
+    // A listing below its minimum takes no trade; it comes back on its own
+    // when a trade on it is cancelled. Its status is not touched.
+    const where: (SQL | undefined)[] = [eq(listings.status, "active"), gte(listings.remainingAmount, listings.minAmount)];
     if (input?.asset) where.push(eq(listings.asset, input.asset));
     if (input?.side) where.push(eq(listings.side, input.side));
     if (input?.fiatCode) where.push(eq(listings.fiatCode, input.fiatCode));

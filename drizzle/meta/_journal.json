@@ -43,6 +43,13 @@
       "when": 1792172940276,
       "tag": "0005_trade_locked_at",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795462476771,
+      "tag": "0006_listing_remaining",
+      "breakpoints": true
     }
   ]
 }

@@ -17,10 +17,6 @@
 // database next to it and drops it afterwards, so the dev database is left
 // alone. Without PG_TEST_URL the file is skipped; the pg-concurrency CI job
 // (WP-12) sets it.
-//
-// RED until WP-07 lands the remaining amount: marked `it.fails` so a local
-// run against Postgres stays green; WP-07 turns it into plain `it`. The
-// branch red/listing-reservation carries the unmarked version.
 
 import { Keypair } from "@stellar/stellar-sdk";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -94,7 +90,7 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
     return rows[0].n;
   }
 
-  it.fails("accepts exactly one of ten simultaneous trades of 60 on a listing of 100", async () => {
+  it("accepts exactly one of ten simultaneous trades of 60 on a listing of 100", async () => {
     const owner = Keypair.random().publicKey();
     const buyers = Array.from({ length: BUYERS }, () => Keypair.random().publicKey());
     await db.insert(users).values([owner, ...buyers].map((publicKey) => ({ publicKey })));
@@ -106,6 +102,7 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
         asset: "XLM",
         minAmount: "10",
         maxAmount: "100",
+        remainingAmount: "100",
         fiatCode: "TRY",
         rate: "4.1250",
         cityId: "745044",

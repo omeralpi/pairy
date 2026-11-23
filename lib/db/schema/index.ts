@@ -59,6 +59,8 @@ export const listings = pgTable(
     asset: assetCode("asset").notNull(),
     minAmount: numeric("min_amount", { precision: 20, scale: 7 }).notNull(),
     maxAmount: numeric("max_amount", { precision: 20, scale: 7 }).notNull(),
+    /** max_amount less every trade that holds or used up its amount; recomputed by lib/listing/remaining.ts. */
+    remainingAmount: numeric("remaining_amount", { precision: 20, scale: 7 }).notNull(),
     fiatCode: text("fiat_code").notNull(),
     /** Fiat per one unit of the asset. */
     rate: numeric("rate", { precision: 20, scale: 4 }).notNull(),
@@ -77,6 +79,7 @@ export const listings = pgTable(
     check("listings_min_amount_positive", sql`${t.minAmount} > 0`),
     check("listings_max_amount_gte_min", sql`${t.maxAmount} >= ${t.minAmount}`),
     check("listings_rate_positive", sql`${t.rate} > 0`),
+    check("listings_remaining_in_range", sql`${t.remainingAmount} >= 0 AND ${t.remainingAmount} <= ${t.maxAmount}`),
   ],
 );
 

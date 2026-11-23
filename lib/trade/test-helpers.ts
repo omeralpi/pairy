@@ -37,6 +37,7 @@ export async function tradeFixture(side: "sell_crypto" | "buy_crypto" = "sell_cr
       asset: "XLM",
       minAmount: "10",
       maxAmount: "100",
+      remainingAmount: "100",
       fiatCode: "TRY",
       rate: "4.1250",
       cityId: "745044",

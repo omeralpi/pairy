@@ -18,6 +18,7 @@ const listing = () => ({
   asset: "XLM" as const,
   minAmount: "10",
   maxAmount: "100",
+  remainingAmount: "100",
   fiatCode: "TRY",
   rate: "4.1250",
   cityId: "745044",
@@ -82,11 +83,13 @@ describe("listings CHECK constraints", () => {
     ["max_amount < min_amount", "listings_max_amount_gte_min", () => ({ ...listing(), minAmount: "50", maxAmount: "49.9999999" })],
     ["rate = 0", "listings_rate_positive", () => ({ ...listing(), rate: "0" })],
     ["rate < 0", "listings_rate_positive", () => ({ ...listing(), rate: "-4.1250" })],
+    ["remaining_amount < 0", "listings_remaining_in_range", () => ({ ...listing(), remainingAmount: "-1" })],
+    ["remaining_amount > max_amount", "listings_remaining_in_range", () => ({ ...listing(), remainingAmount: "100.0000001" })],
   ])("rejects %s (%s)", async (_, constraint, row) => {
     await expect(db.insert(listings).values(row())).rejects.toMatchObject({ cause: { constraint } });
   });
 
   it("accepts min equal to max", async () => {
-    await db.insert(listings).values({ ...listing(), minAmount: "25", maxAmount: "25" });
+    await db.insert(listings).values({ ...listing(), minAmount: "25", maxAmount: "25", remainingAmount: "25" });
   });
 });

@@ -6,11 +6,6 @@
 // check the rule (the remaining-amount check and its messages), never the
 // listing row lock: a check with no lock passes here. The lock is the job of
 // tests/pg/listing-reservation.pg.test.ts on real Postgres.
-//
-// RED until WP-07 lands the remaining amount: the cases below are marked
-// `it.fails` so the branch's default suite stays green; WP-07 turns them
-// into plain `it`. The branch red/listing-reservation carries the unmarked
-// version for the failing run on the old code.
 
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -27,7 +22,7 @@ function open(buyer: string, amount: string) {
 }
 
 describe("listing-reservation-concurrency", () => {
-  it.fails("accepts only one of two simultaneous trades that together exceed the listing", async () => {
+  it("accepts only one of two simultaneous trades that together exceed the listing", async () => {
     const results = await Promise.allSettled([open(f.taker, "60"), open(f.stranger, "60")]);
 
     const fulfilled = results.filter((r) => r.status === "fulfilled");

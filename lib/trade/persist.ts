@@ -7,8 +7,9 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
 import type { Db } from "@/lib/db";
-import { chatMessages, tradeEvents, trades } from "@/lib/db/schema";
+import { chatMessages, listings, tradeEvents, trades } from "@/lib/db/schema";
 import type { TestDb } from "@/lib/db/test-setup";
+import { recomputeRemaining } from "@/lib/listing/remaining";
 
 import {
   TradeStateMachine,
@@ -56,6 +57,14 @@ export async function transitionTrade(
 ): Promise<TradeRow> {
   try {
     return await db.transaction(async (tx) => {
+      // Lock order everywhere: the listing row, then the trade row. The
+      // listing lock serializes this against trade.open and every other
+      // transition on the listing, so the remaining amount recomputed below
+      // sees every committed trade. listing_id never changes, so the
+      // unlocked read is safe.
+      const [ref] = await tx.select({ listingId: trades.listingId }).from(trades).where(eq(trades.id, tradeId));
+      if (!ref) throw new TRPCError({ code: "NOT_FOUND", message: "Trade not found" });
+      await tx.select({ id: listings.id }).from(listings).where(eq(listings.id, ref.listingId)).for("update");
       // The row lock serializes this against other transitions and against
       // chat.send (FOR SHARE), so no message can land after the purge.
       const [row] = await tx.select().from(trades).where(eq(trades.id, tradeId)).for("update");
@@ -76,6 +85,7 @@ export async function transitionTrade(
       if (isTerminal(next.state)) {
         await tx.delete(chatMessages).where(eq(chatMessages.tradeId, tradeId));
       }
+      await recomputeRemaining(tx, ref.listingId);
       return updated;
     });
   } catch (e) {
