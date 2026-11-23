@@ -18,7 +18,7 @@ import {
 import { NETWORK_PASSPHRASE } from "@/lib/stellar/settlement";
 import { fromStroops } from "@/lib/trade/amount";
 
-import { DISPUTE_REASON, TW_ESCROW_WASM_HASH, TW_FACTORY_CONTRACT_ID, TW_FEE_ADDRESS, USDC_SAC } from "./config";
+import { DISPUTE_REASON, ESCROW_XLM_NEED, TW_ESCROW_WASM_HASH, TW_FACTORY_CONTRACT_ID, TW_FEE_ADDRESS, USDC_SAC } from "./config";
 import { netAfterFee } from "./fee";
 
 export type EscrowCall = "deploy" | "fund" | "release" | "dispute" | "resolve";
@@ -47,6 +47,8 @@ export type DecodedCall = {
   /** The transaction's hash on testnet, hex: what each signer signs. */
   hash: string;
   source: string;
+  /** The most the source can be charged, in stroops: inclusion and Soroban resource fees together. */
+  fee: bigint;
   opCount: number;
   /** The first operation's type, and its own source account when it has one. */
   opType: string;
@@ -66,7 +68,8 @@ export type CallExpectation =
   | { kind: "fund"; contractId: string; seller: string; amountStroops: bigint; terms: EscrowTerms }
   | { kind: "release"; contractId: string; seller: string }
   | { kind: "dispute"; contractId: string; signer: string }
-  | { kind: "resolve"; contractId: string; resolver: string; recipient: string; amountStroops: bigint };
+  /** timePolicy (O-17): "server-original" (the default) for Trustless Work's resolve as returned; "browser-rebuilt" for it re-timed by rebuildMaxTime. */
+  | { kind: "resolve"; contractId: string; resolver: string; recipient: string; amountStroops: bigint; timePolicy?: "server-original" | "browser-rebuilt" };
 
 const FN: Record<EscrowCall, string> = {
   deploy: "tw_new_single_release_escrow",
@@ -112,6 +115,7 @@ export function decodeEscrowCall(prepared: { unsignedXdr: string; txHash: string
     network: txHash === prepared.txHash ? "testnet" : "other",
     hash: txHash,
     source: tx.source,
+    fee: BigInt(tx.fee),
     opCount: tx.operations.length,
     opType: op?.type ?? "none",
     opSource: op?.source ?? null,
@@ -146,15 +150,17 @@ const ARG_COUNT: Record<EscrowCall, number> = { deploy: 6, fund: 3, release: 3, 
 
 /**
  * Trustless Work prepares every call valid for 300 s (S-14); the minute on top
- * allows for a clock that runs a little behind.
+ * allows for a clock that runs a little behind. That is the rule for every call
+ * as Trustless Work returns it ("server-original").
  *
- * TODO(S-19/S-20, WP-15): two arbiter signers on two computers need longer than
- * 300 s. S-19 showed that a resolve whose maxTime alone is rebuilt before anyone
- * signs lands, but that is not decided. Until WP-15 decides, only Trustless
- * Work's own window passes here.
+ * Two arbiter signers on two computers need longer, so Pairy re-times the
+ * resolve before anyone signs (O-17, rebuildMaxTime). The re-timed resolve
+ * ("browser-rebuilt") must expire between 10 minutes and 24 hours from now.
  */
 const TW_VALIDITY_S = 300;
 const CLOCK_SLACK_S = 60;
+const REBUILT_MIN_S = 10 * 60;
+const REBUILT_MAX_S = 24 * 3600;
 
 /** A stable text form of decoded values, for exact comparison (bigints and bytes included). */
 const canon = (v: unknown) =>
@@ -230,13 +236,24 @@ export function validateEscrowCall(d: DecodedCall, e: CallExpectation, now = new
   if (d.source !== signer) problems.push(`It would be sent from ${d.source}, not from ${signer}.`);
   if (d.opSource !== null) problems.push("Its operation names its own source account.");
 
+  // O-18: a tampered fee must not drain the signer's XLM. Trustless Work's fees are 0.02-0.21 XLM.
+  if (d.fee > ESCROW_XLM_NEED) {
+    problems.push(`Its fee can reach ${fromStroops(d.fee)} XLM, above the ${fromStroops(ESCROW_XLM_NEED)} XLM Pairy allows.`);
+  }
+
   const nowS = Math.floor(now.getTime() / 1000);
   const tb = d.timeBounds;
+  const until = (t: number) => new Date(t * 1000).toISOString();
+  const rebuilt = e.kind === "resolve" && e.timePolicy === "browser-rebuilt";
   if (!tb || tb.maxTime === 0) problems.push("It never expires; Trustless Work's transactions expire after 5 minutes.");
   else if (tb.minTime !== 0) problems.push("It cannot be sent until a later time.");
-  else if (tb.maxTime <= nowS) problems.push(`It expired at ${new Date(tb.maxTime * 1000).toISOString()}. Prepare it again.`);
-  else if (tb.maxTime > nowS + TW_VALIDITY_S + CLOCK_SLACK_S) {
-    problems.push(`It stays valid until ${new Date(tb.maxTime * 1000).toISOString()}, longer than the 5 minutes Trustless Work gives.`);
+  else if (tb.maxTime <= nowS) problems.push(`It expired at ${until(tb.maxTime)}. Prepare it again.`);
+  else if (rebuilt && tb.maxTime < nowS + REBUILT_MIN_S) {
+    problems.push(`It expires at ${until(tb.maxTime)}, in less than 10 minutes. Prepare it again.`);
+  } else if (rebuilt && tb.maxTime > nowS + REBUILT_MAX_S) {
+    problems.push(`It stays valid until ${until(tb.maxTime)}, more than 24 hours ahead.`);
+  } else if (!rebuilt && tb.maxTime > nowS + TW_VALIDITY_S + CLOCK_SLACK_S) {
+    problems.push(`It stays valid until ${until(tb.maxTime)}, longer than the 5 minutes Trustless Work gives.`);
   }
 
   if (d.opType !== "invokeHostFunction" || !d.contractId) {
@@ -321,6 +338,37 @@ export function validateEscrowCall(d: DecodedCall, e: CallExpectation, now = new
     }
   }
   return problems;
+}
+
+/**
+ * Trustless Work's unsigned transaction with only its maxTime changed (O-17),
+ * edited in the XDR itself so every other byte stays Trustless Work's.
+ * TransactionBuilder.cloneFrom would drop the Soroban data in SDK 17.2.1.
+ * Returns the same shape as Trustless Work's prepare, ready for decodeEscrowCall.
+ */
+export function rebuildMaxTime(unsignedXdr: string, maxTimeSeconds: number): { unsignedXdr: string; txHash: string } {
+  const env = xdr.TransactionEnvelope.fromXDR(unsignedXdr, "base64").toXdrObject();
+  if (env.type !== 2 || env.v1.tx.cond.type !== 1) throw new Error("Only a transaction with time bounds can be re-timed.");
+  if (env.v1.signatures.length) throw new Error("This transaction is already signed; re-time it before anyone signs.");
+  const cond = { type: 1 as const, timeBounds: { ...env.v1.tx.cond.timeBounds, maxTime: BigInt(maxTimeSeconds) } };
+  const out = xdr.TransactionEnvelope.fromXdrObject({ ...env, v1: { ...env.v1, tx: { ...env.v1.tx, cond } } }).toXdr("base64");
+  return { unsignedXdr: out, txHash: hex(TransactionBuilder.fromXDR(out, NETWORK_PASSPHRASE).hash()) };
+}
+
+/**
+ * The server's check after rebuildMaxTime (O-17): the re-timed transaction is
+ * Trustless Work's, byte for byte, except for maxTime. Source, fee, sequence,
+ * memo, minTime, the operation, its authorization and the Soroban data all
+ * must match; anything else that differs is refused.
+ */
+export function onlyMaxTimeChanged(twXdr: string, rebuiltXdr: string): boolean {
+  const tw = xdr.TransactionEnvelope.fromXDR(twXdr, "base64").toXdrObject();
+  const rebuilt = xdr.TransactionEnvelope.fromXDR(rebuiltXdr, "base64").toXdrObject();
+  if (tw.type !== 2 || rebuilt.type !== 2 || tw.v1.tx.cond.type !== 1 || rebuilt.v1.tx.cond.type !== 1) return false;
+  // Put Trustless Work's maxTime back: then the two transactions must be the same bytes.
+  const cond = { type: 1 as const, timeBounds: { ...rebuilt.v1.tx.cond.timeBounds, maxTime: tw.v1.tx.cond.timeBounds.maxTime } };
+  const restored = xdr.Transaction.fromXdrObject({ ...rebuilt.v1.tx, cond }).toXdr("base64");
+  return restored === xdr.Transaction.fromXdrObject(tw.v1.tx).toXdr("base64");
 }
 
 /** One line for the signing screens, e.g. "Fund this trade's escrow with 100 USDC". */

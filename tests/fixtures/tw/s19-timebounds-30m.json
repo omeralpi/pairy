@@ -1,0 +1,467 @@
+{
+  "note": "S-20. TW-prepared resolve rebuilt with maxTime = Horizon time + 30 min before anyone signed; only maxTime changed. Signer 1 signed at once, signer 2 about 27 min later (each apart; merged). The TW envelope as returned, signed by both at the same moment, was refused; the rebuilt one landed.",
+  "escrow": {
+    "label": "window-30m",
+    "contractId": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+    "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    "disputer": "seller",
+    "txs": {
+      "deploy": "6e6e6b66948892afa445bf63d2c7d795173a670c035e37f1047c2ba752a76f38",
+      "fund": "558e25296d70e8c4a8f097deaed408c41720a83c7190344f5ad2164fa92a9faf",
+      "dispute": "6d0ae04ef313a840d96b988ba12df6eb4153d9d51a7c38ab2cc7bf3aca3f5cc2",
+      "resolve": "49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72"
+    }
+  },
+  "endpoint": "resolve",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/resolve-dispute",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+      "disputeResolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "distributions": [
+        {
+          "address": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+          "amount": 5
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThMAWddjAAAABgAAAAEAAAAAAAAAAAAAAABrBJiNAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAAB7MJKlzeZbOHcRHFB8ptk9uGmApPrC2TIFJaAe9s5VuEAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAAy/rpawWrB/6nyHPAWhtqCelXSMPiWWQ3O23ZTTFYQqkAAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAHswkqXN5ls4dxEcUHym2T24aYCk+sLZMgUloB72zlW4QAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAADL+ulrBasH/qfIc8BaG2oJ6VdIw+JZZDc7bdlNMVhCqQAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAYAAAAB7MJKlzeZbOHcRHFB8ptk9uGmApPrC2TIFJaAe9s5VuEAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMv66WsFqwf+p8hzwFobagnpV0jD4llkNztt2U0xWEKpAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAAB7MJKlzeZbOHcRHFB8ptk9uGmApPrC2TIFJaAe9s5VuEAAAABAAAABgAAAAHswkqXN5ls4dxEcUHym2T24aYCk+sLZMgUloB72zlW4QAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAABAAAABgAAAAHswkqXN5ls4dxEcUHym2T24aYCk+sLZMgUloB72zlW4QAAABAAAAABAAAAAQAAAA8AAAAKUmVlbnRyYW5jeQAAAAAAAQAa544AAADoAAAHjAAAAAAAAE2vAAAAAA==",
+      "txHash": "12637dcb682a934d96d468e1c7e9aa8442df45df1bec84f16118671dc625fb89"
+    }
+  },
+  "ms": 428,
+  "at": "2026-11-23T19:43:28.747Z",
+  "decoded": {
+    "envelopeType": "envelopeTypeTx",
+    "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    "sequence": "25288093128982534",
+    "feeStroops": "19987",
+    "resourceFeeStroops": "19887",
+    "footprint": {
+      "readOnly": 3,
+      "readWrite": 5
+    },
+    "timeBounds": {
+      "minTime": "0",
+      "maxTime": "1795463309"
+    },
+    "validitySecondsFromPrepare": 300,
+    "memo": "none",
+    "signatures": 0,
+    "operations": [
+      {
+        "type": "invokeHostFunction",
+        "source": null,
+        "hostFunction": {
+          "type": "hostFunctionTypeInvokeContract",
+          "contract": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+          "function": "resolve_dispute",
+          "args": [
+            "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+            "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            {
+              "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K": "50000000"
+            }
+          ]
+        },
+        "auth": [
+          {
+            "credentials": {
+              "type": "sourceAccount"
+            },
+            "rootInvocation": {
+              "type": "execute",
+              "args": {
+                "source": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+                "function": "resolve_dispute",
+                "args": [
+                  "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+                  "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                  {
+                    "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K": "50000000"
+                  }
+                ]
+              },
+              "invocations": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "checks": {
+    "function": "resolve_dispute",
+    "sourceIsArbiter": true,
+    "resolverArgIsArbiter": true,
+    "seqIsArbiterPlusOne": true,
+    "sacBalanceStroops": "50000000",
+    "distributionEqualsSacBalance": true,
+    "authCredentials": [
+      "sourceAccount"
+    ],
+    "validitySecondsFromPrepare": 300
+  },
+  "twMaxTime": "1795463309",
+  "rebuilt": {
+    "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThMAWddjAAAABgAAAAEAAAAAAAAAAAAAAABrBJ5pAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAAB7MJKlzeZbOHcRHFB8ptk9uGmApPrC2TIFJaAe9s5VuEAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAAy/rpawWrB/6nyHPAWhtqCelXSMPiWWQ3O23ZTTFYQqkAAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAHswkqXN5ls4dxEcUHym2T24aYCk+sLZMgUloB72zlW4QAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAADL+ulrBasH/qfIc8BaG2oJ6VdIw+JZZDc7bdlNMVhCqQAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAYAAAAB7MJKlzeZbOHcRHFB8ptk9uGmApPrC2TIFJaAe9s5VuEAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMv66WsFqwf+p8hzwFobagnpV0jD4llkNztt2U0xWEKpAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAAB7MJKlzeZbOHcRHFB8ptk9uGmApPrC2TIFJaAe9s5VuEAAAABAAAABgAAAAHswkqXN5ls4dxEcUHym2T24aYCk+sLZMgUloB72zlW4QAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAABAAAABgAAAAHswkqXN5ls4dxEcUHym2T24aYCk+sLZMgUloB72zlW4QAAABAAAAABAAAAAQAAAA8AAAAKUmVlbnRyYW5jeQAAAAAAAQAa544AAADoAAAHjAAAAAAAAE2vAAAAAA==",
+    "compare": {
+      "operationsIdentical": true,
+      "hostFunctionIdentical": true,
+      "authEntriesIdentical": true,
+      "authEntries": 1,
+      "sorobanDataIdentical": true,
+      "sorobanResourcesIdentical": true,
+      "resourceFee": {
+        "before": "19887",
+        "after": "19887"
+      },
+      "sourceIdentical": true,
+      "memoIdentical": true,
+      "fee": {
+        "before": 19987,
+        "after": 19987
+      },
+      "seqNum": {
+        "before": "25288093128982534",
+        "after": "25288093128982534"
+      },
+      "timeBounds": {
+        "before": {
+          "minTime": "0",
+          "maxTime": "1795463309"
+        },
+        "after": {
+          "minTime": "0",
+          "maxTime": "1795464809"
+        }
+      },
+      "sha256": {
+        "operations": [
+          "dd326151dffd36b9dfba208856b8c93e2ba12735b2f6ad17e3e4e870ad0824e2",
+          "dd326151dffd36b9dfba208856b8c93e2ba12735b2f6ad17e3e4e870ad0824e2"
+        ],
+        "authEntries": [
+          "9df65806fe06ae043c57b7d379bb1bf1f0e8d85abaf318ee07afd6d606115976",
+          "9df65806fe06ae043c57b7d379bb1bf1f0e8d85abaf318ee07afd6d606115976"
+        ],
+        "sorobanData": [
+          "925dc59ba9ff223c15cfdc79329a38dd1c0a7d565555a17fec3bf55ecf7edcbd",
+          "925dc59ba9ff223c15cfdc79329a38dd1c0a7d565555a17fec3bf55ecf7edcbd"
+        ]
+      },
+      "envelopeBytes": [
+        1156,
+        1156
+      ],
+      "differingByteRanges": [
+        "70-71"
+      ],
+      "txHash": [
+        "12637dcb682a934d96d468e1c7e9aa8442df45df1bec84f16118671dc625fb89",
+        "49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72"
+      ]
+    }
+  },
+  "signatures": [
+    {
+      "signer": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+      "signature": "FEvcpIQv5ncJn2NKkwVv/vkVPCah08F70dpBP3yZtU58aTkULqtsE1xua6fZE2lOuhuYhhI3G03Qz6G8eypeCA==",
+      "signedAt": "2026-11-23T19:43:29.179Z"
+    },
+    {
+      "signer": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+      "signature": "exOYSZFfImD6BbVw5STtD06GAJUa3hKQAhEG/WmiRrDizqecAgM9TQH36B+Vgvjv/culOcHr8K0Pacu99b8+Bw==",
+      "signedAt": "2026-11-23T20:10:29.763Z"
+    }
+  ],
+  "feeSimulations": [
+    {
+      "at": "2026-11-23T19:43:29.581Z",
+      "latestLedger": 5887873,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    },
+    {
+      "at": "2026-11-23T19:48:31.298Z",
+      "latestLedger": 5887933,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    },
+    {
+      "at": "2026-11-23T19:53:37.792Z",
+      "latestLedger": 5887995,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    },
+    {
+      "at": "2026-11-23T19:58:38.503Z",
+      "latestLedger": 5888055,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    },
+    {
+      "at": "2026-11-23T20:03:39.449Z",
+      "latestLedger": 5888115,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    },
+    {
+      "at": "2026-11-23T20:08:40.085Z",
+      "latestLedger": 5888175,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    },
+    {
+      "at": "2026-11-23T20:10:29.733Z",
+      "latestLedger": 5888197,
+      "declaredResourceFee": "19887",
+      "simulatedMinResourceFee": "19890",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1771460,
+      "declaredInstructions": 1763214,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887861,
+          "liveUntilLedger": 6008820
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887863,
+          "liveUntilLedger": 6008820
+        }
+      ]
+    }
+  ],
+  "asReturnedSubmit": {
+    "what": "window-30m TW envelope as returned, 2 sig, after its 300 s",
+    "ok": false,
+    "hash": "12637dcb682a934d96d468e1c7e9aa8442df45df1bec84f16118671dc625fb89",
+    "at": "2026-11-23T20:10:29.775Z",
+    "maxTime": "1795463309",
+    "signatures": 2,
+    "codes": [
+      "tx_too_late"
+    ],
+    "resultXdr": "AAAAAAAAThP////9AAAAAA==",
+    "inLedger": false,
+    "url": null
+  },
+  "rebuiltSubmit": {
+    "what": "window-30m rebuilt to 30 min, 2 sig",
+    "ok": true,
+    "hash": "49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72",
+    "url": "https://stellar.expert/explorer/testnet/tx/49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72",
+    "at": "2026-11-23T20:10:31.196Z",
+    "maxTime": "1795464809",
+    "signatures": 2,
+    "ledger": 5888198
+  },
+  "secondsAfterTwMaxTime": 1322,
+  "distribution": {
+    "distributionAsPrepared": true,
+    "checks": {
+      "recipient": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+      "toRecipient": [
+        "4.9850000"
+      ],
+      "toRecipientExpected": "4.9850000",
+      "toTwFeeAddress": [
+        "0.0150000"
+      ],
+      "toTwFeeAddressExpected": "0.0150000",
+      "otherTransfers": [],
+      "escrowSacBalanceAfter": "0"
+    },
+    "onChain": {
+      "hash": "49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72",
+      "url": "https://stellar.expert/explorer/testnet/tx/49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72",
+      "successful": true,
+      "ledger": 5888198,
+      "closedAt": "2026-11-23T20:10:32Z",
+      "feeChargedStroops": "15002",
+      "maxFeeStroops": "19987",
+      "envelopeSignatures": 2,
+      "horizonRecordHasResultMetaXdr": false,
+      "horizonOperation": [
+        {
+          "type": "invoke_host_function",
+          "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+          "assetBalanceChanges": [
+            {
+              "asset_type": "credit_alphanum4",
+              "asset_code": "USDC",
+              "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+              "type": "transfer",
+              "from": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+              "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+              "amount": "0.0150000"
+            },
+            {
+              "asset_type": "credit_alphanum4",
+              "asset_code": "USDC",
+              "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+              "type": "transfer",
+              "from": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+              "to": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+              "amount": "4.9850000"
+            }
+          ],
+          "address": "",
+          "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+        }
+      ],
+      "rpc": {
+        "status": "SUCCESS",
+        "returnValue": null,
+        "contractEvents": [
+          {
+            "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "type": "contract",
+            "topics": [
+              "transfer",
+              "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+              "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+              "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+            ],
+            "data": "150000"
+          },
+          {
+            "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "type": "contract",
+            "topics": [
+              "transfer",
+              "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+              "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+              "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+            ],
+            "data": "49850000"
+          },
+          {
+            "contractId": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+            "type": "contract",
+            "topics": [
+              "tw_disp_resolve",
+              "pairy-s19-window-30m-1795462943022"
+            ],
+            "data": {
+              "dispute_resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+              "distributions": [
+                {
+                  "address": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                  "amount": "49850000"
+                }
+              ],
+              "platform_fee": "0",
+              "trustless_work_fee": "150000"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

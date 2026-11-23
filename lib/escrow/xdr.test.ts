@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { Address, Networks, StrKey, TransactionBuilder, nativeToScVal, xdr } from "@stellar/stellar-sdk";
+import { Address, Networks, StrKey, TransactionBuilder, nativeToScVal, xdr, type Transaction } from "@stellar/stellar-sdk";
 import { describe, expect, it, vi } from "vitest";
 
 // WP-11 pins these in config.ts (null until then). The values are the ones WP-03 recorded on testnet.
@@ -17,11 +17,13 @@ vi.mock("./config", async (importOriginal) => ({
   TW_FEE_ADDRESS: "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
 }));
 
-import { USDC_SAC } from "./config";
+import { RESOLVE_WINDOW_SECONDS, USDC_SAC } from "./config";
 import {
   decodeEscrowCall,
   deriveEscrowId,
   describeEscrowCall,
+  onlyMaxTimeChanged,
+  rebuildMaxTime,
   validateEscrowCall,
   type CallExpectation,
   type EscrowTerms,
@@ -83,6 +85,13 @@ const EXPECTED: Record<string, CallExpectation> = {
     recipient: "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
     amountStroops: 50000000n,
   },
+  "s19-timebounds-30m": {
+    kind: "resolve",
+    contractId: "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+    resolver: "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    recipient: "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+    amountStroops: 50000000n,
+  },
 };
 const check = (name: string, d = decoded(name), now = at(name)) => validateEscrowCall(d, EXPECTED[name], now);
 
@@ -90,13 +99,15 @@ const check = (name: string, d = decoded(name), now = at(name)) => validateEscro
 
 /** The SDK's XDR wire objects, edited in place. */
 type Wire = any;
-function edited(name: string, edit: (tx: Wire) => void, passphrase = Networks.TESTNET) {
-  const env: Wire = xdr.TransactionEnvelope.fromXDR(fixture(name).response.body.unsignedXdr, "base64").toXdrObject();
+function editedXdr(b64: string, edit: (tx: Wire) => void, passphrase = Networks.TESTNET) {
+  const env: Wire = xdr.TransactionEnvelope.fromXDR(b64, "base64").toXdrObject();
   edit(env.v1.tx);
   const unsignedXdr = xdr.TransactionEnvelope.fromXdrObject(env).toXdr("base64");
   const txHash = Buffer.from(TransactionBuilder.fromXDR(unsignedXdr, passphrase).hash()).toString("hex");
   return { unsignedXdr, txHash };
 }
+const edited = (name: string, edit: (tx: Wire) => void, passphrase = Networks.TESTNET) =>
+  editedXdr(fixture(name).response.body.unsignedXdr, edit, passphrase);
 const mutated = (name: string, edit: (tx: Wire) => void) => decodeEscrowCall(edited(name, edit));
 
 const hostFn = (tx: Wire) => tx.operations[0].body.invokeHostFunctionOp;
@@ -132,6 +143,7 @@ describe("decodeEscrowCall", () => {
       opSource: null,
       contractId: A.contractId,
       fn: "fund_escrow",
+      fee: 149191n,
       args: [SELLER, expect.objectContaining({ amount: 100000000n, engagement_id: "pairy-wp03-a-1795460867633" }), 100000000n],
       authRoots: [
         {
@@ -227,13 +239,18 @@ describe("validateEscrowCall", () => {
       refused(check("fund", decoded("fund"), new Date(at("fund").getTime() + 301_000)), /expired at/);
     });
 
-    it("a longer window than Trustless Work's 300 s (TODO S-19/S-20, WP-15)", () => {
+    it("a longer window than Trustless Work's 300 s (the server-original policy)", () => {
       const d = mutated("resolve-dispute", (tx) => (tx.cond.timeBounds.maxTime += 3600n));
       refused(check("resolve-dispute", d), /stays valid until/);
     });
 
     it("a transaction that never expires", () => {
       refused(check("dispute", mutated("dispute", (tx) => (tx.cond = { type: 0 }))), /never expires/);
+    });
+
+    it("a fee above ESCROW_XLM_NEED, 2 XLM (O-18)", () => {
+      refused(check("fund", mutated("fund", (tx) => (tx.fee = 20_000_001))), /fee can reach 2.0000001 XLM, above the 2 XLM/);
+      expect(check("fund", mutated("fund", (tx) => (tx.fee = 20_000_000)))).toEqual([]);
     });
   });
 
@@ -404,6 +421,110 @@ describe("describeEscrowCall", () => {
   it("names any other call plainly", () => {
     const d = mutated("dispute", (tx) => calls(tx).forEach((c) => (c.functionName = "withdraw_remaining_funds")));
     expect(describeEscrowCall(d)).toBe("Call withdraw_remaining_funds on CDYH…KA7F");
+  });
+});
+
+// --- O-17: the arbiter's resolve, re-timed before anyone signs -------------------------------
+
+type Retimed = {
+  at: string;
+  hash?: string;
+  signatures?: { signedAt: string }[];
+  response: { body: { unsignedXdr: string; txHash: string } };
+  rebuilt: { unsignedXdr: string; compare: { timeBounds: { after: { maxTime: string } }; txHash: [string, string] } };
+};
+const read = (name: string) => JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/tw", `${name}.json`), "utf8"));
+// S-19's real rebuilds: 30 min (landed as 49f399b9), and 24 h for two arbiters. Late-B also raised the fee cap.
+const window30m: Retimed = read("s19-timebounds-30m");
+const [lateA, lateB]: Retimed[] = read("s19-timebounds-24h-late").envelopes;
+const lateAExpected: CallExpectation = {
+  kind: "resolve",
+  contractId: "CAGVTIJIRUKXPPI2LDUZZ2KJENMZRBBLVRCF4WSLLWGNSC32K5HRQ3CX",
+  resolver: "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+  recipient: "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+  amountStroops: 50000000n,
+};
+const rebuiltMaxTime = (r: Retimed) => Number(r.rebuilt.compare.timeBounds.after.maxTime);
+const seconds = (d: string) => Math.floor(new Date(d).getTime() / 1000);
+
+describe("rebuildMaxTime and onlyMaxTimeChanged (O-17)", () => {
+  it("rebuild Trustless Work's resolve to the probe's maxTime byte for byte, with the hash that landed", () => {
+    expect(rebuildMaxTime(window30m.response.body.unsignedXdr, rebuiltMaxTime(window30m))).toEqual({
+      unsignedXdr: window30m.rebuilt.unsignedXdr,
+      txHash: window30m.rebuilt.compare.txHash[1], // 49f399b9…, on testnet
+    });
+    expect(rebuildMaxTime(lateA.response.body.unsignedXdr, rebuiltMaxTime(lateA))).toEqual({
+      unsignedXdr: lateA.rebuilt.unsignedXdr,
+      txHash: lateA.hash,
+    });
+  });
+
+  it("re-time only a transaction nobody has signed", () => {
+    const signed = read("s19-resolve-buyer").twoSignatures.mergedSignedXdr;
+    expect(() => rebuildMaxTime(signed, rebuiltMaxTime(window30m))).toThrow(/signed/);
+  });
+
+  it("accept the probe's rebuilds, where only maxTime changed", () => {
+    expect(onlyMaxTimeChanged(window30m.response.body.unsignedXdr, window30m.rebuilt.unsignedXdr)).toBe(true);
+    expect(onlyMaxTimeChanged(lateA.response.body.unsignedXdr, lateA.rebuilt.unsignedXdr)).toBe(true);
+  });
+
+  it("refuse late-B, which also raised the resource-fee cap", () => {
+    expect(onlyMaxTimeChanged(lateB.response.body.unsignedXdr, lateB.rebuilt.unsignedXdr)).toBe(false);
+  });
+
+  it.each<[string, (tx: Wire) => void]>([
+    ["the source", (tx) => (tx.sourceAccount = { type: 0, ed25519: StrKey.decodeEd25519PublicKey(STRANGER) })],
+    ["the fee", (tx) => (tx.fee += 1)],
+    ["the sequence number", (tx) => (tx.seqNum += 1n)],
+    ["the memo", (tx) => (tx.memo = { type: 1, text: "x" })],
+    ["minTime", (tx) => (tx.cond.timeBounds.minTime = 1n)],
+    ["the operation", (tx) => (calls(tx)[0].args[2].map[0].key = address(STRANGER))],
+    ["the authorization", (tx) => (calls(tx)[1].args[2].map[0].key = address(STRANGER))],
+    ["the Soroban data", (tx) => (tx.ext.sorobanData.resourceFee += 1n)],
+  ])("refuse a rebuild that also changes %s", (_what, edit) => {
+    const changed = editedXdr(window30m.rebuilt.unsignedXdr, edit).unsignedXdr;
+    expect(onlyMaxTimeChanged(window30m.response.body.unsignedXdr, changed)).toBe(false);
+  });
+
+  it("refuse a rebuild through TransactionBuilder.cloneFrom, which drops the Soroban data in SDK 17.2.1", () => {
+    const tw = TransactionBuilder.fromXDR(window30m.response.body.unsignedXdr, Networks.TESTNET) as Transaction;
+    const cloned = TransactionBuilder.cloneFrom(tw, { timebounds: { minTime: 0, maxTime: rebuiltMaxTime(window30m) } }).build();
+    expect(onlyMaxTimeChanged(window30m.response.body.unsignedXdr, cloned.toXDR())).toBe(false);
+  });
+
+  it("refuse another transaction altogether", () => {
+    expect(onlyMaxTimeChanged(window30m.response.body.unsignedXdr, fixture("s19-resolve-buyer").response.body.unsignedXdr)).toBe(false);
+  });
+});
+
+describe("the resolve's time policy (O-17)", () => {
+  const tw = window30m.response.body;
+  const now = at("s19-timebounds-30m");
+  const prepared = seconds(window30m.at);
+  const policy = (timePolicy: "server-original" | "browser-rebuilt", e = EXPECTED["s19-timebounds-30m"]) => ({ ...e, timePolicy }) as CallExpectation;
+  const retimed = (maxTime: number) => decodeEscrowCall(rebuildMaxTime(tw.unsignedXdr, maxTime));
+
+  it("server-original: Trustless Work's own 300 s passes, a re-timed resolve does not", () => {
+    expect(validateEscrowCall(decodeEscrowCall(tw), policy("server-original"), now)).toEqual([]);
+    refused(validateEscrowCall(retimed(rebuiltMaxTime(window30m)), policy("server-original"), now), /stays valid until/);
+  });
+
+  it("browser-rebuilt: the probe's 30 min and 24 h rebuilds pass, and so does RESOLVE_WINDOW_SECONDS", () => {
+    const rebuilt30m = { unsignedXdr: window30m.rebuilt.unsignedXdr, txHash: window30m.rebuilt.compare.txHash[1] };
+    expect(validateEscrowCall(decodeEscrowCall(rebuilt30m), policy("browser-rebuilt"), now)).toEqual([]);
+    // Late-A, checked when its first signer signed.
+    const rebuilt24h = { unsignedXdr: lateA.rebuilt.unsignedXdr, txHash: lateA.hash! };
+    expect(validateEscrowCall(decodeEscrowCall(rebuilt24h), policy("browser-rebuilt", lateAExpected), new Date(lateA.signatures![0].signedAt))).toEqual([]);
+    expect(validateEscrowCall(retimed(prepared + RESOLVE_WINDOW_SECONDS), policy("browser-rebuilt"), now)).toEqual([]);
+  });
+
+  it("browser-rebuilt: at least 10 minutes and at most 24 hours", () => {
+    refused(validateEscrowCall(retimed(prepared + 5 * 60), policy("browser-rebuilt"), now), /less than 10 minutes/);
+    refused(validateEscrowCall(retimed(prepared + 25 * 3600), policy("browser-rebuilt"), now), /more than 24 hours/);
+    refused(validateEscrowCall(decodeEscrowCall(tw), policy("browser-rebuilt"), now), /less than 10 minutes/);
+    expect(validateEscrowCall(retimed(prepared + 10 * 60), policy("browser-rebuilt"), now)).toEqual([]);
+    expect(validateEscrowCall(retimed(prepared + 24 * 3600), policy("browser-rebuilt"), now)).toEqual([]);
   });
 });
 

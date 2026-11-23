@@ -30,7 +30,11 @@ const TRIMMED = ["deploy-reused-engagement-id.json"];
 const recorded: [string, Recorded][] = readdirSync(FIXTURES)
   .filter((f) => f.endsWith(".json") && f !== "errors.json")
   .sort()
-  .map((f) => [f, load(f)]);
+  // A file may hold several recorded calls (S-19's 24 h envelopes).
+  .flatMap((f): [string, Recorded][] => {
+    const d = load(f);
+    return d.envelopes ? d.envelopes.map((e: Recorded, i: number): [string, Recorded] => [`${f} #${i}`, e]) : [[f, d]];
+  });
 const probes: [string, Recorded][] = [
   ...Object.entries(load("errors.json").probes as Record<string, Recorded>),
   ["resolve-dispute-wrong-sum", load("resolve-dispute-wrong-sum.json")],

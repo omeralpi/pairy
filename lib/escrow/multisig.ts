@@ -8,11 +8,9 @@
 // FIXES F-04: envelope signatures only. S-19 landed a 2-of-2 resolve this way
 // (13c43a45), so no address-credentials path is built.
 //
-// TODO(S-19/S-20, WP-15): Trustless Work's resolve is valid for 300 s, short for
-// two signers on two computers. S-19 showed a resolve whose maxTime alone was
-// rebuilt before anyone signed lands; whether Pairy does that is not decided.
-// Until WP-15 decides, the hash these functions check is the one of the
-// transaction as Trustless Work prepared it.
+// O-17: the signers sign the resolve as re-timed by rebuildMaxTime
+// (lib/escrow/xdr.ts), so the hash to check signatures against is the rebuilt
+// one, never Trustless Work's txHash. WP-29 stores it and passes it in.
 
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
 

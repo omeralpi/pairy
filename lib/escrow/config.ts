@@ -49,6 +49,14 @@ export const FUNDED_NUDGE_MS = 72 * 3600_000;
 export const NOTE_MAX = 500;
 
 /**
+ * How long the arbiter's signers get to sign a resolution (O-17): before anyone
+ * signs, Pairy re-times Trustless Work's resolve to Horizon time + this. One
+ * committed value, never a request input; lib/escrow/xdr.ts holds it between
+ * 10 minutes and 24 hours.
+ */
+export const RESOLVE_WINDOW_SECONDS = 3600;
+
+/**
  * XLM, in stroops, the seller needs above the account's reserves for the
  * escrow's network fees. WP-03 measured about 0.015 XLM for fund and release
  * together; 2 XLM leaves room for fee surges.
