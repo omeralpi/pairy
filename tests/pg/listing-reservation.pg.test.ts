@@ -153,17 +153,17 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
    * Starts `calls` one at a time while the gate holds `hold` in an open
    * transaction: the next call starts only once every earlier one is blocked,
    * so the first holds the listing row and the rest queue on it. `reached[i]`
-   * is the blocked-or-settled count seen after call i started.
+   * counts only calls still blocked after call i started (settled ones are not
+   * counted), so `[1, 2]` fails if the hold stops holding.
    */
   async function inTurn(hold: string, params: string[], calls: (() => Promise<unknown>)[]) {
     await gate.query("begin");
     await gate.query(hold, params);
-    let settled = 0;
     const started: Promise<unknown>[] = [];
     const reached: number[] = [];
     for (const call of calls) {
-      started.push(call().finally(() => settled++));
-      reached.push(await waitForGate(started.length, () => settled));
+      started.push(call());
+      reached.push(await waitForGate(started.length, () => 0));
     }
     await gate.query("commit");
     return { results: await Promise.allSettled(started), reached };
