@@ -1,0 +1,317 @@
+{
+  "note": "S-19 on escrow exit-buyer. Resolver = a classic 2-of-2 (two signers weight 1, master 0, thresholds 2/2/2). Every refused attempt was refused at submission and never reached a ledger.",
+  "escrow": {
+    "label": "exit-buyer",
+    "contractId": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+    "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    "disputer": "buyer",
+    "txs": {
+      "deploy": "babb93f85e3c0a5757cb271bdc0ae272ece0285ee2eb43bad4ee7cbfff73fc0f",
+      "fund": "d0d0d6e164ea2e1285f2cf1b24b020e8d96444cafd717c08a7db9df2aef54ca3",
+      "dispute": "fc788ff6a4d245c3d6d40bcb764fd22247f6f6670a69c14a3cb7c60c1bac7bf2",
+      "resolve": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9"
+    }
+  },
+  "arbiter": {
+    "account": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    "signer1": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+    "signer2": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+    "setOptionsTx": "25225dc0f25aeb3068972a9c615e3d84b3f8b831947ade742b4caf58fd39a275",
+    "setOptionsUrl": "https://stellar.expert/explorer/testnet/tx/25225dc0f25aeb3068972a9c615e3d84b3f8b831947ade742b4caf58fd39a275",
+    "sequence": "25288093128982530",
+    "thresholds": {
+      "low_threshold": 2,
+      "med_threshold": 2,
+      "high_threshold": 2
+    },
+    "signers": [
+      {
+        "key": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+        "weight": 1,
+        "type": "ed25519_public_key"
+      },
+      {
+        "key": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+        "weight": 1,
+        "type": "ed25519_public_key"
+      },
+      {
+        "key": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+        "weight": 0,
+        "type": "ed25519_public_key"
+      }
+    ]
+  },
+  "endpoint": "resolve",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/resolve-dispute",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+      "disputeResolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "distributions": [
+        {
+          "address": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+          "amount": 5
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThQAWddjAAAAAgAAAAEAAAAAAAAAAAAAAABrBJh4AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABbcNgUSR4eOqwFGIq8kvbDD4YHfomvxBjx9wllefyQCsAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAALup14wF4//N9b9IxqTjEqmlaLZ5RsVq5fkz3Rh2dJ34AAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAFtw2BRJHh46rAUYiryS9sMPhgd+ia/EGPH3CWV5/JAKwAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAAAu6nXjAXj/831v0jGpOMSqaVotnlGxWrl+TPdGHZ0nfgAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAYAAAABbcNgUSR4eOqwFGIq8kvbDD4YHfomvxBjx9wllefyQCsAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAC7qdeMBeP/zfW/SMak4xKppWi2eUbFauX5M90YdnSd+AAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABbcNgUSR4eOqwFGIq8kvbDD4YHfomvxBjx9wllefyQCsAAAABAAAABgAAAAFtw2BRJHh46rAUYiryS9sMPhgd+ia/EGPH3CWV5/JAKwAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAABAAAABgAAAAFtw2BRJHh46rAUYiryS9sMPhgd+ia/EGPH3CWV5/JAKwAAABAAAAABAAAAAQAAAA8AAAAKUmVlbnRyYW5jeQAAAAAAAQAa6iQAAADoAAAHjAAAAAAAAE2wAAAAAA==",
+      "txHash": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9"
+    }
+  },
+  "ms": 572,
+  "at": "2026-11-23T19:43:08.281Z",
+  "decoded": {
+    "envelopeType": "envelopeTypeTx",
+    "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    "sequence": "25288093128982530",
+    "feeStroops": "19988",
+    "resourceFeeStroops": "19888",
+    "footprint": {
+      "readOnly": 3,
+      "readWrite": 5
+    },
+    "timeBounds": {
+      "minTime": "0",
+      "maxTime": "1795463288"
+    },
+    "validitySecondsFromPrepare": 300,
+    "memo": "none",
+    "signatures": 0,
+    "operations": [
+      {
+        "type": "invokeHostFunction",
+        "source": null,
+        "hostFunction": {
+          "type": "hostFunctionTypeInvokeContract",
+          "contract": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+          "function": "resolve_dispute",
+          "args": [
+            "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+            "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            {
+              "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN": "50000000"
+            }
+          ]
+        },
+        "auth": [
+          {
+            "credentials": {
+              "type": "sourceAccount"
+            },
+            "rootInvocation": {
+              "type": "execute",
+              "args": {
+                "source": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+                "function": "resolve_dispute",
+                "args": [
+                  "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+                  "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                  {
+                    "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN": "50000000"
+                  }
+                ]
+              },
+              "invocations": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "checks": {
+    "function": "resolve_dispute",
+    "sourceIsArbiter": true,
+    "resolverArgIsArbiter": true,
+    "seqIsArbiterPlusOne": true,
+    "sacBalanceStroops": "50000000",
+    "distributionEqualsSacBalance": true,
+    "authCredentials": [
+      "sourceAccount"
+    ],
+    "validitySecondsFromPrepare": 300
+  },
+  "preparedHashEqualsSubmittedHash": true,
+  "singleSignature": [
+    {
+      "what": "exit-buyer signer 1 alone",
+      "ok": false,
+      "hash": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "at": "2026-11-23T19:43:09.058Z",
+      "maxTime": "1795463288",
+      "signatures": 1,
+      "codes": [
+        "tx_bad_auth"
+      ],
+      "resultXdr": "AAAAAAAAThT////6AAAAAA==",
+      "inLedger": false,
+      "url": null
+    },
+    {
+      "what": "exit-buyer signer 2 alone",
+      "ok": false,
+      "hash": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "at": "2026-11-23T19:43:09.909Z",
+      "maxTime": "1795463288",
+      "signatures": 1,
+      "codes": [
+        "tx_bad_auth"
+      ],
+      "resultXdr": "AAAAAAAAThT////6AAAAAA==",
+      "inLedger": false,
+      "url": null
+    },
+    {
+      "what": "exit-buyer master (weight 0) + signer 1",
+      "ok": false,
+      "hash": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "at": "2026-11-23T19:43:10.269Z",
+      "maxTime": "1795463288",
+      "signatures": 2,
+      "codes": [
+        "tx_bad_auth"
+      ],
+      "resultXdr": "AAAAAAAAThT////6AAAAAA==",
+      "inLedger": false,
+      "url": null
+    }
+  ],
+  "twoSignatures": {
+    "signatures": [
+      {
+        "signer": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+        "signature": "6KBWELtr9NYeop+z36Ol3grG7jfanlWVHS5Uqw77Jios5CpCAyiqp5cqYQQr/3pHWhKFrz33uBe8bdsmrVY6Aw==",
+        "signedAt": "2026-11-23T19:43:10.633Z"
+      },
+      {
+        "signer": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+        "signature": "v2h3ev5RA6N6Lp39n6NYkTkAOuHARULCyQeItjjv7J6xib3CvBdPyGK0okQTld7U5dfABaeEOcBk95uDud2TBw==",
+        "signedAt": "2026-11-23T19:43:10.635Z"
+      }
+    ],
+    "mergedSignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThQAWddjAAAAAgAAAAEAAAAAAAAAAAAAAABrBJh4AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABbcNgUSR4eOqwFGIq8kvbDD4YHfomvxBjx9wllefyQCsAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAALup14wF4//N9b9IxqTjEqmlaLZ5RsVq5fkz3Rh2dJ34AAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAFtw2BRJHh46rAUYiryS9sMPhgd+ia/EGPH3CWV5/JAKwAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAAAu6nXjAXj/831v0jGpOMSqaVotnlGxWrl+TPdGHZ0nfgAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAYAAAABbcNgUSR4eOqwFGIq8kvbDD4YHfomvxBjx9wllefyQCsAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAC7qdeMBeP/zfW/SMak4xKppWi2eUbFauX5M90YdnSd+AAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABbcNgUSR4eOqwFGIq8kvbDD4YHfomvxBjx9wllefyQCsAAAABAAAABgAAAAFtw2BRJHh46rAUYiryS9sMPhgd+ia/EGPH3CWV5/JAKwAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAABAAAABgAAAAFtw2BRJHh46rAUYiryS9sMPhgd+ia/EGPH3CWV5/JAKwAAABAAAAABAAAAAQAAAA8AAAAKUmVlbnRyYW5jeQAAAAAAAQAa6iQAAADoAAAHjAAAAAAAAE2wAAAAArp6NwYAAABA6KBWELtr9NYeop+z36Ol3grG7jfanlWVHS5Uqw77Jios5CpCAyiqp5cqYQQr/3pHWhKFrz33uBe8bdsmrVY6A+cA4bIAAABAv2h3ev5RA6N6Lp39n6NYkTkAOuHARULCyQeItjjv7J6xib3CvBdPyGK0okQTld7U5dfABaeEOcBk95uDud2TBw==",
+    "submit": {
+      "what": "exit-buyer both signers merged",
+      "ok": true,
+      "hash": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "url": "https://stellar.expert/explorer/testnet/tx/13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "at": "2026-11-23T19:43:10.637Z",
+      "maxTime": "1795463288",
+      "signatures": 2,
+      "ledger": 5887870
+    }
+  },
+  "balances": {
+    "buyerUsdcBefore": "0.0000000",
+    "buyerUsdcAfter": "4.9850000"
+  },
+  "distribution": {
+    "distributionAsPrepared": true,
+    "checks": {
+      "recipient": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+      "toRecipient": [
+        "4.9850000"
+      ],
+      "toRecipientExpected": "4.9850000",
+      "toTwFeeAddress": [
+        "0.0150000"
+      ],
+      "toTwFeeAddressExpected": "0.0150000",
+      "otherTransfers": [],
+      "escrowSacBalanceAfter": "0"
+    },
+    "onChain": {
+      "hash": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "url": "https://stellar.expert/explorer/testnet/tx/13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9",
+      "successful": true,
+      "ledger": 5887870,
+      "closedAt": "2026-11-23T19:43:12Z",
+      "feeChargedStroops": "15003",
+      "maxFeeStroops": "19988",
+      "envelopeSignatures": 2,
+      "horizonRecordHasResultMetaXdr": false,
+      "horizonOperation": [
+        {
+          "type": "invoke_host_function",
+          "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+          "assetBalanceChanges": [
+            {
+              "asset_type": "credit_alphanum4",
+              "asset_code": "USDC",
+              "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+              "type": "transfer",
+              "from": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+              "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+              "amount": "0.0150000"
+            },
+            {
+              "asset_type": "credit_alphanum4",
+              "asset_code": "USDC",
+              "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+              "type": "transfer",
+              "from": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+              "to": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+              "amount": "4.9850000"
+            }
+          ],
+          "address": "",
+          "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+        }
+      ],
+      "rpc": {
+        "status": "SUCCESS",
+        "returnValue": null,
+        "contractEvents": [
+          {
+            "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "type": "contract",
+            "topics": [
+              "transfer",
+              "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+              "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+              "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+            ],
+            "data": "150000"
+          },
+          {
+            "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "type": "contract",
+            "topics": [
+              "transfer",
+              "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+              "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+              "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+            ],
+            "data": "49850000"
+          },
+          {
+            "contractId": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+            "type": "contract",
+            "topics": [
+              "tw_disp_resolve",
+              "pairy-s19-exit-buyer-1795462873221"
+            ],
+            "data": {
+              "dispute_resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+              "distributions": [
+                {
+                  "address": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+                  "amount": "49850000"
+                }
+              ],
+              "platform_fee": "0",
+              "trustless_work_fee": "150000"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,441 @@
+// Every escrow transaction Trustless Work prepared on testnet (WP-03, S-19)
+// must pass the check, and every way of changing what it does must fail it
+// (DECISIONS 7). Mutations edit the recorded XDR and re-hash it, as a Trustless
+// Work that lies consistently would.
+
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import { Address, Networks, StrKey, TransactionBuilder, nativeToScVal, xdr } from "@stellar/stellar-sdk";
+import { describe, expect, it, vi } from "vitest";
+
+// WP-11 pins these in config.ts (null until then). The values are the ones WP-03 recorded on testnet.
+vi.mock("./config", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./config")>()),
+  TW_FACTORY_CONTRACT_ID: "CCYOZX2IZBMFWN5MIMGQ7GAND7KSAIRCEC3LQSUS5CTSJ6SKKTTYL7GL",
+  TW_ESCROW_WASM_HASH: "1231807d01111bee78a846ddacdd0a6cf88b762115e70f5bce16ffabd660e47f",
+  TW_FEE_ADDRESS: "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+}));
+
+import { USDC_SAC } from "./config";
+import {
+  decodeEscrowCall,
+  deriveEscrowId,
+  describeEscrowCall,
+  validateEscrowCall,
+  type CallExpectation,
+  type EscrowTerms,
+} from "./xdr";
+
+type Fixture = { at: string; response: { body: { unsignedXdr: string; txHash: string; contractId?: string } } };
+const fixture = (name: string): Fixture =>
+  JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/tw", `${name}.json`), "utf8"));
+/** When the fixture was recorded: inside the 300 s Trustless Work gave it. */
+const at = (name: string) => new Date(fixture(name).at);
+const decoded = (name: string) => decodeEscrowCall(fixture(name).response.body);
+
+// WP-03's parties and escrows (tests/fixtures/tw/*.json).
+const SELLER = "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4";
+const BUYER = "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV";
+const PLATFORM = "GACMHHE3UGKORO2X2RPNE74A6L4CQGA6M4JMYTWVRQ2CMLMTQAQRCUSD";
+const RESOLVER = "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI";
+const A = { admin: "GDQPAMJYN6WIRVN3FHATKGURUYDPQQGBYBGNQ4HJDTCYFGB7A3BZPQ7J", contractId: "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN" };
+const B = { admin: "GDJVGKU2FQCWXMJJ3GVI75JFAZAJSJCEUUR4T4DIVTCD6JNUSD65QPKY", contractId: "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F" };
+const C = { admin: "GD3RIWS3JG4LD5JVOU5UWI4BHEDUO2H7GMX5DSGROP3LHH4XMAORA32V", contractId: "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5" };
+const FACTORY = "CCYOZX2IZBMFWN5MIMGQ7GAND7KSAIRCEC3LQSUS5CTSJ6SKKTTYL7GL";
+/** Anyone else: a payee, fee address or resolver Pairy never asked for. */
+const STRANGER = "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN";
+
+function terms(admin: string, amountStroops: bigint): EscrowTerms {
+  return {
+    admin,
+    platform: PLATFORM,
+    receiver: BUYER,
+    approvers: [SELLER],
+    releaseSigners: [SELLER],
+    disputeResolvers: [RESOLVER],
+    serviceProviders: [SELLER],
+    amountStroops,
+    platformFeePercent: 0,
+    tokenContract: USDC_SAC,
+    milestones: [{ description: "Cash handed over" }],
+  };
+}
+
+/** What Pairy expects of each recorded call. */
+const EXPECTED: Record<string, CallExpectation> = {
+  deploy: { kind: "deploy", admin: A.admin, contractId: A.contractId, terms: terms(A.admin, 100000000n) },
+  "deploy-b": { kind: "deploy", admin: B.admin, contractId: B.contractId, terms: terms(B.admin, 100000000n) },
+  "deploy-c": { kind: "deploy", admin: C.admin, contractId: C.contractId, terms: terms(C.admin, 123456789n) },
+  fund: { kind: "fund", contractId: A.contractId, seller: SELLER, amountStroops: 100000000n, terms: terms(A.admin, 100000000n) },
+  "fund-b": { kind: "fund", contractId: B.contractId, seller: SELLER, amountStroops: 100000000n, terms: terms(B.admin, 100000000n) },
+  "fund-c": { kind: "fund", contractId: C.contractId, seller: SELLER, amountStroops: 123456789n, terms: terms(C.admin, 123456789n) },
+  "approve-and-release-milestones": { kind: "release", contractId: A.contractId, seller: SELLER },
+  dispute: { kind: "dispute", contractId: B.contractId, signer: BUYER },
+  "dispute-c": { kind: "dispute", contractId: C.contractId, signer: SELLER },
+  "resolve-dispute": { kind: "resolve", contractId: B.contractId, resolver: RESOLVER, recipient: BUYER, amountStroops: 100000000n },
+  "resolve-dispute-c": { kind: "resolve", contractId: C.contractId, resolver: RESOLVER, recipient: SELLER, amountStroops: 123456789n },
+  // S-19: the same call prepared for a 2-of-2 arbiter account.
+  "s19-resolve-buyer": {
+    kind: "resolve",
+    contractId: "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+    resolver: "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    recipient: "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+    amountStroops: 50000000n,
+  },
+};
+const check = (name: string, d = decoded(name), now = at(name)) => validateEscrowCall(d, EXPECTED[name], now);
+
+// --- Editing a recorded transaction in its XDR wire form ---------------------------------------
+
+/** The SDK's XDR wire objects, edited in place. */
+type Wire = any;
+function edited(name: string, edit: (tx: Wire) => void, passphrase = Networks.TESTNET) {
+  const env: Wire = xdr.TransactionEnvelope.fromXDR(fixture(name).response.body.unsignedXdr, "base64").toXdrObject();
+  edit(env.v1.tx);
+  const unsignedXdr = xdr.TransactionEnvelope.fromXdrObject(env).toXdr("base64");
+  const txHash = Buffer.from(TransactionBuilder.fromXDR(unsignedXdr, passphrase).hash()).toString("hex");
+  return { unsignedXdr, txHash };
+}
+const mutated = (name: string, edit: (tx: Wire) => void) => decodeEscrowCall(edited(name, edit));
+
+const hostFn = (tx: Wire) => tx.operations[0].body.invokeHostFunctionOp;
+/** The call and its authorization's root: Trustless Work would change both together. */
+const calls = (tx: Wire): Wire[] => [hostFn(tx).hostFunction.invokeContract, hostFn(tx).auth[0].rootInvocation.function.contractFn];
+const subCalls = (tx: Wire): Wire[] => hostFn(tx).auth[0].rootInvocation.subInvocations;
+const scv = (v: unknown, type?: "i128" | "u32" | "string") => nativeToScVal(v, type ? { type } : undefined).toXdrObject();
+const address = (a: string) => nativeToScVal(Address.fromString(a)).toXdrObject();
+const scAddress = (a: string) => Address.fromString(a).toScAddress().toXdrObject();
+/** A field of a contract struct (an ScVal map). */
+const field = (struct: Wire, name: string): Wire => struct.map.find((e: Wire) => String(e.key.sym) === name).val;
+const setField = (struct: Wire, name: string, val: Wire) => {
+  struct.map.find((e: Wire) => String(e.key.sym) === name).val = val;
+};
+/** An authorized USDC transfer, as an authorization tree node. */
+const transfer = (from: string, to: string, amount: bigint): Wire => ({
+  function: { type: 0, contractFn: { contractAddress: scAddress(USDC_SAC), functionName: "transfer", args: [address(from), address(to), scv(amount, "i128")] } },
+  subInvocations: [],
+});
+
+function refused(problems: string[], pattern: RegExp) {
+  expect(problems.some((p) => pattern.test(p)), `${pattern} not in:\n${problems.join("\n")}`).toBe(true);
+}
+
+describe("decodeEscrowCall", () => {
+  it("reads the call, the whole authorization tree and the time bounds", () => {
+    expect(decoded("fund")).toEqual({
+      network: "testnet",
+      hash: fixture("fund").response.body.txHash,
+      source: SELLER,
+      opCount: 1,
+      opType: "invokeHostFunction",
+      opSource: null,
+      contractId: A.contractId,
+      fn: "fund_escrow",
+      args: [SELLER, expect.objectContaining({ amount: 100000000n, engagement_id: "pairy-wp03-a-1795460867633" }), 100000000n],
+      authRoots: [
+        {
+          credentials: "source",
+          contractId: A.contractId,
+          fn: "fund_escrow",
+          args: expect.any(Array),
+          subInvocations: [{ contractId: USDC_SAC, fn: "transfer", args: [SELLER, A.contractId, 100000000n], subInvocations: [] }],
+        },
+      ],
+      timeBounds: { minTime: 0, maxTime: 1795461214 },
+    });
+  });
+
+  it("marks a hash that is not the testnet hash of the transaction", () => {
+    const fund = fixture("fund").response.body;
+    expect(decodeEscrowCall({ ...fund, txHash: "0".repeat(64) }).network).toBe("other");
+  });
+});
+
+describe("deriveEscrowId (FIXES F-02)", () => {
+  it.each(["deploy", "deploy-b", "deploy-c"])("gives %s's escrow address from the factory and the salt, before anything is signed", (name) => {
+    expect(deriveEscrowId(decoded(name))).toBe(fixture(name).response.body.contractId);
+  });
+
+  it("refuses a call that deploys nothing", () => {
+    expect(() => deriveEscrowId(decoded("fund"))).toThrow();
+  });
+});
+
+describe("validateEscrowCall", () => {
+  it.each(Object.keys(EXPECTED))("passes %s as Trustless Work prepared it", (name) => {
+    expect(check(name)).toEqual([]);
+  });
+
+  describe("refuses, for every kind", () => {
+    it("a transaction prepared for another network (the mainnet passphrase)", () => {
+      refused(check("fund", decodeEscrowCall(edited("fund", () => {}, Networks.PUBLIC))), /another network/);
+    });
+
+    it("an extra operation", () => {
+      refused(check("dispute", mutated("dispute", (tx) => tx.operations.push(tx.operations[0]))), /2 operations/);
+    });
+
+    it("an operation with its own source account", () => {
+      const d = mutated("dispute", (tx) => (tx.operations[0].sourceAccount = { type: 0, ed25519: StrKey.decodeEd25519PublicKey(SELLER) }));
+      refused(check("dispute", d), /own source account/);
+    });
+
+    it("another signer", () => {
+      const d = mutated("fund", (tx) => {
+        tx.sourceAccount = { type: 0, ed25519: StrKey.decodeEd25519PublicKey(BUYER) };
+        for (const c of calls(tx)) c.args[0] = address(BUYER);
+      });
+      refused(check("fund", d), new RegExp(`sent from ${BUYER}`));
+      refused(check("fund", d), new RegExp(`acts for ${BUYER}`));
+    });
+
+    it("another contract", () => {
+      const d = mutated("fund", (tx) => calls(tx).forEach((c) => (c.contractAddress = scAddress(B.contractId))));
+      refused(check("fund", d), new RegExp(`calls contract ${B.contractId}, not ${A.contractId}`));
+    });
+
+    it("another function: the resolver's sweep instead of the resolution", () => {
+      const d = mutated("resolve-dispute", (tx) => calls(tx).forEach((c) => (c.functionName = "withdraw_remaining_funds")));
+      refused(check("resolve-dispute", d), /calls withdraw_remaining_funds, not resolve_dispute/);
+    });
+
+    it("a call of another kind than the step asks for", () => {
+      refused(validateEscrowCall(decoded("fund"), EXPECTED["approve-and-release-milestones"], at("fund")), /calls fund_escrow, not approve_and_release_milestones/);
+    });
+
+    it("a second authorization root", () => {
+      refused(check("dispute", mutated("dispute", (tx) => hostFn(tx).auth.push(hostFn(tx).auth[0]))), /2 authorizations/);
+    });
+
+    it("an authorization for a different call than the one made", () => {
+      const d = mutated("dispute", (tx) => (calls(tx)[1].args[1] = scv("another reason", "string")));
+      refused(check("dispute", d), /authorization is for a different call/);
+    });
+
+    it("address credentials instead of the transaction's own signature (FIXES F-04)", () => {
+      const d = mutated("resolve-dispute", (tx) => {
+        hostFn(tx).auth[0].credentials = {
+          type: 1,
+          address: { address: scAddress(RESOLVER), nonce: 1n, signatureExpirationLedger: 1, signature: scv(null) },
+        };
+      });
+      refused(check("resolve-dispute", d), /sign inside the call/);
+    });
+
+    it("an expired transaction", () => {
+      refused(check("fund", decoded("fund"), new Date(at("fund").getTime() + 301_000)), /expired at/);
+    });
+
+    it("a longer window than Trustless Work's 300 s (TODO S-19/S-20, WP-15)", () => {
+      const d = mutated("resolve-dispute", (tx) => (tx.cond.timeBounds.maxTime += 3600n));
+      refused(check("resolve-dispute", d), /stays valid until/);
+    });
+
+    it("a transaction that never expires", () => {
+      refused(check("dispute", mutated("dispute", (tx) => (tx.cond = { type: 0 }))), /never expires/);
+    });
+  });
+
+  describe("deploy", () => {
+    it("refuses another factory", () => {
+      const d = mutated("deploy", (tx) => calls(tx).forEach((c) => (c.contractAddress = scAddress(B.contractId))));
+      refused(check("deploy", d), new RegExp(`calls contract ${B.contractId}, not ${FACTORY}`));
+    });
+
+    it("refuses an escrow address that is not the one the factory and salt give", () => {
+      const d = mutated("deploy", (tx) => {
+        for (const c of calls(tx)) c.args[2] = scv(Uint8Array.from(c.args[2].bytes, (b: number, i: number) => (i === 0 ? b ^ 1 : b)));
+      });
+      refused(check("deploy", d), new RegExp(`returned \\(${A.contractId}\\) is not the one this transaction creates`));
+    });
+
+    it("refuses other contract code", () => {
+      const d = mutated("deploy", (tx) => {
+        for (const c of calls(tx)) {
+          c.args[1] = scv(new Uint8Array(32).fill(1));
+          c.args[5].vec[1] = scv(new Uint8Array(32).fill(1));
+        }
+      });
+      refused(check("deploy", d), /installs contract code 0101/);
+    });
+
+    it("refuses a constructor that names another admin", () => {
+      const d = mutated("deploy", (tx) => calls(tx).forEach((c) => (c.args[5].vec[0] = address(STRANGER))));
+      refused(check("deploy", d), /constructor arguments/);
+    });
+
+    it("refuses an escrow initialised with another resolver", () => {
+      const d = mutated("deploy", (tx) => {
+        for (const init of [...calls(tx).map((c) => c.args[4].vec[0]), subCalls(tx)[0].function.contractFn.args[0]]) {
+          field(field(init, "roles"), "dispute_resolvers").vec[0] = address(STRANGER);
+        }
+      });
+      refused(check("deploy", d), new RegExp(`dispute resolvers are ${STRANGER}, not ${RESOLVER}`));
+    });
+
+    it("refuses an escrow that starts in a dispute", () => {
+      const d = mutated("deploy", (tx) => {
+        for (const init of [...calls(tx).map((c) => c.args[4].vec[0]), subCalls(tx)[0].function.contractFn.args[0]]) {
+          setField(field(init, "dispute"), "is_disputed", scv(true));
+        }
+      });
+      refused(check("deploy", d), /already in a dispute/);
+    });
+
+    it("refuses an authorization for anything but initialize_escrow on the new escrow", () => {
+      const d = mutated("deploy", (tx) => (subCalls(tx)[0].function.contractFn.contractAddress = scAddress(B.contractId)));
+      refused(check("deploy", d), new RegExp(`also lets initialize_escrow run on ${B.contractId}`));
+    });
+  });
+
+  describe("fund", () => {
+    it.each([1n, -1n])("refuses an amount %i stroop off", (delta) => {
+      const amount = scv(100000000n + delta, "i128");
+      const d = mutated("fund", (tx) => {
+        for (const c of calls(tx)) c.args[2] = amount;
+        subCalls(tx)[0].function.contractFn.args[2] = amount;
+      });
+      refused(check("fund", d), new RegExp(`moves ${delta > 0 ? "10.0000001" : "9.9999999"} USDC, not 10 USDC`));
+    });
+
+    it("refuses an expected_escrow with another resolver (G25)", () => {
+      const d = mutated("fund", (tx) => calls(tx).forEach((c) => (field(field(c.args[1], "roles"), "dispute_resolvers").vec[0] = address(STRANGER))));
+      refused(check("fund", d), new RegExp(`dispute resolvers are ${STRANGER}, not ${RESOLVER}`));
+    });
+
+    it("refuses an escrow that is already released", () => {
+      const d = mutated("fund", (tx) => calls(tx).forEach((c) => setField(c.args[1], "released", scv(true))));
+      refused(check("fund", d), /already marked released/);
+    });
+
+    it("refuses an added transfer(seller → someone else)", () => {
+      const d = mutated("fund", (tx) => subCalls(tx).push(transfer(SELLER, STRANGER, 1n)));
+      refused(check("fund", d), new RegExp(`also lets transfer run on ${USDC_SAC}`));
+    });
+
+    it("refuses a call nested under the transfer", () => {
+      const d = mutated("fund", (tx) => subCalls(tx)[0].subInvocations.push(transfer(SELLER, STRANGER, 1n)));
+      refused(check("fund", d), /also lets transfer run/);
+    });
+
+    it("refuses a fund whose transfer is not authorized", () => {
+      refused(check("fund", mutated("fund", (tx) => subCalls(tx).splice(0))), /lacks the expected transfer/);
+    });
+  });
+
+  describe("release", () => {
+    it("refuses a fee address other than the pinned one", () => {
+      const d = mutated("approve-and-release-milestones", (tx) => calls(tx).forEach((c) => (c.args[1] = address(STRANGER))));
+      refused(check("approve-and-release-milestones", d), new RegExp(`fee to ${STRANGER}`));
+    });
+
+    it("refuses other milestones", () => {
+      const d = mutated("approve-and-release-milestones", (tx) =>
+        calls(tx).forEach((c) => (c.args[2] = { type: 16, vec: [scv(0, "u32"), scv(1, "u32")] })),
+      );
+      refused(check("approve-and-release-milestones", d), /other milestones/);
+    });
+
+    it("refuses an added transfer", () => {
+      const d = mutated("approve-and-release-milestones", (tx) => subCalls(tx).push(transfer(SELLER, STRANGER, 1n)));
+      refused(check("approve-and-release-milestones", d), /also lets transfer run/);
+    });
+  });
+
+  describe("dispute", () => {
+    it("refuses another reason", () => {
+      const d = mutated("dispute", (tx) => calls(tx).forEach((c) => (c.args[1] = scv("Alice Example, +62 811 000", "string"))));
+      refused(check("dispute", d), /dispute reason/);
+    });
+  });
+
+  describe("resolve", () => {
+    it("refuses a payout to a third address", () => {
+      const d = mutated("resolve-dispute", (tx) => calls(tx).forEach((c) => (c.args[2].map[0].key = address(STRANGER))));
+      refused(check("resolve-dispute", d), new RegExp(`pays out 10 USDC to ${STRANGER}, not 10 USDC to ${BUYER}`));
+    });
+
+    it("refuses a split", () => {
+      const d = mutated("resolve-dispute", (tx) =>
+        calls(tx).forEach((c) => {
+          c.args[2].map = [
+            { key: address(BUYER), val: scv(50000000n, "i128") },
+            { key: address(SELLER), val: scv(50000000n, "i128") },
+          ];
+        }),
+      );
+      refused(check("resolve-dispute", d), new RegExp(`pays out 5 USDC to ${BUYER} and 5 USDC to ${SELLER}, not 10 USDC to ${BUYER}`));
+    });
+
+    it.each([1n, -1n])("refuses an amount %i stroop off", (delta) => {
+      const d = mutated("resolve-dispute", (tx) => calls(tx).forEach((c) => (c.args[2].map[0].val = scv(100000000n + delta, "i128"))));
+      refused(check("resolve-dispute", d), /pays out/);
+    });
+
+    it("refuses a fee address other than the pinned one", () => {
+      const d = mutated("resolve-dispute", (tx) => calls(tx).forEach((c) => (c.args[1] = address(STRANGER))));
+      refused(check("resolve-dispute", d), new RegExp(`fee to ${STRANGER}`));
+    });
+
+    it("refuses another resolver", () => {
+      const d = mutated("resolve-dispute", (tx) => {
+        tx.sourceAccount = { type: 0, ed25519: StrKey.decodeEd25519PublicKey(STRANGER) };
+        for (const c of calls(tx)) c.args[0] = address(STRANGER);
+      });
+      refused(check("resolve-dispute", d), new RegExp(`sent from ${STRANGER}`));
+    });
+  });
+});
+
+describe("describeEscrowCall", () => {
+  it("says in one line what each call does", () => {
+    expect(describeEscrowCall(decoded("deploy-c"))).toBe("Create this trade's escrow for 12.3456789 USDC");
+    expect(describeEscrowCall(decoded("fund"))).toBe("Fund this trade's escrow with 10 USDC");
+    expect(describeEscrowCall(decoded("approve-and-release-milestones"))).toBe(
+      "Release this trade's escrow to the buyer, less Trustless Work's 0.3% fee",
+    );
+    expect(describeEscrowCall(decoded("dispute"))).toBe("Open a dispute on this trade's escrow");
+    expect(describeEscrowCall(decoded("resolve-dispute-c"))).toBe(
+      "Pay this trade's escrow to GBMI…3NR4: 12.3086419 USDC after Trustless Work's 0.3% fee",
+    );
+  });
+
+  it("names any other call plainly", () => {
+    const d = mutated("dispute", (tx) => calls(tx).forEach((c) => (c.functionName = "withdraw_remaining_funds")));
+    expect(describeEscrowCall(d)).toBe("Call withdraw_remaining_funds on CDYH…KA7F");
+  });
+});
+
+describe("before WP-11 pins the factory, wasm hash and fee address (FIXES F-02, F-10)", () => {
+  it("checks the fee address and the wasm hash only once pinned, and logs the factory it derived from", async () => {
+    vi.resetModules();
+    vi.doMock("./config", async (importOriginal) => ({
+      ...(await importOriginal<typeof import("./config")>()),
+      TW_FACTORY_CONTRACT_ID: null,
+      TW_ESCROW_WASM_HASH: null,
+      TW_FEE_ADDRESS: null,
+    }));
+    const unpinned = await import("./xdr");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const release = unpinned.decodeEscrowCall(
+        edited("approve-and-release-milestones", (tx) => calls(tx).forEach((c) => (c.args[1] = address(STRANGER)))),
+      );
+      expect(unpinned.validateEscrowCall(release, EXPECTED["approve-and-release-milestones"], at("approve-and-release-milestones"))).toEqual([]);
+
+      const deploy = unpinned.decodeEscrowCall(
+        edited("deploy", (tx) => {
+          for (const c of calls(tx)) {
+            c.args[1] = scv(new Uint8Array(32).fill(1));
+            c.args[5].vec[1] = scv(new Uint8Array(32).fill(1));
+          }
+        }),
+      );
+      expect(unpinned.validateEscrowCall(deploy, EXPECTED.deploy, at("deploy"))).toEqual([]);
+      expect(warn).toHaveBeenCalledWith(JSON.stringify({ evt: "escrow.factory_unpinned", factory: FACTORY }));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
