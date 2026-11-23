@@ -1,0 +1,119 @@
+{
+  "endpoint": "dispute",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/dispute",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+      "signer": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+      "reason": "Pairy protected trade: a trader opened a dispute."
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "unsignedXdr": "AAAAAgAAAADeMF8C8OcajZqQW64mHEaIpcgGZSHiybTDbqz33g3MRgAAPpYAWdXQAAAAAgAAAAEAAAAAAAAAAAAAAABrBJCbAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAAOZGlzcHV0ZV9lc2Nyb3cAAAAAAAIAAAASAAAAAAAAAADeMF8C8OcajZqQW64mHEaIpcgGZSHiybTDbqz33g3MRgAAAA4AAAAxUGFpcnkgcHJvdGVjdGVkIHRyYWRlOiBhIHRyYWRlciBvcGVuZWQgYSBkaXNwdXRlLgAAAAAAAAEAAAAAAAAAAAAAAAHwf/+f+J/YBezpBiaeJ4Pn6R61IdbVbrXbJ47PGBSA9QAAAA5kaXNwdXRlX2VzY3JvdwAAAAAAAgAAABIAAAAAAAAAAN4wXwLw5xqNmpBbriYcRoilyAZlIeLJtMNurPfeDcxGAAAADgAAADFQYWlyeSBwcm90ZWN0ZWQgdHJhZGU6IGEgdHJhZGVyIG9wZW5lZCBhIGRpc3B1dGUuAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAYAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAEAAAAGAAAAAfB//5/4n9gF7OkGJp4ng+fpHrUh1tVutdsnjs8YFID1AAAAEAAAAAEAAAABAAAADwAAAAZFc2Nyb3cAAAAAAAEADxWZAAAAAAAABbQAAAAAAAA+MgAAAAA=",
+      "txHash": "0479d3af8c14221e2513e8f752b8e2c27caca38288476c188f029b231d0626ff"
+    }
+  },
+  "ms": 526,
+  "at": "2026-11-23T19:09:35.197Z",
+  "decoded": {
+    "envelopeType": "envelopeTypeTx",
+    "source": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+    "sequence": "25286362257162242",
+    "feeStroops": "16022",
+    "resourceFeeStroops": "15922",
+    "footprint": {
+      "readOnly": 2,
+      "readWrite": 1
+    },
+    "timeBounds": {
+      "minTime": "0",
+      "maxTime": "1795461275"
+    },
+    "validitySecondsFromPrepare": 300,
+    "memo": "none",
+    "signatures": 0,
+    "operations": [
+      {
+        "type": "invokeHostFunction",
+        "source": null,
+        "hostFunction": {
+          "type": "hostFunctionTypeInvokeContract",
+          "contract": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "function": "dispute_escrow",
+          "args": [
+            "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "Pairy protected trade: a trader opened a dispute."
+          ]
+        },
+        "auth": [
+          {
+            "credentials": {
+              "type": "sourceAccount"
+            },
+            "rootInvocation": {
+              "type": "execute",
+              "args": {
+                "source": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+                "function": "dispute_escrow",
+                "args": [
+                  "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+                  "Pairy protected trade: a trader opened a dispute."
+                ]
+              },
+              "invocations": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "submitted": {
+    "via": "tw-send-transaction",
+    "ok": true,
+    "hash": "0479d3af8c14221e2513e8f752b8e2c27caca38288476c188f029b231d0626ff",
+    "status": 200
+  },
+  "onChain": {
+    "hash": "0479d3af8c14221e2513e8f752b8e2c27caca38288476c188f029b231d0626ff",
+    "url": "https://stellar.expert/explorer/testnet/tx/0479d3af8c14221e2513e8f752b8e2c27caca38288476c188f029b231d0626ff",
+    "successful": true,
+    "ledger": 5887467,
+    "closedAt": "2026-11-23T19:09:37Z",
+    "feeChargedStroops": "10329",
+    "maxFeeStroops": "16022",
+    "envelopeSignatures": 1,
+    "horizonRecordHasResultMetaXdr": false,
+    "horizonOperation": [
+      {
+        "type": "invoke_host_function",
+        "source": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+        "assetBalanceChanges": null,
+        "address": "",
+        "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+      }
+    ],
+    "rpc": {
+      "status": "SUCCESS",
+      "returnValue": null,
+      "contractEvents": [
+        {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "type": "contract",
+          "topics": [
+            "tw_dispute",
+            "pairy-wp03-b-1795460949005"
+          ],
+          "data": {
+            "reason": "Pairy protected trade: a trader opened a dispute.",
+            "signer": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV"
+          }
+        }
+      ]
+    }
+  }
+}

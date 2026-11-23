@@ -1,0 +1,110 @@
+{
+  "endpoint": "read",
+  "note": "indexer read model",
+  "request": {
+    "method": "GET",
+    "path": "/escrows/CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+    "apiKeyHeader": true,
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "escrow": {
+        "network": "testnet",
+        "contractId": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+        "type": "single-release",
+        "contractVersion": "v2",
+        "apiVersion": null,
+        "status": "active",
+        "anomalies": [],
+        "amount": "10",
+        "balance": "0",
+        "asset": {
+          "name": "USDC",
+          "address": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+          "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          "decimals": 7,
+          "resolved": true
+        },
+        "lastLedgerSeq": "5887447",
+        "createdAt": "2026-11-23T19:07:53.245Z",
+        "updatedAt": "2026-11-23T19:07:59.458Z",
+        "firstLedgerClosedAt": "2026-11-23T19:07:52.000Z",
+        "lastLedgerClosedAt": "2026-11-23T19:07:57.000Z",
+        "snapshot": {
+          "title": "Pairy spike escrow A",
+          "description": "Pairy protected trade, Stellar testnet",
+          "engagementId": "pairy-wp03-a-1795460867633",
+          "roles": {
+            "admin": "GDQPAMJYN6WIRVN3FHATKGURUYDPQQGBYBGNQ4HJDTCYFGB7A3BZPQ7J",
+            "platform": "GACMHHE3UGKORO2X2RPNE74A6L4CQGA6M4JMYTWVRQ2CMLMTQAQRCUSD",
+            "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "approvers": [
+              "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+            ],
+            "observers": [],
+            "releaseSigners": [
+              "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+            ],
+            "disputeResolvers": [
+              "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI"
+            ],
+            "serviceProviders": [
+              "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+            ]
+          },
+          "trustline": {
+            "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+          },
+          "amount": "10",
+          "platformFee": "0",
+          "milestones": [
+            {
+              "status": "pending",
+              "evidence": "",
+              "approvals": {
+                "target": 1,
+                "approvedBy": [],
+                "approvalCount": 0
+              },
+              "description": "Cash handed over"
+            }
+          ],
+          "dispute": {
+            "reason": "",
+            "resolved": false,
+            "isDisputed": false
+          },
+          "released": false
+        }
+      },
+      "events": [
+        {
+          "kind": "tw_init",
+          "actor": null,
+          "ledgerSeq": "5887446",
+          "txHash": "e7c74f4cc3575e787e128268eccf306d7c90a90e42ee69fa76dfc673cb1f06e3",
+          "ledgerClosedAt": "2026-11-23T19:07:52.000Z",
+          "topics": [
+            "tw_init",
+            "pairy-wp03-a-1795460867633"
+          ],
+          "payload": {
+            "amount": "10",
+            "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "trustline": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+            "platformFee": "0"
+          }
+        }
+      ],
+      "eventsHasMore": false,
+      "deposits": [],
+      "depositsHasMore": false,
+      "depositsTotal": 0
+    }
+  },
+  "ms": 570,
+  "at": "2026-11-23T19:08:25.210Z"
+}

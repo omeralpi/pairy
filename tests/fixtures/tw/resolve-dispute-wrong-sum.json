@@ -1,0 +1,39 @@
+{
+  "endpoint": "resolve",
+  "note": "Not signed or submitted.",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/resolve-dispute",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+      "disputeResolver": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+      "distributions": [
+        {
+          "address": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+          "amount": 5
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 422,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/escrow-distributions-must-equal-balance",
+      "title": "Validation Error",
+      "status": 422,
+      "code": "ESCROW_DISTRIBUTIONS_MUST_EQUAL_BALANCE",
+      "detail": "Distributions must equal the total escrow balance.",
+      "instance": "/escrow/single-release/v2/resolve-dispute",
+      "traceId": "1b5287b3-ad6e-4e91-aac9-c02c2af828ba",
+      "extensions": {
+        "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+        "type": "single-release",
+        "method": "resolve_dispute"
+      }
+    }
+  },
+  "ms": 537,
+  "at": "2026-11-23T19:09:45.861Z"
+}

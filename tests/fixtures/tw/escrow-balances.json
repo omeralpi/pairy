@@ -1,0 +1,22 @@
+{
+  "endpoint": "read",
+  "request": {
+    "method": "GET",
+    "path": "/escrow/single-release/v2/escrow-balances?addresses=CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+    "apiKeyHeader": true,
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": [
+      {
+        "address": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+        "balance": 0,
+        "decimals": 7
+      }
+    ]
+  },
+  "ms": 501,
+  "at": "2026-11-23T19:08:24.708Z"
+}

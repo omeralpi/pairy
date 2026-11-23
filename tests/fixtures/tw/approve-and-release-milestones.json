@@ -1,0 +1,198 @@
+{
+  "endpoint": "approveAndRelease",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/approve-and-release-milestones",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+      "signer": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+      "milestoneIndexes": [
+        0
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "unsignedXdr": "AAAAAgAAAABYiuIOMb7O55uKrjKLoMvC9LmcqdC9Lze3m6MKovtpjQAAXlQAWdXQAAAABAAAAAEAAAAAAAAAAAAAAABrBJBpAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABjMX80VDvzWcSleUMXp+HTw2DztSzl63YqnHhRcBJ6xwAAAAeYXBwcm92ZV9hbmRfcmVsZWFzZV9taWxlc3RvbmVzAAAAAAADAAAAEgAAAAAAAAAAWIriDjG+zuebiq4yi6DLwvS5nKnQvS83t5ujCqL7aY0AAAASAAAAAAAAAADGv/Ns3J1vGbw7gKp0Agfg3fiRKG7T46GXzujob3SMyAAAABAAAAABAAAAAQAAAAMAAAAAAAAAAQAAAAAAAAAAAAAAAYzF/NFQ781nEpXlDF6fh08Ng87Us5et2Kpx4UXASescAAAAHmFwcHJvdmVfYW5kX3JlbGVhc2VfbWlsZXN0b25lcwAAAAAAAwAAABIAAAAAAAAAAFiK4g4xvs7nm4quMougy8L0uZyp0L0vN7ebowqi+2mNAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAAQAAAAAQAAAAEAAAADAAAAAAAAAAAAAAABAAAAAAAAAAMAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAFAAAAAEAAAAGAAAAAYzF/NFQ781nEpXlDF6fh08Ng87Us5et2Kpx4UXASescAAAAFAAAAAEAAAAHEjGAfQERG+54qEbdrN0KbPiLdiEV5w9bzhb/q9Zg5H8AAAAEAAAAAQAAAADGv/Ns3J1vGbw7gKp0Agfg3fiRKG7T46GXzujob3SMyAAAAAFVU0RDAAAAAEI+fQXy7K+/7BkrIVo/G+lq7bjY5wJUq+NBPgIH3layAAAAAQAAAADeMF8C8OcajZqQW64mHEaIpcgGZSHiybTDbqz33g3MRgAAAAFVU0RDAAAAAEI+fQXy7K+/7BkrIVo/G+lq7bjY5wJUq+NBPgIH3layAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAYzF/NFQ781nEpXlDF6fh08Ng87Us5et2Kpx4UXASescAAAAAQAAAAYAAAABjMX80VDvzWcSleUMXp+HTw2DztSzl63YqnHhRcBJ6xwAAAAQAAAAAQAAAAEAAAAPAAAABkVzY3JvdwAAAAAAAQAbo7MAAADoAAAHdAAAAAAAAF3wAAAAAA==",
+      "txHash": "a7e180f33e9f43cc3f956bd3f5eab05969bbfff73acf976a4cf077c9fcc688ef"
+    }
+  },
+  "ms": 475,
+  "at": "2026-11-23T19:08:44.994Z",
+  "decoded": {
+    "envelopeType": "envelopeTypeTx",
+    "source": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+    "sequence": "25286362257162244",
+    "feeStroops": "24148",
+    "resourceFeeStroops": "24048",
+    "footprint": {
+      "readOnly": 3,
+      "readWrite": 4
+    },
+    "timeBounds": {
+      "minTime": "0",
+      "maxTime": "1795461225"
+    },
+    "validitySecondsFromPrepare": 300,
+    "memo": "none",
+    "signatures": 0,
+    "operations": [
+      {
+        "type": "invokeHostFunction",
+        "source": null,
+        "hostFunction": {
+          "type": "hostFunctionTypeInvokeContract",
+          "contract": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+          "function": "approve_and_release_milestones",
+          "args": [
+            "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+            "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            [
+              0
+            ]
+          ]
+        },
+        "auth": [
+          {
+            "credentials": {
+              "type": "sourceAccount"
+            },
+            "rootInvocation": {
+              "type": "execute",
+              "args": {
+                "source": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+                "function": "approve_and_release_milestones",
+                "args": [
+                  "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+                  "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                  [
+                    0
+                  ]
+                ]
+              },
+              "invocations": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "submitted": {
+    "via": "horizon",
+    "ok": true,
+    "hash": "a7e180f33e9f43cc3f956bd3f5eab05969bbfff73acf976a4cf077c9fcc688ef",
+    "ledger": 5887457
+  },
+  "onChain": {
+    "hash": "a7e180f33e9f43cc3f956bd3f5eab05969bbfff73acf976a4cf077c9fcc688ef",
+    "url": "https://stellar.expert/explorer/testnet/tx/a7e180f33e9f43cc3f956bd3f5eab05969bbfff73acf976a4cf077c9fcc688ef",
+    "successful": true,
+    "ledger": 5887457,
+    "closedAt": "2026-11-23T19:08:47Z",
+    "feeChargedStroops": "18257",
+    "maxFeeStroops": "24148",
+    "envelopeSignatures": 1,
+    "horizonRecordHasResultMetaXdr": false,
+    "horizonOperation": [
+      {
+        "type": "invoke_host_function",
+        "source": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+        "assetBalanceChanges": [
+          {
+            "asset_type": "credit_alphanum4",
+            "asset_code": "USDC",
+            "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "type": "transfer",
+            "from": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+            "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            "amount": "0.0300000"
+          },
+          {
+            "asset_type": "credit_alphanum4",
+            "asset_code": "USDC",
+            "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "type": "transfer",
+            "from": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+            "to": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "amount": "9.9700000"
+          }
+        ],
+        "address": "",
+        "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+      }
+    ],
+    "rpc": {
+      "status": "SUCCESS",
+      "returnValue": null,
+      "contractEvents": [
+        {
+          "contractId": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+          "type": "contract",
+          "topics": [
+            "tw_ms_approve",
+            "pairy-wp03-a-1795460867633"
+          ],
+          "data": {
+            "approver": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+            "milestone_indices": [
+              0
+            ]
+          }
+        },
+        {
+          "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          "type": "contract",
+          "topics": [
+            "transfer",
+            "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+            "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          ],
+          "data": "300000"
+        },
+        {
+          "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          "type": "contract",
+          "topics": [
+            "transfer",
+            "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+            "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          ],
+          "data": "99700000"
+        },
+        {
+          "contractId": "CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN",
+          "type": "contract",
+          "topics": [
+            "tw_release",
+            "pairy-wp03-a-1795460867633"
+          ],
+          "data": {
+            "amount": "100000000",
+            "net_amount": "99700000",
+            "platform_fee": "0",
+            "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "release_signer": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+            "trustless_work_fee": "300000"
+          }
+        }
+      ]
+    }
+  },
+  "balances": {
+    "before": {
+      "seller": "3192404539",
+      "buyer": "0",
+      "platform": "0"
+    },
+    "after": {
+      "seller": "3192404539",
+      "buyer": "99700000",
+      "platform": "0"
+    }
+  }
+}

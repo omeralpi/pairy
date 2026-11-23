@@ -1,0 +1,69 @@
+{
+  "endpoint": "read",
+  "note": "on-chain get_escrow via TW",
+  "request": {
+    "method": "GET",
+    "path": "/escrow/single-release/v2/CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+    "apiKeyHeader": true,
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "type": "single-release",
+      "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+      "contractBaseId": "CCYOZX2IZBMFWN5MIMGQ7GAND7KSAIRCEC3LQSUS5CTSJ6SKKTTYL7GL",
+      "engagementId": "pairy-wp03-b-1795460949005",
+      "title": "Pairy spike escrow B",
+      "description": "Pairy protected trade, Stellar testnet",
+      "amount": 10,
+      "balance": 0,
+      "platformFee": 0,
+      "receiverMemo": 0,
+      "trustline": {
+        "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+        "symbol": "USDC"
+      },
+      "roles": {
+        "approvers": [
+          "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        ],
+        "serviceProviders": [
+          "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        ],
+        "platform": "GACMHHE3UGKORO2X2RPNE74A6L4CQGA6M4JMYTWVRQ2CMLMTQAQRCUSD",
+        "releaseSigners": [
+          "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        ],
+        "disputeResolvers": [
+          "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI"
+        ],
+        "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+        "admin": "GDJVGKU2FQCWXMJJ3GVI75JFAZAJSJCEUUR4T4DIVTCD6JNUSD65QPKY",
+        "observers": []
+      },
+      "milestones": [
+        {
+          "description": "Cash handed over",
+          "status": "pending",
+          "evidence": "",
+          "approvals": {
+            "target": 1,
+            "approvalCount": 0,
+            "approvedBy": []
+          }
+        }
+      ],
+      "dispute": {
+        "isDisputed": false,
+        "reason": "",
+        "resolved": false
+      },
+      "released": false
+    }
+  },
+  "ms": 505,
+  "at": "2026-11-23T19:09:23.975Z"
+}

@@ -1,0 +1,226 @@
+{
+  "note": "Nothing here was signed or submitted.",
+  "probes": {
+    "noApiKey": {
+      "request": {
+        "method": "POST",
+        "path": "/escrow/single-release/v2/fund",
+        "apiKeyHeader": false,
+        "body": {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "signer": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+          "amount": 1
+        }
+      },
+      "response": {
+        "status": 401,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/auth-credential-missing",
+          "title": "Unauthorized",
+          "status": 401,
+          "code": "AUTH_CREDENTIAL_MISSING",
+          "detail": "Missing x-api-key header or Authorization: Bearer token",
+          "instance": "/escrow/single-release/v2/fund",
+          "traceId": "9572d652-028c-495a-84bc-ebc8b04ac1aa"
+        }
+      },
+      "ms": 378,
+      "at": "2026-11-23T19:09:26.454Z"
+    },
+    "missingField": {
+      "request": {
+        "method": "POST",
+        "path": "/escrow/single-release/v2/fund",
+        "apiKeyHeader": true,
+        "body": {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "signer": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/bad-request",
+          "title": "Bad Request",
+          "status": 400,
+          "code": "BAD_REQUEST",
+          "detail": "amount must not be less than 0; amount must be a number conforming to the specified constraints",
+          "instance": "/escrow/single-release/v2/fund",
+          "traceId": "394215f4-e365-4842-8ff7-a3402973619c",
+          "extensions": {
+            "errors": [
+              "amount must not be less than 0",
+              "amount must be a number conforming to the specified constraints"
+            ]
+          }
+        }
+      },
+      "ms": 413,
+      "at": "2026-11-23T19:09:26.833Z"
+    },
+    "unknownProperty": {
+      "request": {
+        "method": "POST",
+        "path": "/escrow/single-release/v2/fund",
+        "apiKeyHeader": true,
+        "body": {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "signer": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+          "amount": 1,
+          "extra": true
+        }
+      },
+      "response": {
+        "status": 400,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/bad-request",
+          "title": "Bad Request",
+          "status": 400,
+          "code": "BAD_REQUEST",
+          "detail": "property extra should not exist",
+          "instance": "/escrow/single-release/v2/fund",
+          "traceId": "7055b170-f21f-490c-9aae-2e75c955654e",
+          "extensions": {
+            "errors": [
+              "property extra should not exist"
+            ]
+          }
+        }
+      },
+      "ms": 228,
+      "at": "2026-11-23T19:09:27.246Z"
+    },
+    "releaseByNonApprover": {
+      "request": {
+        "method": "POST",
+        "path": "/escrow/single-release/v2/approve-and-release-milestones",
+        "apiKeyHeader": true,
+        "body": {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "signer": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+          "milestoneIndexes": [
+            0
+          ]
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/escrow-signer-must-be-approver-and-release-signer",
+          "title": "Forbidden",
+          "status": 403,
+          "code": "ESCROW_SIGNER_MUST_BE_APPROVER_AND_RELEASE_SIGNER",
+          "detail": "approve_and_release_milestones requires the signer to be in BOTH roles.approvers and roles.release_signers.",
+          "instance": "/escrow/single-release/v2/approve-and-release-milestones",
+          "traceId": "dcf485f5-3ec2-42ee-be42-0845cd8a62fd",
+          "extensions": {
+            "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "type": "single-release",
+            "method": "approve_and_release_milestones"
+          }
+        }
+      },
+      "ms": 348,
+      "at": "2026-11-23T19:09:27.474Z"
+    },
+    "disputeByResolver": {
+      "request": {
+        "method": "POST",
+        "path": "/escrow/single-release/v2/dispute",
+        "apiKeyHeader": true,
+        "body": {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "signer": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+          "reason": "Pairy protected trade: a trader opened a dispute."
+        }
+      },
+      "response": {
+        "status": 403,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/escrow-dispute-resolver-cannot-dispute",
+          "title": "Forbidden",
+          "status": 403,
+          "code": "ESCROW_DISPUTE_RESOLVER_CANNOT_DISPUTE",
+          "detail": "A dispute resolver cannot initiate a dispute.",
+          "instance": "/escrow/single-release/v2/dispute",
+          "traceId": "bc166268-8a33-46a0-98cd-03cc2b999e16",
+          "extensions": {
+            "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "type": "single-release",
+            "method": "dispute_escrow"
+          }
+        }
+      },
+      "ms": 292,
+      "at": "2026-11-23T19:09:27.822Z"
+    },
+    "resolveWhileNotDisputed": {
+      "request": {
+        "method": "POST",
+        "path": "/escrow/single-release/v2/resolve-dispute",
+        "apiKeyHeader": true,
+        "body": {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "disputeResolver": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+          "distributions": [
+            {
+              "address": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+              "amount": 10
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 409,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/escrow-not-in-dispute",
+          "title": "Conflict",
+          "status": 409,
+          "code": "ESCROW_NOT_IN_DISPUTE",
+          "detail": "Escrow is not currently in dispute.",
+          "instance": "/escrow/single-release/v2/resolve-dispute",
+          "traceId": "ddc7ac5d-d4e4-4db3-b9b9-88c15c2fe542",
+          "extensions": {
+            "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "type": "single-release",
+            "method": "resolve_dispute"
+          }
+        }
+      },
+      "ms": 427,
+      "at": "2026-11-23T19:09:28.114Z"
+    },
+    "unknownEscrowRead": {
+      "request": {
+        "method": "GET",
+        "path": "/escrows/CAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC526",
+        "apiKeyHeader": true,
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "type": "https://docs.trustlesswork.com/trustless-work/v2-en/api-rest/errors/escrow-not-found",
+          "title": "Not Found",
+          "status": 404,
+          "code": "ESCROW_NOT_FOUND",
+          "detail": "Escrow not found",
+          "instance": "/escrows/CAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC526",
+          "traceId": "bd56bcc7-810e-46b6-a4ae-fd21524cca80",
+          "extensions": {
+            "contractId": "CAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQC526"
+          }
+        }
+      },
+      "ms": 252,
+      "at": "2026-11-23T19:09:28.541Z"
+    }
+  }
+}

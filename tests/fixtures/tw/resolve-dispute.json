@@ -1,0 +1,189 @@
+{
+  "endpoint": "resolve",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/resolve-dispute",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+      "disputeResolver": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+      "distributions": [
+        {
+          "address": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+          "amount": 10
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "unsignedXdr": "AAAAAgAAAAAMLrUuDIhmUl5wEXD6PUe2ktszZU69ZvGax+3vwNKaAwAATfYAWdXQAAAAAQAAAAEAAAAAAAAAAAAAAABrBJCnAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAAAMLrUuDIhmUl5wEXD6PUe2ktszZU69ZvGax+3vwNKaAwAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAA3jBfAvDnGo2akFuuJhxGiKXIBmUh4sm0w26s994NzEYAAAAKAAAAAAAAAAAAAAAABfXhAAAAAAEAAAAAAAAAAAAAAAHwf/+f+J/YBezpBiaeJ4Pn6R61IdbVbrXbJ47PGBSA9QAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAAwutS4MiGZSXnARcPo9R7aS2zNlTr1m8ZrH7e/A0poDAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAADeMF8C8OcajZqQW64mHEaIpcgGZSHiybTDbqz33g3MRgAAAAoAAAAAAAAAAAAAAAAF9eEAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAYAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAN4wXwLw5xqNmpBbriYcRoilyAZlIeLJtMNurPfeDcxGAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAABAAAABgAAAAHwf/+f+J/YBezpBiaeJ4Pn6R61IdbVbrXbJ47PGBSA9QAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAABAAAABgAAAAHwf/+f+J/YBezpBiaeJ4Pn6R61IdbVbrXbJ47PGBSA9QAAABAAAAABAAAAAQAAAA8AAAAKUmVlbnRyYW5jeQAAAAAAAQAa5UAAAADoAAAHfAAAAAAAAE2SAAAAAA==",
+      "txHash": "489ce14c2b985b223ce4a8fb31c6c28736a6efc23aac31537ef190589cc83edc"
+    }
+  },
+  "ms": 365,
+  "at": "2026-11-23T19:09:47.324Z",
+  "decoded": {
+    "envelopeType": "envelopeTypeTx",
+    "source": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+    "sequence": "25286362257162241",
+    "feeStroops": "19958",
+    "resourceFeeStroops": "19858",
+    "footprint": {
+      "readOnly": 3,
+      "readWrite": 5
+    },
+    "timeBounds": {
+      "minTime": "0",
+      "maxTime": "1795461287"
+    },
+    "validitySecondsFromPrepare": 300,
+    "memo": "none",
+    "signatures": 0,
+    "operations": [
+      {
+        "type": "invokeHostFunction",
+        "source": null,
+        "hostFunction": {
+          "type": "hostFunctionTypeInvokeContract",
+          "contract": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "function": "resolve_dispute",
+          "args": [
+            "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+            "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            {
+              "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV": "100000000"
+            }
+          ]
+        },
+        "auth": [
+          {
+            "credentials": {
+              "type": "sourceAccount"
+            },
+            "rootInvocation": {
+              "type": "execute",
+              "args": {
+                "source": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+                "function": "resolve_dispute",
+                "args": [
+                  "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+                  "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                  {
+                    "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV": "100000000"
+                  }
+                ]
+              },
+              "invocations": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "submitted": {
+    "via": "horizon",
+    "ok": true,
+    "hash": "489ce14c2b985b223ce4a8fb31c6c28736a6efc23aac31537ef190589cc83edc",
+    "ledger": 5887470
+  },
+  "onChain": {
+    "hash": "489ce14c2b985b223ce4a8fb31c6c28736a6efc23aac31537ef190589cc83edc",
+    "url": "https://stellar.expert/explorer/testnet/tx/489ce14c2b985b223ce4a8fb31c6c28736a6efc23aac31537ef190589cc83edc",
+    "successful": true,
+    "ledger": 5887470,
+    "closedAt": "2026-11-23T19:09:52Z",
+    "feeChargedStroops": "14819",
+    "maxFeeStroops": "19958",
+    "envelopeSignatures": 1,
+    "horizonRecordHasResultMetaXdr": false,
+    "horizonOperation": [
+      {
+        "type": "invoke_host_function",
+        "source": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+        "assetBalanceChanges": [
+          {
+            "asset_type": "credit_alphanum4",
+            "asset_code": "USDC",
+            "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "type": "transfer",
+            "from": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            "amount": "0.0300000"
+          },
+          {
+            "asset_type": "credit_alphanum4",
+            "asset_code": "USDC",
+            "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "type": "transfer",
+            "from": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "to": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "amount": "9.9700000"
+          }
+        ],
+        "address": "",
+        "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+      }
+    ],
+    "rpc": {
+      "status": "SUCCESS",
+      "returnValue": null,
+      "contractEvents": [
+        {
+          "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          "type": "contract",
+          "topics": [
+            "transfer",
+            "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+            "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          ],
+          "data": "300000"
+        },
+        {
+          "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          "type": "contract",
+          "topics": [
+            "transfer",
+            "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+            "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+            "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          ],
+          "data": "99700000"
+        },
+        {
+          "contractId": "CDYH77477CP5QBPM5EDCNHRHQPT6SHVVEHLNK3VV3MTY5TYYCSAPKA7F",
+          "type": "contract",
+          "topics": [
+            "tw_disp_resolve",
+            "pairy-wp03-b-1795460949005"
+          ],
+          "data": {
+            "dispute_resolver": "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI",
+            "distributions": [
+              {
+                "address": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+                "amount": "99700000"
+              }
+            ],
+            "platform_fee": "0",
+            "trustless_work_fee": "300000"
+          }
+        }
+      ]
+    }
+  },
+  "balances": {
+    "escrowBefore": 10,
+    "before": {
+      "seller": "3092404539",
+      "buyer": "99700000"
+    },
+    "after": {
+      "seller": "3092404539",
+      "buyer": "199400000"
+    }
+  }
+}

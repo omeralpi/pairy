@@ -1,0 +1,52 @@
+{
+  "endpoint": "deploy",
+  "note": "Prepared only; never signed or submitted. unsignedXdr dropped from the recording.",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/deploy",
+    "apiKeyHeader": true,
+    "body": {
+      "signer": "GCHQMIGMPOWMSIRLBCKD3EAH32W22KWR2RLGYWCON3G23PH2PTSYGDD7",
+      "engagementId": "pairy-wp03-a-1795460867633",
+      "title": "Pairy spike: reused engagementId (never submitted)",
+      "description": "Pairy protected trade, Stellar testnet",
+      "roles": {
+        "approvers": [
+          "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        ],
+        "serviceProviders": [
+          "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        ],
+        "releaseSigners": [
+          "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+        ],
+        "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+        "platform": "GACMHHE3UGKORO2X2RPNE74A6L4CQGA6M4JMYTWVRQ2CMLMTQAQRCUSD",
+        "disputeResolvers": [
+          "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI"
+        ],
+        "admin": "GCHQMIGMPOWMSIRLBCKD3EAH32W22KWR2RLGYWCON3G23PH2PTSYGDD7"
+      },
+      "amount": 10,
+      "platformFee": 0,
+      "trustline": {
+        "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+      },
+      "milestones": [
+        {
+          "description": "Cash handed over"
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "txHash": "f7c51b0ba1eb129a637a3b5be772e24de71121aed19327fd68c8ed5facf9c57d",
+      "contractId": "CCDHCC5ZH2VE74O4SODQG25BIOKTT62452AABUTLREYESP6A4ZK6DNS4"
+    }
+  },
+  "ms": 458,
+  "at": "2026-11-23T19:10:53.002Z"
+}

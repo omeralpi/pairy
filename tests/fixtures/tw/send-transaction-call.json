@@ -1,0 +1,24 @@
+{
+  "endpoint": "submit",
+  "request": {
+    "method": "POST",
+    "path": "/stellar/send-transaction",
+    "apiKeyHeader": true,
+    "body": {
+      "signedXdr": "AAAAAgAAAADeMF8C8OcajZqQW64mHEaIpcgGZSHiybTDbqz33g3MRgAAPpYAWdXQAAAAAgAAAAEAAAAAAAAAAAAAAABrBJCbAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAAOZGlzcHV0ZV9lc2Nyb3cAAAAAAAIAAAASAAAAAAAAAADeMF8C8OcajZqQW64mHEaIpcgGZSHiybTDbqz33g3MRgAAAA4AAAAxUGFpcnkgcHJvdGVjdGVkIHRyYWRlOiBhIHRyYWRlciBvcGVuZWQgYSBkaXNwdXRlLgAAAAAAAAEAAAAAAAAAAAAAAAHwf/+f+J/YBezpBiaeJ4Pn6R61IdbVbrXbJ47PGBSA9QAAAA5kaXNwdXRlX2VzY3JvdwAAAAAAAgAAABIAAAAAAAAAAN4wXwLw5xqNmpBbriYcRoilyAZlIeLJtMNurPfeDcxGAAAADgAAADFQYWlyeSBwcm90ZWN0ZWQgdHJhZGU6IGEgdHJhZGVyIG9wZW5lZCBhIGRpc3B1dGUuAAAAAAAAAAAAAAEAAAAAAAAAAgAAAAYAAAAB8H//n/if2AXs6QYmnieD5+ketSHW1W612yeOzxgUgPUAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAEAAAAGAAAAAfB//5/4n9gF7OkGJp4ng+fpHrUh1tVutdsnjs8YFID1AAAAEAAAAAEAAAABAAAADwAAAAZFc2Nyb3cAAAAAAAEADxWZAAAAAAAABbQAAAAAAAA+MgAAAAHeDcxGAAAAQGJQfh1sBciz+uBmiYD+JguMG+ngM1RShMkEyYKdpKFjMMghASspzUvpAbFvccUqI+lNBL9C/gIBxq/viNruyQE="
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "txHash": "0479d3af8c14221e2513e8f752b8e2c27caca38288476c188f029b231d0626ff",
+      "ledger": 5887467,
+      "code": "STELLAR_TX_SUBMITTED",
+      "message": "The escrow has been disputed."
+    }
+  },
+  "ms": 2292,
+  "at": "2026-11-23T19:09:35.729Z",
+  "note": "request.body.signedXdr is a signed testnet envelope of a throwaway account"
+}
