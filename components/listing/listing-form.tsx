@@ -47,9 +47,9 @@ function Segmented<T extends string>({
   );
 }
 
-function FieldError({ messages }: { messages?: string[] }) {
+function FieldError({ messages, className }: { messages?: string[]; className?: string }) {
   if (!messages?.length) return null;
-  return <p className="text-sm text-danger">{messages[0]}</p>;
+  return <p className={cn("text-sm text-danger", className)}>{messages[0]}</p>;
 }
 
 // Label ships text-sm/font-medium as utilities, which beat .eyebrow; override them here.
@@ -125,17 +125,15 @@ export function ListingForm() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="min" className={LABEL}>Min {asset}</Label>
-          <Input id="min" className={NUMBER} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
-          <FieldError messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="max" className={LABEL}>{side === "sell_crypto" ? "Total to offer" : "Total to buy"} ({asset})</Label>
-          <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
-          <FieldError messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
-        </div>
+      {/* Labels, inputs and errors are rows of one grid, so a label that wraps on a
+          narrow screen ("Total to offer (USDC)") cannot push its input below the other. */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        <Label htmlFor="min" className={cn(LABEL, "self-end")}>Min {asset}</Label>
+        <Label htmlFor="max" className={cn(LABEL, "self-end")}>{side === "sell_crypto" ? "Total to offer" : "Total to buy"} ({asset})</Label>
+        <Input id="min" className={NUMBER} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
+        <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
+        <FieldError className="col-start-1" messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
+        <FieldError className="col-start-2" messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
       </div>
 
       <div className="grid grid-cols-[1fr_7rem] gap-3">

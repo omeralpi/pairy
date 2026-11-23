@@ -51,7 +51,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             <Term label="Amount">{amountRange(listing)}</Term>
             <Term label="Left">
               {leftLabel(listing)}
-              {belowMinimum(listing) && (
+              {listing.status === "active" && belowMinimum(listing) && (
                 <span className="mt-1 block font-sans text-slate">
                   Not taking new trades until an open trade on it is cancelled.
                 </span>
