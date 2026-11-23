@@ -2,9 +2,10 @@
 // together exceed a listing must not both be accepted. The listing offers
 // 10 to 100 XLM; two buyers each open 60 at once, and exactly one may win.
 //
-// This file runs on pglite, which executes one transaction at a time, so it
-// proves the remaining-amount check, not the listing row lock. The row lock
-// is proven on real Postgres by tests/pg/listing-reservation.pg.test.ts.
+// This file runs on pglite, which serialises transactions, so it can only
+// check the rule (the remaining-amount check and its messages), never the
+// listing row lock: a check with no lock passes here. The lock is the job of
+// tests/pg/listing-reservation.pg.test.ts on real Postgres.
 //
 // RED until WP-07 lands the remaining amount: the cases below are marked
 // `it.fails` so the branch's default suite stays green; WP-07 turns them
