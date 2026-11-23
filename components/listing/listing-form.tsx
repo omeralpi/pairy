@@ -126,14 +126,16 @@ export function ListingForm() {
       </div>
 
       {/* Labels, inputs and errors are rows of one grid, so a label that wraps on a
-          narrow screen ("Total to offer (USDC)") cannot push its input below the other. */}
+          narrow screen ("Total to offer (USDC)") cannot push its input below the other.
+          Each field's three parts stay together in the DOM for screen readers; the
+          grid classes place them. */}
       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-        <Label htmlFor="min" className={cn(LABEL, "self-end")}>Min {asset}</Label>
-        <Label htmlFor="max" className={cn(LABEL, "self-end")}>{side === "sell_crypto" ? "Total to offer" : "Total to buy"} ({asset})</Label>
-        <Input id="min" className={NUMBER} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
-        <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
-        <FieldError className="col-start-1" messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
-        <FieldError className="col-start-2" messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
+        <Label htmlFor="min" className={cn(LABEL, "col-start-1 row-start-1 self-end")}>Min {asset}</Label>
+        <Input id="min" className={cn(NUMBER, "col-start-1 row-start-2")} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
+        <FieldError className="col-start-1 row-start-3" messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
+        <Label htmlFor="max" className={cn(LABEL, "col-start-2 row-start-1 self-end")}>{side === "sell_crypto" ? "Total to offer" : "Total to buy"} ({asset})</Label>
+        <Input id="max" className={cn(NUMBER, "col-start-2 row-start-2")} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
+        <FieldError className="col-start-2 row-start-3" messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
       </div>
 
       <div className="grid grid-cols-[1fr_7rem] gap-3">
