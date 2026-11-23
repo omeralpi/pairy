@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-import { amountRange, rateLabel, sideLabel, type Listing } from "./format";
+import { toStroops } from "@/lib/trade/amount";
+
+import { amountRange, leftLabel, rateLabel, sideLabel, type Listing } from "./format";
 
 /** One listing as a plain row. Put rows in a `divide-y divide-line` list. */
 export function ListingCard({ listing, showCity = true }: { listing: Listing; showCity?: boolean }) {
@@ -13,6 +15,9 @@ export function ListingCard({ listing, showCity = true }: { listing: Listing; sh
         <p className="truncate font-medium text-ink underline-offset-4 group-hover:underline">
           {sideLabel(listing.side)} {amountRange(listing)}
         </p>
+        {toStroops(listing.remainingAmount) < toStroops(listing.maxAmount) && (
+          <p className="mt-0.5 truncate text-sm text-slate">{leftLabel(listing)}</p>
+        )}
         {showCity && (
           <p className="mt-0.5 truncate text-sm text-slate">
             {listing.cityName}, {listing.countryCode}

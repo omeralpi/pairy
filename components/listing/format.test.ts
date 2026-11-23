@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { amountInput } from "@/lib/trade/amount";
 
-import { balanceLabel, normalizeDecimal } from "./format";
+import { balanceLabel, belowMinimum, leftLabel, normalizeDecimal } from "./format";
 
 describe("normalizeDecimal (Q-20)", () => {
   it("accepts a decimal comma and a leading dot", () => {
@@ -33,5 +33,20 @@ describe("balanceLabel", () => {
     expect(balanceLabel("1234567.5000000")).toBe("1,234,567.50");
     expect(balanceLabel("100")).toBe("100.00");
     expect(balanceLabel("0.2900000")).toBe("0.29");
+  });
+});
+
+describe("leftLabel", () => {
+  it("says how much of the listing's total is still left, without padding zeros", () => {
+    expect(leftLabel({ remainingAmount: "40.0000000", maxAmount: "100.0000000", asset: "USDC" })).toBe("40 of 100 USDC left");
+    expect(leftLabel({ remainingAmount: "0.0000000", maxAmount: "250.5000000", asset: "XLM" })).toBe("0 of 250.5 XLM left");
+  });
+});
+
+describe("belowMinimum", () => {
+  it("is true only when less than the minimum is left", () => {
+    expect(belowMinimum({ remainingAmount: "9.9999999", minAmount: "10.0000000" })).toBe(true);
+    expect(belowMinimum({ remainingAmount: "10.0000000", minAmount: "10.0000000" })).toBe(false);
+    expect(belowMinimum({ remainingAmount: "0.0000000", minAmount: "10.0000000" })).toBe(true);
   });
 });

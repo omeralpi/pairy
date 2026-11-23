@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { ConfirmAction } from "@/components/confirm-action";
 import { friendlyError, isUnauthorized } from "@/components/friendly-error";
-import { amountRange, rateLabel, sideLabel, type Listing } from "@/components/listing/format";
+import { amountRange, belowMinimum, leftLabel, rateLabel, sideLabel, type Listing } from "@/components/listing/format";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth/use-session";
@@ -38,6 +38,10 @@ function Row({ listing }: { listing: Listing }) {
           <p className="text-sm text-slate">
             <span className="font-mono">{rateLabel(listing)}</span> · {listing.cityName}, {listing.countryCode}
           </p>
+          <p className="text-sm text-slate">{leftLabel(listing)}</p>
+          {listing.status === "active" && belowMinimum(listing) && (
+            <p className="text-sm text-warning">Hidden from the map: less than the minimum is left.</p>
+          )}
         </Link>
         <span className={cn("shrink-0 pt-1 font-mono text-[11px] uppercase tracking-[0.18em]", STATUS_STYLE[listing.status])}>
           {listing.status}
@@ -94,7 +98,8 @@ export default function MyListingsPage() {
       </div>
       <p className="mt-3 text-sm text-slate">
         Paused listings are hidden from the map until you resume them. Closed is final. Either way, trades already
-        open on a listing continue.
+        open on a listing continue. A listing with less than its minimum left is hidden too, until a trade on it is
+        cancelled.
       </p>
 
       <div className="mt-8">

@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { friendlyError } from "@/components/friendly-error";
-import { normalizeDecimal, trimAmount } from "@/components/listing/format";
+import { belowMinimum, normalizeDecimal, trimAmount } from "@/components/listing/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth/use-session";
-import { amountInput, fiatTotal, toStroops } from "@/lib/trade/amount";
+import { amountInput, fiatTotal, fromStroops, toStroops } from "@/lib/trade/amount";
 
 /** On the listing page: pick an amount inside the listing's bounds and open a trade. */
 export function StartTradeButton({ listingId }: { listingId: string }) {
@@ -32,17 +32,27 @@ export function StartTradeButton({ listingId }: { listingId: string }) {
   if (listing.status !== "active") {
     return <p className="text-sm text-slate">This listing is not taking trades right now.</p>;
   }
+  if (belowMinimum(listing)) {
+    return (
+      <p className="text-sm text-slate">
+        Not enough left on this listing right now. It comes back when a trade on it is cancelled.
+      </p>
+    );
+  }
 
+  // Open trades reserve part of the total, so the upper bound is what is left.
+  const maxStroops =
+    toStroops(listing.remainingAmount) < toStroops(listing.maxAmount)
+      ? toStroops(listing.remainingAmount)
+      : toStroops(listing.maxAmount);
   const min = trimAmount(listing.minAmount);
-  const max = trimAmount(listing.maxAmount);
+  const max = fromStroops(maxStroops);
   // Normalized on use, not while typing: "1," must not turn into "1." before
   // the user has typed the "000" that makes it a thousands separator.
   const value = normalizeDecimal(amount);
   const parsed = amountInput.safeParse(value);
   const inBounds =
-    parsed.success &&
-    toStroops(parsed.data) >= toStroops(listing.minAmount) &&
-    toStroops(parsed.data) <= toStroops(listing.maxAmount);
+    parsed.success && toStroops(parsed.data) >= toStroops(listing.minAmount) && toStroops(parsed.data) <= maxStroops;
   const youAre = listing.side === "sell_crypto" ? "buyer" : "seller";
 
   return (
@@ -72,7 +82,7 @@ export function StartTradeButton({ listingId }: { listingId: string }) {
           : /[,\s]/.test(value)
             ? "Use a dot for decimals and no thousands separators, e.g. 1000.5. "
             : amount
-              ? `Enter an amount between ${min} and ${max} ${listing.asset}. `
+              ? `Enter ${min} to ${max} ${listing.asset}. `
               : ""}
         You will be the {youAre}. Opening a trade moves no money; your peer has to agree first.
       </p>
