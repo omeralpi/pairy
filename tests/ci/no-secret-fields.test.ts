@@ -125,11 +125,20 @@ function routeInputProblems(source: string): string[] {
 }
 
 /**
- * PLAN I1 with FIXES F-06: Pairy's server holds no Stellar signing key. A key
- * may be made only in the wallet and the escrow creation-key modules, and the
- * server side never signs. Tests and the two test-only helpers are not scanned.
+ * PLAN I1 with FIXES F-06 and O-18: Pairy's server holds no Stellar signing
+ * key. A key may be made only in the wallet and the escrow creation-key
+ * modules, and the server side never signs. Tests and the two test-only
+ * helpers are not scanned.
  */
-const KEY_CONSTRUCTION = ["Keypair.random(", "Keypair.fromSecret(", ".secret()", "decodeEd25519SecretSeed", "fromRawEd25519Seed"];
+const KEY_CONSTRUCTION = [
+  "Keypair.random(",
+  "Keypair.fromSecret(",
+  ".secret()",
+  "decodeEd25519SecretSeed",
+  "fromRawEd25519Seed",
+  "new Keypair(",
+  "Keypair.master(",
+];
 const SIGNING = [".sign(", "signTransaction(", "signAuthEntry(", "authorizeEntry(", "KeyManager"];
 const KEY_MODULES = ["lib/wallet/device-wallet.ts", "lib/escrow/creation-key.ts", "components/wallet/privy-key-converter.tsx"];
 const NO_SIGNING = /^(server|app\/api|lib\/db)\/|^lib\/escrow\/(verify|sync|multisig)\.ts$/;
@@ -263,6 +272,13 @@ export async function GET(req: Request) { if (!authorized(req)) return new Respo
         { file: "tests/integration/testnet.ts", text: everyWay },
       ]),
     ).toEqual([]);
+  });
+
+  it("the key-boundary scan also finds a key built from raw bytes or the network's master key (O-18)", () => {
+    const file = "server/api/routers/escrow.ts";
+    const text = 'const kp = new Keypair({ type: "ed25519", secretKey });\nconst root = Keypair.master(Networks.TESTNET);';
+    expect(keyBoundaryProblems([{ file, text }])).toEqual([`${file}: makes a key (new Keypair()`, `${file}: makes a key (Keypair.master()`]);
+    expect(keyBoundaryProblems([{ file: "lib/escrow/creation-key.ts", text }])).toEqual([]);
   });
 
   it("the key-boundary scan finds every signing call on the server side", () => {
