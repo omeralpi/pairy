@@ -9,7 +9,7 @@ Sprint day 1 is 2026-11-24 and day 30 is 2026-12-23. A gate that falls on a week
 | Day | Due | Gate | If it is missed | Result | Date | Proof |
 |---|---|---|---|---|---|---|
 | 4 | 2026-11-27 | **D1**: a Privy-signed testnet payment on stellar.expert, and a SEP-53 sign-in through Privy accepted by the unchanged check | Retry until day 10; then Deliverable 1 is not claimed as done, and each tested step's result, failing call and error go into EVIDENCE.md | pending | | |
-| 5 | 2026-11-28 | [`docs/arbitration.md`](arbitration.md) on GitHub, with the rule and the acceptance text | — | pending | | |
+| 5 | 2026-11-28 | [`docs/arbitration.md`](arbitration.md) on GitHub, with the rule and the acceptance text | No fallback in the SOW; EVIDENCE.md quotes the first-commit date. | pending | | |
 | 5 | 2026-11-28 | **D2**: one USDC escrow created with a fresh creation key, funded and released on testnet by the repo's script, with Pairy's role mapping | Retry until day 12; then Deliverable 2 is reported not delivered | pending | | |
 | 10 | 2026-12-03 | **EURC source**: test EURC in a team account | The third asset is a test euro token (`TEUR`, "Test EUR") from a new testnet issuer, disclosed in EVIDENCE.md | pending | | |
 | 12 | 2026-12-05 | **Dispute exits**: resolved to the buyer and resolved to the seller, scripted with the two-signature arbiter | User-facing protected mode is not delivered; only the scripted exits ship | pending | | |
