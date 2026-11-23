@@ -132,7 +132,7 @@ export function ListingForm() {
           <FieldError messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="max" className={LABEL}>Max {asset}</Label>
+          <Label htmlFor="max" className={LABEL}>{side === "sell_crypto" ? "Total to offer" : "Total to buy"} ({asset})</Label>
           <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
           <FieldError messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
         </div>
