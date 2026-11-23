@@ -32,6 +32,8 @@ jobs:
         run: pnpm vitest run tests/ci/no-secret-fields.test.ts
       - name: coordination-purge-on-terminal
         run: pnpm vitest run tests/ci/coordination-purge-on-terminal.test.ts
+      - name: tw-endpoint-allowlist
+        run: pnpm vitest run tests/ci/tw-endpoint-allowlist.test.ts
 
       - name: build
         run: pnpm build
