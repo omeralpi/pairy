@@ -10,6 +10,7 @@ export default defineConfig({
       "server/**/*.test.ts",
       "components/**/*.test.{ts,tsx}",
       "tests/ci/**/*.test.ts",
+      "scripts/**/*.test.ts",
     ],
     testTimeout: 20_000,
     hookTimeout: 20_000,

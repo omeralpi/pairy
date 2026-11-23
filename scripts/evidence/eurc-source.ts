@@ -1,7 +1,7 @@
 // Records one dated attempt at the test EURC source (D3 B4, S-09; FIXES
 // X-04): Circle's testnet issuer as Horizon sees it, what the testnet DEX
-// would give for XLM, and the treasury's EURC balance against the pass mark.
-// Run it on each attempt; the attempts accumulate in
+// would give for XLM, and what the treasury has received against the pass
+// mark. Run it on each attempt; the attempts accumulate in
 // scripts/evidence/out/eurc-source.json, newest last.
 //
 //   pnpm tsx scripts/evidence/eurc-source.ts
@@ -14,13 +14,10 @@ import { Asset } from "@stellar/stellar-sdk";
 import { TESTNET_EURC_ISSUER } from "../../lib/stellar/assets";
 import { horizon } from "../../lib/stellar/horizon";
 import type { TreasuryState } from "../ops/create-treasury";
+import { DECISION_DAY, PASS_MARK, decide, passes, type TreasuryReport } from "./eurc-decision";
 import { readOut, readState, writeOut } from "./record";
 
 const EURC = new Asset("EURC", TESTNET_EURC_ISSUER);
-/** FIXES X-04 lowered the plan's 100 to 10: the faucet pays a few EURC at a time. */
-const PASS_MARK = "10.0000000";
-/** Day 10. No EURC in the treasury by then: TEUR (DECISIONS 16). */
-const DECISION_DAY = "2026-12-03";
 
 const FAUCET = {
   url: "https://faucet.circle.com/",
@@ -44,7 +41,7 @@ type Attempt = {
     /** strictReceivePaths([native], EURC, "10"): what 10 EURC would cost. */
     for10Eurc: { sourceAmount: string } | null;
   };
-  treasury: { account: string; eurcBalance: string; passes: boolean } | null;
+  treasury: (TreasuryReport & { passes: boolean }) | null;
   decision: string;
 };
 
@@ -63,6 +60,34 @@ function balanceOf(acc: Awaited<ReturnType<typeof horizon.loadAccount>>, asset: 
   return line?.balance ?? "0.0000000";
 }
 
+function fromStroops(n: bigint): string {
+  return `${n / 10_000_000n}.${(n % 10_000_000n).toString().padStart(7, "0")}`;
+}
+
+/**
+ * Every EURC credit to the account since it was made, summed: faucet payments
+ * included, spending by `acquire` ignored. The decision rests on this, not on
+ * the balance.
+ */
+async function eurcReceived(account: string): Promise<string> {
+  let total = 0n;
+  let page = await horizon.effects().forAccount(account).order("asc").limit(200).call();
+  for (;;) {
+    for (const e of page.records) {
+      if (
+        e.type === "account_credited" &&
+        e.asset_code === EURC.code &&
+        e.asset_issuer === EURC.issuer
+      ) {
+        const [whole, frac = ""] = e.amount.split(".");
+        total += BigInt(whole + frac.padEnd(7, "0"));
+      }
+    }
+    if (page.records.length < 200) return fromStroops(total);
+    page = await page.next();
+  }
+}
+
 async function attempt(): Promise<Attempt> {
   const [issuerAcc, assets, send, receive] = await Promise.all([
     horizon.loadAccount(TESTNET_EURC_ISSUER),
@@ -76,23 +101,19 @@ async function attempt(): Promise<Attempt> {
   const state = readState<TreasuryState>("treasury-eurc");
   let treasury: Attempt["treasury"] = null;
   if (state) {
-    const eurcBalance = balanceOf(await horizon.loadAccount(state.account), EURC);
+    const [acc, received] = await Promise.all([
+      horizon.loadAccount(state.account),
+      eurcReceived(state.account),
+    ]);
     treasury = {
       account: state.account,
-      eurcBalance,
-      passes: Number(eurcBalance) >= Number(PASS_MARK),
+      eurcReceived: received,
+      eurcBalance: balanceOf(acc, EURC),
+      passes: passes(received),
     };
   }
 
   const at = new Date().toISOString();
-  const decision = !treasury
-    ? "no treasury yet: run scripts/ops/create-treasury.ts EURC"
-    : treasury.passes
-      ? "pass: EURC is the third asset"
-      : at.slice(0, 10) > DECISION_DAY
-        ? `no EURC by day 10 (${DECISION_DAY}): issue TEUR (DECISIONS 16)`
-        : `waiting for Circle's faucet (HX-7) to pay ${treasury.account}`;
-
   return {
     at,
     issuer: {
@@ -112,7 +133,7 @@ async function attempt(): Promise<Attempt> {
       for10Eurc: receive.records[0] ? { sourceAmount: receive.records[0].source_amount } : null,
     },
     treasury,
-    decision,
+    decision: decide(treasury, at.slice(0, 10)),
   };
 }
 
@@ -128,7 +149,9 @@ async function main() {
   } satisfies Record_);
   console.log(`issuer ${next.issuer.address} home_domain ${next.issuer.homeDomain}, ${next.issuer.holders} holders`);
   console.log(`dex: 100 XLM -> ${next.dex.for100Xlm?.destinationAmount ?? "no path"} EURC; 10 EURC costs ${next.dex.for10Eurc?.sourceAmount ?? "no path"} XLM`);
-  if (next.treasury) console.log(`treasury ${next.treasury.account} holds ${next.treasury.eurcBalance} EURC (pass mark ${PASS_MARK})`);
+  if (next.treasury) {
+    console.log(`treasury ${next.treasury.account} received ${next.treasury.eurcReceived} EURC, holds ${next.treasury.eurcBalance} (pass mark ${PASS_MARK})`);
+  }
   console.log(next.decision);
 }
 
