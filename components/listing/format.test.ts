@@ -38,7 +38,9 @@ describe("balanceLabel", () => {
 
 describe("leftLabel", () => {
   it("says how much of the listing's total is still left, without padding zeros", () => {
+    expect(leftLabel({ remainingAmount: "100.0000000", maxAmount: "100.0000000", asset: "USDC" })).toBe("100 of 100 USDC left");
     expect(leftLabel({ remainingAmount: "40.0000000", maxAmount: "100.0000000", asset: "USDC" })).toBe("40 of 100 USDC left");
+    expect(leftLabel({ remainingAmount: "40.1234567", maxAmount: "100.0000000", asset: "USDC" })).toBe("40.1234567 of 100 USDC left");
     expect(leftLabel({ remainingAmount: "0.0000000", maxAmount: "250.5000000", asset: "XLM" })).toBe("0 of 250.5 XLM left");
   });
 });

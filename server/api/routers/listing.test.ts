@@ -125,9 +125,9 @@ describe("listing.create", () => {
   });
 
   it.each(["THB", "IDR"] as const)("quotes cash in %s and filters the map by it", async (fiatCode) => {
-    const created = await as(ALICE).create({ ...valid, fiatCode } as never);
+    const created = await as(ALICE).create({ ...valid, fiatCode });
     expect(created.fiatCode).toBe(fiatCode);
-    expect((await as(null).list({ fiatCode } as never)).map((l) => l.id)).toEqual([created.id]);
+    expect((await as(null).list({ fiatCode })).map((l) => l.id)).toEqual([created.id]);
   });
 });
 
