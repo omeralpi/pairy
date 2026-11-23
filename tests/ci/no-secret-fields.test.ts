@@ -124,6 +124,34 @@ function routeInputProblems(source: string): string[] {
   return problems;
 }
 
+/**
+ * PLAN I1 with FIXES F-06: Pairy's server holds no Stellar signing key. A key
+ * may be made only in the wallet and the escrow creation-key modules, and the
+ * server side never signs. Tests and the two test-only helpers are not scanned.
+ */
+const KEY_CONSTRUCTION = ["Keypair.random(", "Keypair.fromSecret(", ".secret()", "decodeEd25519SecretSeed", "fromRawEd25519Seed"];
+const SIGNING = [".sign(", "signTransaction(", "signAuthEntry(", "authorizeEntry(", "KeyManager"];
+const KEY_MODULES = ["lib/wallet/device-wallet.ts", "lib/escrow/creation-key.ts", "components/wallet/privy-key-converter.tsx"];
+const NO_SIGNING = /^(server|app\/api|lib\/db)\/|^lib\/escrow\/(verify|sync|multisig)\.ts$/;
+
+function inKeyScan(file: string): boolean {
+  return (
+    /^(app|components|lib|server)\/.*\.tsx?$/.test(file) &&
+    !/\.test\.tsx?$/.test(file) &&
+    file !== "lib/trade/test-helpers.ts" &&
+    file !== "lib/db/test-setup.ts"
+  );
+}
+
+function keyBoundaryProblems(files: { file: string; text: string }[]): string[] {
+  return files
+    .filter(({ file }) => inKeyScan(file))
+    .flatMap(({ file, text }) => [
+      ...(KEY_MODULES.includes(file) ? [] : KEY_CONSTRUCTION.filter((id) => text.includes(id)).map((id) => `${file}: makes a key (${id})`)),
+      ...(NO_SIGNING.test(file) ? SIGNING.filter((id) => text.includes(id)).map((id) => `${file}: signs (${id})`) : []),
+    ]);
+}
+
 describe("no-secret-fields", () => {
   it("the walker catches planted secret fields, however deeply nested", () => {
     const planted = z.object({
@@ -205,5 +233,53 @@ export async function GET(req: Request) { if (!authorized(req)) return new Respo
       .filter((f) => /^\s*["']use server["']/m.test(readFileSync(f, "utf8")))
       .map(rel);
     expect(withAction).toEqual([]);
+  });
+
+  it("no source makes a Stellar key outside the wallet and creation-key modules, and nothing on the server side signs", () => {
+    const files = ["app", "components", "lib", "server"]
+      .flatMap((d) => filesUnder(path.join(root, d)))
+      .filter((f) => /\.tsx?$/.test(f))
+      .map((f) => ({ file: rel(f), text: readFileSync(f, "utf8") }));
+    // The scan reads the real tree: the wallet module, which does make a key, is in it.
+    expect(files.filter((f) => inKeyScan(f.file)).map((f) => f.file)).toContain("lib/wallet/device-wallet.ts");
+    expect(keyBoundaryProblems(files)).toEqual([]);
+  });
+
+  it("the key-boundary scan finds every way to make a key, outside the wallet and creation-key modules", () => {
+    for (const id of KEY_CONSTRUCTION) {
+      for (const file of ["server/api/routers/trade.ts", "app/api/cron/expire-trades/route.ts", "lib/trade/persist.ts", "components/trade/trade-room.tsx"]) {
+        expect(keyBoundaryProblems([{ file, text: `const k = ${id}` }])).toEqual([`${file}: makes a key (${id})`]);
+      }
+    }
+    const everyWay = KEY_CONSTRUCTION.join("\n");
+    expect(
+      keyBoundaryProblems([
+        ...KEY_MODULES.map((file) => ({ file, text: everyWay })),
+        { file: "server/api/routers/auth.test.ts", text: everyWay },
+        { file: "components/wallet/tx-summary.test.ts", text: everyWay },
+        { file: "lib/trade/test-helpers.ts", text: everyWay },
+        { file: "lib/db/test-setup.ts", text: everyWay },
+        { file: "scripts/ops/setup-arbiter.ts", text: everyWay },
+        { file: "tests/integration/testnet.ts", text: everyWay },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("the key-boundary scan finds every signing call on the server side", () => {
+    for (const id of SIGNING) {
+      for (const file of ["server/api/routers/escrow.ts", "app/api/cron/expire-trades/route.ts", "lib/db/index.ts", "lib/escrow/verify.ts", "lib/escrow/sync.ts", "lib/escrow/multisig.ts"]) {
+        expect(keyBoundaryProblems([{ file, text: `x${id}` }])).toEqual([`${file}: signs (${id})`]);
+      }
+    }
+    // The browser signs with the user's own wallet or the creation key, and tests sign freely.
+    const everySigningCall = SIGNING.map((id) => `x${id}`).join("\n");
+    expect(
+      keyBoundaryProblems([
+        { file: "lib/trade/sign-and-submit.ts", text: everySigningCall },
+        { file: "lib/wallet/device-wallet.ts", text: everySigningCall },
+        { file: "lib/escrow/creation-key.ts", text: everySigningCall },
+        { file: "server/api/routers/auth.test.ts", text: everySigningCall },
+      ]),
+    ).toEqual([]);
   });
 });
