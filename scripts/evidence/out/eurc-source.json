@@ -1,0 +1,43 @@
+{
+  "passMark": "10.0000000",
+  "decisionDay": "2026-12-03",
+  "fallback": "TEUR, shown as Test EUR, from scripts/ops/issue-test-euro.ts; issuer disclosed in EVIDENCE.md",
+  "faucet": {
+    "url": "https://faucet.circle.com/",
+    "network": "Stellar Testnet",
+    "token": "EURC",
+    "humanTask": "HX-7: a public web form behind reCAPTCHA, no account; one request per token and network per rate window"
+  },
+  "attempts": [
+    {
+      "at": "2026-11-23T20:11:04.416Z",
+      "issuer": {
+        "address": "GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO",
+        "homeDomain": "circle.com",
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        },
+        "holders": 4115,
+        "outstanding": "7167815485.2001179"
+      },
+      "dex": {
+        "for100Xlm": {
+          "destinationAmount": "0.0000477",
+          "path": [
+            "USDC"
+          ]
+        },
+        "for10Eurc": null
+      },
+      "treasury": {
+        "account": "GBNSEA54V6EOBZZOHVC5HSDGHAZDEVJ3YVVB3QHLCQ2EVGZXMUUQLZBB",
+        "eurcBalance": "0.0000000",
+        "passes": false
+      },
+      "decision": "waiting for Circle's faucet (HX-7) to pay GBNSEA54V6EOBZZOHVC5HSDGHAZDEVJ3YVVB3QHLCQ2EVGZXMUUQLZBB"
+    }
+  ]
+}

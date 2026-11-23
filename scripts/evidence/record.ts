@@ -56,6 +56,11 @@ export async function snapshot(label: string, kp: Keypair, asset: Asset) {
   };
 }
 
+export function readOut<T>(name: string): T | null {
+  const file = path.join(OUT_DIR, `${name}.json`);
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
+}
+
 export function writeOut(name: string, data: unknown) {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const file = path.join(OUT_DIR, `${name}.json`);
