@@ -1,0 +1,253 @@
+{
+  "endpoint": "fund",
+  "request": {
+    "method": "POST",
+    "path": "/escrow/single-release/v2/fund",
+    "apiKeyHeader": true,
+    "body": {
+      "contractId": "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+      "signer": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+      "amount": 12.3456789
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "unsignedXdr": "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",
+      "txHash": "7cfd6b333f31d2b726129645f84556d36d9eba18cae571f2cc58d2b558289e5d"
+    }
+  },
+  "ms": 592,
+  "at": "2026-11-23T19:21:56.605Z",
+  "decoded": {
+    "envelopeType": "envelopeTypeTx",
+    "source": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+    "sequence": "25286362257162246",
+    "feeStroops": "148475",
+    "resourceFeeStroops": "148375",
+    "footprint": {
+      "readOnly": 5,
+      "readWrite": 3
+    },
+    "timeBounds": {
+      "minTime": "0",
+      "maxTime": "1795462017"
+    },
+    "validitySecondsFromPrepare": 300,
+    "memo": "none",
+    "signatures": 0,
+    "operations": [
+      {
+        "type": "invokeHostFunction",
+        "source": null,
+        "hostFunction": {
+          "type": "hostFunctionTypeInvokeContract",
+          "contract": "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+          "function": "fund_escrow",
+          "args": [
+            "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+            {
+              "amount": "123456789",
+              "description": "Pairy protected trade, Stellar testnet",
+              "dispute": {
+                "is_disputed": false,
+                "reason": "",
+                "resolved": false
+              },
+              "engagement_id": "pairy-wp03-c-1795461707847",
+              "milestones": [
+                {
+                  "approvals": {
+                    "approval_count": 0,
+                    "approved_by": [],
+                    "target": 1
+                  },
+                  "description": "Cash handed over",
+                  "evidence": "",
+                  "status": "pending"
+                }
+              ],
+              "platform_fee": 0,
+              "receiver_memo": 0,
+              "released": false,
+              "roles": {
+                "admin": "GD3RIWS3JG4LD5JVOU5UWI4BHEDUO2H7GMX5DSGROP3LHH4XMAORA32V",
+                "approvers": [
+                  "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+                ],
+                "dispute_resolvers": [
+                  "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI"
+                ],
+                "observers": [],
+                "platform": "GACMHHE3UGKORO2X2RPNE74A6L4CQGA6M4JMYTWVRQ2CMLMTQAQRCUSD",
+                "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+                "release_signers": [
+                  "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+                ],
+                "service_providers": [
+                  "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+                ]
+              },
+              "title": "Pairy spike escrow C",
+              "trustline": {
+                "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+              }
+            },
+            "123456789"
+          ]
+        },
+        "auth": [
+          {
+            "credentials": {
+              "type": "sourceAccount"
+            },
+            "rootInvocation": {
+              "type": "execute",
+              "args": {
+                "source": "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+                "function": "fund_escrow",
+                "args": [
+                  "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+                  {
+                    "amount": "123456789",
+                    "description": "Pairy protected trade, Stellar testnet",
+                    "dispute": {
+                      "is_disputed": false,
+                      "reason": "",
+                      "resolved": false
+                    },
+                    "engagement_id": "pairy-wp03-c-1795461707847",
+                    "milestones": [
+                      {
+                        "approvals": {
+                          "approval_count": 0,
+                          "approved_by": [],
+                          "target": 1
+                        },
+                        "description": "Cash handed over",
+                        "evidence": "",
+                        "status": "pending"
+                      }
+                    ],
+                    "platform_fee": 0,
+                    "receiver_memo": 0,
+                    "released": false,
+                    "roles": {
+                      "admin": "GD3RIWS3JG4LD5JVOU5UWI4BHEDUO2H7GMX5DSGROP3LHH4XMAORA32V",
+                      "approvers": [
+                        "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+                      ],
+                      "dispute_resolvers": [
+                        "GAGC5NJOBSEGMUS6OAIXB6R5I63JFWZTMVHL2ZXRTLD6336A2KNAG5UI"
+                      ],
+                      "observers": [],
+                      "platform": "GACMHHE3UGKORO2X2RPNE74A6L4CQGA6M4JMYTWVRQ2CMLMTQAQRCUSD",
+                      "receiver": "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV",
+                      "release_signers": [
+                        "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+                      ],
+                      "service_providers": [
+                        "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+                      ]
+                    },
+                    "title": "Pairy spike escrow C",
+                    "trustline": {
+                      "address": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA"
+                    }
+                  },
+                  "123456789"
+                ]
+              },
+              "invocations": [
+                {
+                  "type": "execute",
+                  "args": {
+                    "source": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+                    "function": "transfer",
+                    "args": [
+                      "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+                      "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+                      "123456789"
+                    ]
+                  },
+                  "invocations": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "submitted": {
+    "via": "horizon",
+    "ok": true,
+    "hash": "7cfd6b333f31d2b726129645f84556d36d9eba18cae571f2cc58d2b558289e5d",
+    "ledger": 5887616
+  },
+  "onChain": {
+    "hash": "7cfd6b333f31d2b726129645f84556d36d9eba18cae571f2cc58d2b558289e5d",
+    "url": "https://stellar.expert/explorer/testnet/tx/7cfd6b333f31d2b726129645f84556d36d9eba18cae571f2cc58d2b558289e5d",
+    "successful": true,
+    "ledger": 5887616,
+    "closedAt": "2026-11-23T19:22:02Z",
+    "feeChargedStroops": "126786",
+    "maxFeeStroops": "148475",
+    "envelopeSignatures": 1,
+    "horizonRecordHasResultMetaXdr": false,
+    "horizonOperation": [
+      {
+        "type": "invoke_host_function",
+        "source": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+        "assetBalanceChanges": [
+          {
+            "asset_type": "credit_alphanum4",
+            "asset_code": "USDC",
+            "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+            "type": "transfer",
+            "from": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+            "to": "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+            "amount": "12.3456789"
+          }
+        ],
+        "address": "",
+        "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+      }
+    ],
+    "rpc": {
+      "status": "SUCCESS",
+      "returnValue": null,
+      "contractEvents": [
+        {
+          "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+          "type": "contract",
+          "topics": [
+            "transfer",
+            "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4",
+            "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+            "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+          ],
+          "data": "123456789"
+        },
+        {
+          "contractId": "CCYHKDCWAKU6HAM33JOJX4D53CRQ6D6RAMEDJYQDT6F7NF5CZ5QRILS5",
+          "type": "contract",
+          "topics": [
+            "tw_fund",
+            "pairy-wp03-c-1795461707847"
+          ],
+          "data": {
+            "amount": "123456789",
+            "funded_total": "123456789",
+            "funder": "GBMIVYQOGG7M5Z43RKXDFC5AZPBPJOM4VHIL2LZXW6N2GCVC7NUY3NR4"
+          }
+        }
+      ]
+    }
+  },
+  "balances": {
+    "sellerUsdcBefore": "3092404539",
+    "sellerUsdcAfter": "2968947750"
+  }
+}
