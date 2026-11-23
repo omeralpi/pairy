@@ -2,6 +2,9 @@
 // checked against, on the server and in the browser. Committed, not env, so
 // every change is reviewable in git history.
 
+/** Trustless Work's V2 API. Only server/tw/client.ts calls it (tests/ci/tw-endpoint-allowlist). */
+export const TW_API_BASE = "https://beta.api.trustlesswork.com";
+
 /**
  * The only dispute resolver every escrow names. Two signers at weight 1, its
  * own key at weight 0, thresholds 2/2/2 (scripts/ops/setup-arbiter.ts;
