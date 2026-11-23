@@ -25,6 +25,7 @@
     "db:migrate": "drizzle-kit migrate",
     "test": "vitest run",
     "test:testnet": "vitest run --config vitest.testnet.config.ts",
+    "test:pg": "vitest run --config vitest.pg.config.ts",
     "copy:maplibre-worker": "node -e \"require('node:fs').copyFileSync('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','public/maplibre-gl-worker.mjs')\""
   },
   "dependencies": {
