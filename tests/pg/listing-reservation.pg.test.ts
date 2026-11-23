@@ -5,7 +5,11 @@
 // and exactly one may win. A second test runs a cancel and an open on the
 // same listing at once through the gate and expects both to complete: it
 // catches a deadlock (40P01, for example from a lock upgrade on the listing
-// row) or a hang between an open and a transition, nothing more.
+// row) or a hang between an open and a transition, nothing more. Two more
+// start a cancel and an open one after the other, in both orders, and expect
+// what is left to equal max minus the counted trades: that pins the listing
+// lock in transitionTrade and the recompute inside it (either one missing
+// leaves 90 where the truth is 50).
 //
 // Without help the calls drift apart by more than the microseconds between a
 // check and its commit, so a check with no lock would pass most runs by luck.
@@ -130,14 +134,39 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
     await gate.query("lock table trades in share mode");
     let settled = 0;
     const calls = start().map((call) => call.finally(() => settled++));
-    const deadline = Date.now() + GATE_DEADLINE_MS;
-    let waiting = 0;
-    while ((waiting = await blocked()) + settled < calls.length && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 20));
-    }
-    const reachedGate = waiting + settled;
+    const reachedGate = await waitForGate(calls.length, () => settled);
     await gate.query("commit");
     return { results: await Promise.allSettled(calls), reachedGate };
+  }
+
+  /** Polls until `n` calls are blocked or settled (or the deadline passes); returns that count. */
+  async function waitForGate(n: number, settled: () => number): Promise<number> {
+    const deadline = Date.now() + GATE_DEADLINE_MS;
+    let waiting = 0;
+    while ((waiting = await blocked()) + settled() < n && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    return waiting + settled();
+  }
+
+  /**
+   * Starts `calls` one at a time while the gate holds `hold` in an open
+   * transaction: the next call starts only once every earlier one is blocked,
+   * so the first holds the listing row and the rest queue on it. `reached[i]`
+   * is the blocked-or-settled count seen after call i started.
+   */
+  async function inTurn(hold: string, params: string[], calls: (() => Promise<unknown>)[]) {
+    await gate.query("begin");
+    await gate.query(hold, params);
+    let settled = 0;
+    const started: Promise<unknown>[] = [];
+    const reached: number[] = [];
+    for (const call of calls) {
+      started.push(call().finally(() => settled++));
+      reached.push(await waitForGate(started.length, () => settled));
+    }
+    await gate.query("commit");
+    return { results: await Promise.allSettled(started), reached };
   }
 
   function caller(publicKey: string) {
@@ -206,5 +235,52 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
     expect(rows.map((r) => r.state).sort()).toEqual(["cancelled", "listed"]);
     const [after] = await db.select({ remainingAmount: listings.remainingAmount }).from(listings).where(eq(listings.id, listing.id));
     expect(after.remainingAmount).toBe("90.0000000");
+  });
+
+  /** A listing with 10 and 50 reserved (40 left): a cancel of the 50 and an open of 40 by a third buyer. */
+  async function seedCancelVsOpen() {
+    const {
+      listing,
+      buyers: [first, second, third],
+    } = await seedListing(3);
+    await caller(first).trade.open({ listingId: listing.id, amount: "10" });
+    const fifty = await caller(second).trade.open({ listingId: listing.id, amount: "50" });
+    return {
+      listing,
+      opener: third,
+      cancel: () => caller(second).trade.cancel({ tradeId: fifty.id }),
+      open: () => caller(third).trade.open({ listingId: listing.id, amount: "40" }),
+    };
+  }
+
+  // Whichever order the two commit in, the last recompute must sum every
+  // committed trade: 100 - (10 + 40) = 50. A transition that does not lock
+  // the listing, or recomputes after its commit, sums with a snapshot that
+  // misses the other call's trade and leaves 90.
+  async function expectFiftyLeft(listingId: string, results: PromiseSettledResult<unknown>[]) {
+    const rejected = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    expect(rejected.map((r) => rootCause(r.reason)), "both calls must complete").toEqual([]);
+    const rows = await db.select({ state: trades.state }).from(trades).where(eq(trades.listingId, listingId));
+    expect(rows.map((r) => r.state).sort()).toEqual(["cancelled", "listed", "listed"]);
+    const [after] = await db.select({ remainingAmount: listings.remainingAmount }).from(listings).where(eq(listings.id, listingId));
+    expect(after.remainingAmount).toBe("50.0000000");
+  }
+
+  it("keeps the amount right when an open holds the listing and a cancel arrives", async () => {
+    const { listing, opener, cancel, open } = await seedCancelVsOpen();
+    // The open stops inside its transaction, after its listing lock: the
+    // trades INSERT needs FOR KEY SHARE on the opener's users row.
+    const { results, reached } = await inTurn("select 1 from users where public_key = $1 for update", [opener], [open, cancel]);
+    expect(reached, "the open, then the cancel, must reach the gate").toEqual([1, 2]);
+    await expectFiftyLeft(listing.id, results);
+  });
+
+  it("keeps the amount right when a cancel holds the listing and an open arrives", async () => {
+    const { listing, cancel, open } = await seedCancelVsOpen();
+    // The cancel stops inside its transaction, after its listing lock: a
+    // terminal transition purges the trade's chat_messages.
+    const { results, reached } = await inTurn("lock table chat_messages in share mode", [], [cancel, open]);
+    expect(reached, "the cancel, then the open, must reach the gate").toEqual([1, 2]);
+    await expectFiftyLeft(listing.id, results);
   });
 });
