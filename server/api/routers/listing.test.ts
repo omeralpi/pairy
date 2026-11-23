@@ -123,6 +123,12 @@ describe("listing.create", () => {
     const created = await as(ALICE).create({ ...valid, minAmount: "1.0000001", maxAmount: "1.0000001" });
     expect(created.maxAmount).toBe("1.0000001");
   });
+
+  it.each(["THB", "IDR"] as const)("quotes cash in %s and filters the map by it", async (fiatCode) => {
+    const created = await as(ALICE).create({ ...valid, fiatCode } as never);
+    expect(created.fiatCode).toBe(fiatCode);
+    expect((await as(null).list({ fiatCode } as never)).map((l) => l.id)).toEqual([created.id]);
+  });
 });
 
 describe("listing.list", () => {

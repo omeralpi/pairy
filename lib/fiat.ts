@@ -13,6 +13,8 @@ export const FIAT_CODES = [
   "INR",
   "PHP",
   "UAH",
+  "THB",
+  "IDR",
 ] as const;
 
 export type FiatCode = (typeof FIAT_CODES)[number];
