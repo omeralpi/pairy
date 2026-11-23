@@ -25,10 +25,11 @@ const BALANCE = "00000000" + "f".repeat(64);
 let f: Awaited<ReturnType<typeof tradeFixture>>;
 let liveBalances: Set<string>;
 // A reset time after every trade in these tests.
-const later = new Date(Date.now() + 60_000);
+let later: Date;
 
 beforeEach(async () => {
   f = await tradeFixture();
+  later = new Date(Date.now() + 60_000);
   liveBalances = new Set();
   vi.mocked(loadAccount).mockReset().mockResolvedValue(null);
   vi.mocked(findClaimTx).mockReset().mockResolvedValue(null);
