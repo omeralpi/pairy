@@ -2,9 +2,10 @@
 // runs one transaction at a time, so tests/ci/listing-reservation-concurrency
 // checks the remaining-amount rule only; this file proves the listing row
 // lock: ten buyers open 60 at once on a listing of 100 over real connections,
-// and exactly one may win. A second test holds a cancel and an open on the
-// same listing together and expects both to complete (the lock order,
-// listing then trade, is what keeps them from deadlocking).
+// and exactly one may win. A second test runs a cancel and an open on the
+// same listing at once through the gate and expects both to complete: it
+// catches a deadlock (40P01, for example from a lock upgrade on the listing
+// row) or a hang between an open and a transition, nothing more.
 //
 // Without help the calls drift apart by more than the microseconds between a
 // check and its commit, so a check with no lock would pass most runs by luck.
@@ -44,6 +45,17 @@ const BUYERS = 10;
 const GATE_DEADLINE_MS = 10_000;
 
 const createCaller = createCallerFactory(appRouter);
+
+/**
+ * The innermost cause's code and message (TRPCError wraps a drizzle error,
+ * which wraps the pg one), so a deadlock reads "40P01 deadlock detected".
+ */
+function rootCause(e: unknown): string {
+  let c = e;
+  while (c instanceof Object && (c as { cause?: unknown }).cause instanceof Object) c = (c as { cause: unknown }).cause;
+  const { code, message } = c as { code?: unknown; message?: unknown };
+  return [code, message].filter(Boolean).join(" ");
+}
 
 describe.runIf(!PG_TEST_URL && requirePg)("listing-reservation-concurrency (postgres; REQUIRE_PG=1)", () => {
   it("has a PG_TEST_URL to run against", () => {
@@ -189,7 +201,7 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
     expect(reachedGate, "not both calls reached the gate").toBeGreaterThanOrEqual(2);
 
     const rejected = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    expect(rejected.map((r) => String(r.reason)), "both calls must complete").toEqual([]);
+    expect(rejected.map((r) => rootCause(r.reason)), "both calls must complete").toEqual([]);
     const rows = await db.select({ state: trades.state }).from(trades).where(eq(trades.listingId, listing.id));
     expect(rows.map((r) => r.state).sort()).toEqual(["cancelled", "listed"]);
     const [after] = await db.select({ remainingAmount: listings.remainingAmount }).from(listings).where(eq(listings.id, listing.id));

@@ -75,8 +75,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # The migrations on a real Postgres 16 (the test migrates its own
-      # database as well, so this also checks they are idempotent).
+      # Applies the migrations to a real Postgres 16; the test then migrates
+      # its own fresh database.
       - name: migrate
         run: pnpm db:migrate
       - name: listing-reservation-concurrency (postgres)
