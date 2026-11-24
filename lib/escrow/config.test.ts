@@ -2,10 +2,12 @@ import { Networks, StrKey } from "@stellar/stellar-sdk";
 import { describe, expect, it } from "vitest";
 
 import { toAsset } from "@/lib/stellar/assets";
+import type { WalletKind } from "@/lib/wallet/use-wallet";
 
 import {
   ARBITER_ACCOUNT,
   PLATFORM_ACCOUNT,
+  PROTECTED_WALLET_KINDS,
   SERVICE_PROVIDER_ROLE,
   TW_ESCROW_WASM_HASH,
   TW_FACTORY_CONTRACT_ID,
@@ -41,6 +43,13 @@ describe("escrow config", () => {
 
   it("keeps the seller as the service provider: the seller alone released on testnet (S-16)", () => {
     expect(SERVICE_PROVIDER_ROLE).toBe("seller");
+  });
+
+  // S-06 (WP-20): a Privy wallet signed a Trustless Work fund and release on testnet, so "privy" stays.
+  it("allows every wallet kind in protected mode, Privy included (S-06)", () => {
+    const kinds: readonly WalletKind[] = PROTECTED_WALLET_KINDS;
+    expect([...kinds].sort()).toEqual(["device", "freighter", "privy"]);
+    expect(new Set(kinds).size).toBe(kinds.length);
   });
 
   it("links an escrow to Trustless Work's testnet viewer", () => {

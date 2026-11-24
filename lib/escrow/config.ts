@@ -2,6 +2,16 @@
 // checked against, on the server and in the browser. Committed, not env, so
 // every change is reviewable in git history.
 
+import type { WalletKind } from "@/lib/wallet/use-wallet";
+
+/**
+ * The wallet kinds that may open or accept a protected trade. All three: on
+ * 2026-11-24 a Privy wallet signed a Trustless Work fund and release through
+ * Pairy's raw-hash path and both landed (S-06, docs/phase2-gates.md), so the
+ * SOW's fallback of hiding protected mode from Privy users is not needed.
+ */
+export const PROTECTED_WALLET_KINDS: readonly WalletKind[] = ["device", "freighter", "privy"];
+
 /** Trustless Work's V2 API. Only server/tw/client.ts calls it (tests/ci/tw-endpoint-allowlist). */
 export const TW_API_BASE = "https://beta.api.trustlesswork.com";
 
