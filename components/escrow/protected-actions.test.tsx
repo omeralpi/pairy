@@ -11,6 +11,9 @@ const queries = vi.hoisted(() => [] as { path: string; enabled: unknown }[]);
 const mutated = vi.hoisted(() => [] as { path: string; input: unknown }[]);
 const buttons = vi.hoisted(() => [] as { label: string; onClick?: () => unknown }[]);
 const initial = vi.hoisted(() => ({ accepted: false }));
+const mutationOpts = vi.hoisted(() => ({}) as Record<string, { onError?: (e: unknown) => void }>);
+const confirms = vi.hoisted(() => [] as { description: string; onConfirm: () => void }[]);
+const toasts = vi.hoisted(() => [] as string[]);
 
 vi.mock("react", async (importOriginal) => {
   const react = await importOriginal<typeof import("react")>();
@@ -26,7 +29,12 @@ vi.mock("@/lib/api", () => {
             return path.join(".") === "escrow.preflight" ? { data: preflight.data } : { data: undefined };
           };
         }
-        if (key === "useMutation") return () => ({ mutate: (input: unknown) => void mutated.push({ path: path.join("."), input }), isPending: false });
+        if (key === "useMutation") {
+          return (opts?: { onError?: (e: unknown) => void }) => {
+            mutationOpts[path.join(".")] = opts ?? {};
+            return { mutate: (input: unknown) => void mutated.push({ path: path.join("."), input }), isPending: false };
+          };
+        }
         if (key === "useUtils") return () => node([]);
         return node([...path, key]);
       },
@@ -34,10 +42,12 @@ vi.mock("@/lib/api", () => {
   return { api: node([]) };
 });
 vi.mock("@/components/confirm-action", () => ({
-  ConfirmAction: ({ children, description }: { children: React.ReactNode; description: string }) => (
-    <div data-confirm={description}>{children}</div>
-  ),
+  ConfirmAction: ({ children, description, onConfirm }: { children: React.ReactNode; description: string; onConfirm: () => void }) => {
+    confirms.push({ description, onConfirm });
+    return <div data-confirm={description}>{children}</div>;
+  },
 }));
+vi.mock("sonner", () => ({ toast: { error: (m: string) => void toasts.push(m) } }));
 vi.mock("@/components/ui/button", () => ({
   Button: (p: { children: string; onClick?: () => unknown; disabled?: boolean }) => {
     buttons.push({ label: String(p.children), onClick: p.onClick });
@@ -45,6 +55,8 @@ vi.mock("@/components/ui/button", () => ({
   },
 }));
 vi.mock("@/components/escrow/create-panel", () => ({ CreatePanel: () => <p>CREATE PANEL</p> }));
+vi.mock("@/components/escrow/fund-panel", () => ({ FundPanel: () => <p>FUND PANEL</p> }));
+vi.mock("@/components/escrow/release-panel", () => ({ ReleasePanel: () => <p>RELEASE PANEL</p> }));
 vi.mock("@/components/trade/trustline-button", () => ({
   TrustlineButton: (p: { asset: string; escrow?: boolean }) => <p>TRUSTLINE {p.asset} {p.escrow ? "before the escrow" : ""}</p>,
 }));
@@ -71,6 +83,8 @@ const render = (t: Partial<typeof trade>, o: { accepted?: boolean; trustline?: b
   queries.length = 0;
   buttons.length = 0;
   mutated.length = 0;
+  confirms.length = 0;
+  toasts.length = 0;
   return renderToStaticMarkup(<ProtectedActions trade={{ ...trade, ...t } as never} />);
 };
 const agreeButton = (html: string) => html.match(/<button[^>]*>Agree and accept<\/button>/)?.[0];
@@ -154,10 +168,53 @@ describe("ProtectedActions queries", () => {
     render({ role: "seller", openedBy: "buyer" });
     expect(queries).toContainEqual({ path: "escrow.preflight", enabled: false });
   });
+});
 
-  it("shows nothing of its own once the escrow exists: those panels come later", () => {
-    for (const state of ["escrow_created", "funded"]) {
-      for (const role of ["seller", "buyer"]) expect(render({ state, role })).toBe("");
-    }
+describe("ProtectedActions once the escrow exists (WP-35)", () => {
+  const created = { state: "escrow_created", escrowContractId: "CESCROW", viewerUrl: "https://viewer.trustlesswork.com/testnet/v2/CESCROW" };
+  const funded = { ...created, state: "funded", disputed: false };
+  const disputed = { ...funded, disputed: true };
+  const FUNDED = "This escrow is already funded. A dispute is the way to a refund.";
+
+  it("gives the seller the fund, then Cancel, saying the escrow is not funded yet", () => {
+    const html = render({ ...created, role: "seller", openedBy: "buyer" });
+    expect(html).toMatch(/FUND PANEL[\s\S]*Cancel trade/);
+    expect(html).toContain('data-confirm="Its chat will be deleted. The escrow isn&#x27;t funded, so no money moves."');
+  });
+
+  it("gives the buyer Cancel while the escrow waits for its fund, and the viewer link (F-16)", () => {
+    const html = render({ ...created, role: "buyer", openedBy: "buyer" });
+    expect(html).toContain("Cancel trade");
+    expect(html).toContain('href="https://viewer.trustlesswork.com/testnet/v2/CESCROW"');
+    expect(html).not.toContain("FUND PANEL");
+  });
+
+  it("shows the buyer the server's funded sentence when the cancel is refused (F-16, O-27)", () => {
+    render({ ...created, role: "buyer", openedBy: "buyer" });
+    expect(confirms).toHaveLength(1);
+    confirms[0].onConfirm();
+    expect(mutated).toEqual([{ path: "trade.cancel", input: { tradeId: trade.id } }]);
+    mutationOpts["trade.cancel"].onError!({ message: FUNDED, data: { code: "BAD_REQUEST" } });
+    expect(toasts).toEqual([FUNDED]);
+  });
+
+  it("gives no one Cancel once funded: the seller releases, the buyer waits", () => {
+    const seller = render({ ...funded, role: "seller", openedBy: "buyer" });
+    expect(seller).toContain("RELEASE PANEL");
+    const buyer = render({ ...funded, role: "buyer", openedBy: "buyer" });
+    expect(buyer).not.toContain("RELEASE PANEL");
+    for (const html of [seller, buyer]) expect(html).not.toContain("Cancel trade");
+  });
+
+  it("tells the waiting buyer what the release pays and that this page shows it, with no claim and no repeat of the status line", () => {
+    const html = render({ ...funded, role: "buyer", openedBy: "buyer" }).replaceAll("&#x27;", "'");
+    expect(html).toContain("you receive 19.94 USDC");
+    expect(html).toContain('href="https://viewer.trustlesswork.com/testnet/v2/CESCROW"');
+    expect(html).not.toMatch(/claim/i);
+    expect(html).not.toContain("Let go of the cash only when the release shows on this screen.");
+  });
+
+  it("leaves a disputed escrow to the dispute panels", () => {
+    for (const role of ["seller", "buyer"]) expect(render({ ...disputed, role })).toBe("");
   });
 });

@@ -123,6 +123,14 @@ describe("TradeRoom read-only surfaces for a protected trade", () => {
     expect(html).toContain("You funded the escrow with 10 USDC.");
   });
 
+  it("says once to the waiting buyer to let go of the cash only when the release shows, and offers no claim (WP-35)", () => {
+    const html = room({ ...funded, role: "buyer", counterparty: "GSELLER" }).replaceAll("&#x27;", "'");
+    expect(status(html)).toBe("Funded. Let go of the cash only when the release shows on this screen.");
+    expect(html.split("Let go of the cash only when the release shows on this screen.")).toHaveLength(2);
+    expect(html).toContain("you receive 9.97 USDC");
+    expect(html).not.toMatch(/<button[^>]*>[^<]*Claim/);
+  });
+
   it("marks a release as settled through the escrow, with what the buyer received", () => {
     const html = room({ ...funded, state: "released", releaseTx: "r".repeat(64), events: [...funded.events, event("release", "seller", "r".repeat(64))] });
     expect(status(html)).toBe("Settled. The buyer received 9.97 USDC.");

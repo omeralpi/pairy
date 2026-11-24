@@ -5,7 +5,10 @@ import { useState } from "react";
 
 import { ConfirmAction } from "@/components/confirm-action";
 import { AcceptanceScreen } from "@/components/escrow/acceptance-screen";
+import { BuyerWaiting } from "@/components/escrow/buyer-waiting";
 import { CreatePanel } from "@/components/escrow/create-panel";
+import { FundPanel } from "@/components/escrow/fund-panel";
+import { ReleasePanel } from "@/components/escrow/release-panel";
 import { roleName, type TradeView } from "@/components/trade/format";
 import { TrustlineButton } from "@/components/trade/trustline-button";
 import { useMutationOpts } from "@/components/trade/use-mutation-opts";
@@ -16,8 +19,10 @@ import { ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 /**
  * What the viewer can do now in a protected trade, by role and state: the
  * peer who did not open it accepts the protected-trade terms by agreeing, the
- * buyer adds the USDC trustline the escrow needs, and the seller creates the
- * escrow. Its other panels (fund, release, dispute) come in later work packages.
+ * buyer adds the USDC trustline the escrow needs, the seller creates the
+ * escrow, funds it and releases it, and the buyer waits for the release.
+ * Either side may cancel until the escrow is funded (FIXES F-16). The
+ * dispute panels come in a later work package.
  */
 export function ProtectedActions({ trade }: { trade: TradeView }) {
   const utils = api.useUtils();
@@ -37,7 +42,11 @@ export function ProtectedActions({ trade }: { trade: TradeView }) {
   const cancelButton = (
     <ConfirmAction
       title="Cancel this trade?"
-      description="Its chat will be deleted. Nothing is in escrow, so no money moves."
+      description={
+        trade.state === "escrow_created"
+          ? "Its chat will be deleted. The escrow isn't funded, so no money moves."
+          : "Its chat will be deleted. Nothing is in escrow, so no money moves."
+      }
       confirmLabel="Cancel trade"
       onConfirm={() => cancel.mutate({ tradeId: trade.id })}
     >
@@ -100,6 +109,35 @@ export function ProtectedActions({ trade }: { trade: TradeView }) {
           <div>{cancelButton}</div>
         </section>
       );
+    case "escrow_created":
+      // A refused cancel (the escrow was funded meanwhile) shows the server's funded sentence (O-27).
+      return trade.role === "seller" ? (
+        <div className="space-y-6">
+          <FundPanel trade={trade} />
+          {cancelButton}
+        </div>
+      ) : (
+        <section className="space-y-5">
+          <p className="leading-relaxed text-slate">
+            Nothing is in it yet. You are its receiver, and only the seller can fund and release it.
+          </p>
+          {trade.viewerUrl && (
+            <a
+              href={trade.viewerUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-sm text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+            >
+              Check it on Trustless Work&apos;s viewer ↗
+            </a>
+          )}
+          <div>{cancelButton}</div>
+        </section>
+      );
+    case "funded":
+      // A disputed escrow is the arbiter's; its answer panels come with the dispute (WP-37).
+      if (trade.disputed) return null;
+      return trade.role === "seller" ? <ReleasePanel trade={trade} /> : <BuyerWaiting trade={trade} />;
     default:
       return null;
   }
