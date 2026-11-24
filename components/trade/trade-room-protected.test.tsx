@@ -84,6 +84,7 @@ const trade = {
   answers: { seller: null, buyer: null },
   answerDeadline: null,
   promiseDeadline: null,
+  answersOpen: false,
   events: [event("open", "buyer"), event("agree", "seller")],
 };
 const created = {
@@ -179,6 +180,7 @@ describe("TradeRoom's Flag a problem on a protected trade (WP-37)", () => {
     disputeOpenedBy: "buyer",
     answerDeadline: new Date(recorded.getTime() + 24 * 3600_000),
     promiseDeadline: new Date(recorded.getTime() + 72 * 3600_000),
+    answersOpen: true,
     events: [...funded.events, event("escrowDispute", "buyer", "d".repeat(64))],
   };
   const text = (html: string) => html.replaceAll("&#x27;", "'");

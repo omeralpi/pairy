@@ -402,6 +402,13 @@ export const tradeRouter = createTRPCRouter({
       viewerUrl: trade.createTx !== null && trade.escrowContractId !== null ? twViewerUrl(trade.escrowContractId) : null,
       stallNudge:
         trade.state === "funded" && !trade.disputed && trade.fundedAt !== null && Date.now() >= trade.fundedAt.getTime() + FUNDED_NUDGE_MS,
+      // Whether escrow.answer takes an answer now, by this server's clock: the answer form opens and
+      // closes on it, never on the device's clock (O-34).
+      answersOpen:
+        trade.state === "funded" &&
+        trade.disputed &&
+        trade.disputeRecordedAt !== null &&
+        Date.now() < answerDeadline({ disputeRecordedAt: trade.disputeRecordedAt }).getTime(),
     };
   }),
 });

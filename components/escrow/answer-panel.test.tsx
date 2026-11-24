@@ -69,6 +69,8 @@ const trade = {
   answers: { seller: null, buyer: null } as Record<"seller" | "buyer", null | { cashHandedOver: boolean; note: string | null; answeredAt: Date }>,
   answerDeadline: DEADLINE as Date | null,
   promiseDeadline: PROMISE as Date | null,
+  // trade.byId's, by the server's clock (O-34).
+  answersOpen: true,
 };
 const said = (cashHandedOver: boolean, note: string | null = null) => ({ cashHandedOver, note, answeredAt: new Date(RECORDED.getTime() + 600_000) });
 
@@ -208,28 +210,39 @@ describe("AnswerPanel: both answers given", () => {
   });
 });
 
-describe("AnswerPanel: the deadline passed", () => {
-  it("takes the form away at the deadline, not a millisecond before (the server refuses from then on)", () => {
-    at(DEADLINE.getTime() - 1);
-    expect(form(render())).toBe(true);
-    at(DEADLINE);
-    const html = render();
+describe("AnswerPanel: the server's clock opens and closes the form (O-34)", () => {
+  it("keeps the form while the server says answers are open, though this device's clock runs hours fast", () => {
+    at(DEADLINE.getTime() + 2 * 3600_000);
+    const html = render({ answersOpen: true });
+    expect(form(html)).toBe(true);
+    expect(sendButton()).toBeDefined();
+    expect(html).toContain("00:00:00 left");
+    expect(html).not.toContain("Answers closed");
+    expect(html).toContain("The buyer hasn't answered yet.");
+    expect(html).not.toContain("The rule gives");
+  });
+
+  it("takes the form away once the server says answers are closed, though this device's clock is behind", () => {
+    at(RECORDED.getTime() + 60_000);
+    const html = render({ answersOpen: false });
     expect(form(html)).toBe(false);
     expect(sendButton()).toBeUndefined();
     expect(html).toContain(`Answers closed at ${shortWhen(DEADLINE)}. You sent no answer.`);
     expect(html).not.toContain(" left");
   });
+});
 
+describe("AnswerPanel: the deadline passed", () => {
   it("treats a missing answer as none and applies the rule: all to the seller (rule 3)", () => {
     at(DEADLINE.getTime() + 1000);
-    const html = render();
+    const html = render({ answersOpen: false });
     expect(html).toContain("The buyer sent no answer.");
     expect(html).toContain(`The rule gives: all to the seller (rule 3). The arbiter signs by ${shortWhen(PROMISE)}.`);
   });
 
   it("pays the buyer when the seller sent no answer and the buyer said yes (rule 2)", () => {
     at(DEADLINE.getTime() + 1000);
-    const html = render({ answers: { seller: null, buyer: said(true) } });
+    const html = render({ answersOpen: false, answers: { seller: null, buyer: said(true) } });
     expect(html).toContain("The buyer answered Yes.");
     expect(html).toContain("The rule gives: all to the buyer (rule 2).");
   });
@@ -247,6 +260,7 @@ describe("AnswerPanel once the arbiter settled", () => {
   const settled = (state: string, seller: boolean | null, buyer: boolean | null) =>
     render({
       state,
+      answersOpen: false,
       answers: { seller: seller === null ? null : said(seller), buyer: buyer === null ? null : said(buyer) },
       answerDeadline: DEADLINE,
     });
@@ -264,7 +278,7 @@ describe("AnswerPanel once the arbiter settled", () => {
 
   it("resolved to the seller: both answers and the rule that gave it (rule 3), seen by the buyer", () => {
     at(DEADLINE.getTime() + 3600_000);
-    const html = render({ state: "resolved_seller", role: "buyer", answers: { seller: said(false), buyer: said(true) } });
+    const html = render({ state: "resolved_seller", role: "buyer", answersOpen: false, answers: { seller: said(false), buyer: said(true) } });
     expect(html).toContain("You answered Yes.");
     expect(html).toContain("The seller answered No.");
     expect(html).toContain("The arbiter applied rule 3: all to the seller.");

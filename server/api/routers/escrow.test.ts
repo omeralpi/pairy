@@ -1083,6 +1083,37 @@ describe("trade.byId and trade.mine on a disputed protected trade", () => {
   });
 });
 
+describe("trade.byId's answersOpen: the answer form follows the server's clock (O-34)", () => {
+  it("is true only while escrow.answer would take an answer: from the recorded dispute until 24 hours later", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run);
+    expect((await f.as(run.buyer).trade.byId({ id: t.id })).answersOpen).toBe(false);
+    await set(t.id, disputed(0));
+    const deadline = (await row(t.id)).disputeRecordedAt!.getTime() + 24 * 3600_000;
+
+    vi.setSystemTime(new Date(deadline - 1000));
+    for (const who of [run.seller, run.buyer]) expect((await f.as(who).trade.byId({ id: t.id })).answersOpen).toBe(true);
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true })).resolves.toBeDefined();
+    // Still open for the side that has not answered: the flag is the window's, not the viewer's.
+    expect((await f.as(run.buyer).trade.byId({ id: t.id })).answersOpen).toBe(true);
+
+    vi.setSystemTime(new Date(deadline));
+    for (const who of [run.seller, run.buyer]) expect((await f.as(who).trade.byId({ id: t.id })).answersOpen).toBe(false);
+    await expect(f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: false })).rejects.toThrow(/Answers closed at/);
+  });
+
+  it("is false wherever escrow.answer refuses: an undisputed or ended trade", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run, disputed(1));
+    expect((await f.as(run.seller).trade.byId({ id: t.id })).answersOpen).toBe(true);
+    await set(t.id, { disputed: false });
+    expect((await f.as(run.seller).trade.byId({ id: t.id })).answersOpen).toBe(false);
+    await expect(f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: true })).rejects.toThrow(/no open dispute/);
+    await set(t.id, { disputed: true, state: "resolved_seller", resolveTx: "3".repeat(64), resolvedAt: new Date() });
+    expect((await f.as(run.seller).trade.byId({ id: t.id })).answersOpen).toBe(false);
+  });
+});
+
 describe("trade.mine: each trade's own answers and deadlines (WP-31 judge)", () => {
   it("lets the list tell whether the viewer answered, trade by trade, in byId's shape", async () => {
     const run = DISPUTES.buyer;

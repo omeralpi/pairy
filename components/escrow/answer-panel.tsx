@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { NOTE_MAX } from "@/lib/escrow/config";
-import { resolutionReady, ruleOutcome } from "@/lib/escrow/rule";
+import { ruleOutcome } from "@/lib/escrow/rule";
 import type { TradeRole } from "@/lib/trade/state-machine";
 import { cn } from "@/lib/utils";
 
@@ -47,9 +47,11 @@ function AnswerLine({ who, answer, open }: { who: "You" | `The ${TradeRole}`; an
 /**
  * Once the escrow is disputed, each trader answers the published rule's one
  * question, once, after a confirm (DECISIONS 10), within 24 hours of when
- * Pairy recorded the dispute (DECISIONS 1). Both answers and notes are shown
- * to both; once both answered or the window closed, the rule's outcome. After
- * the arbiter settles, the answers stay with the rule that applied.
+ * Pairy recorded the dispute (DECISIONS 1). The form opens and closes on the
+ * server's clock (`answersOpen`, O-34); this device's clock only counts down
+ * the time left. Both answers and notes are shown to both; once both answered
+ * or the window closed, the rule's outcome. After the arbiter settles, the
+ * answers stay with the rule that applied.
  */
 export function AnswerPanel({ trade }: { trade: TradeView }) {
   const utils = api.useUtils();
@@ -93,10 +95,11 @@ export function AnswerPanel({ trade }: { trade: TradeView }) {
   // Recorded disputes always carry both (escrow.recordDispute, sync).
   if (!trade.answerDeadline || !trade.promiseDeadline) return null;
   const deadline = trade.answerDeadline;
-  // The server's "Answers closed at …" settles it when this device's clock is behind.
+  // A refused answer ("Answers closed at …") closes it before the next refresh brings the flag.
   const closedByServer = send.error?.message.startsWith("Answers closed at") ?? false;
-  const open = now < deadline.getTime() && !closedByServer;
-  const ready = closedByServer || resolutionReady(given, deadline, new Date(now));
+  const open = trade.answersOpen && !closedByServer;
+  // As lib/escrow/rule.ts's resolutionReady, with the window's end read from the server's clock.
+  const ready = !open || (given.seller !== null && given.buyer !== null);
   const failure = send.error && !closedByServer ? friendlyError(send.error) : null;
 
   function answer() {
