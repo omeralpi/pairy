@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ARBITER_ACCOUNT } from "@/lib/escrow/config";
 import { horizon } from "@/lib/stellar/horizon";
 
-import { arbiterAccountProblems, arbiterAccountState, isArbiterSigner, type ArbiterAccountState } from "./arbiter-auth";
+import { arbiterAccountNow, arbiterAccountProblems, arbiterAccountState, isArbiterSigner, type ArbiterAccountState } from "./arbiter-auth";
 
 const OMER = "GDRJ7JMJPBAGHKLP5JZJ6S6CP3OZ2ZURM23RBHR2N56MDOFSOOLQLD5Q";
 const ENSAR = "GDH2MGKJYMEZEHR62RRFYGHHK74AQ2AFZKUEP6GWCK5BRFB2A3T2N6J7";
@@ -63,6 +63,38 @@ describe("arbiterAccountState", () => {
     loadAccount.mockRejectedValueOnce(new Error("Request failed with status code 503"));
     await expect(arbiterAccountState()).rejects.toThrow(/503/);
     await expect(isArbiterSigner(OMER)).resolves.toBe(true);
+  });
+});
+
+describe("arbiterAccountNow", () => {
+  it("reads Horizon every time, with the account's sequence, and leaves the cache holding what it read", async () => {
+    loadAccount.mockImplementation(async () => ({ ...onHorizon(), sequence: "25287766711468033" }));
+    await arbiterAccountState();
+    expect(await arbiterAccountNow()).toEqual({
+      masterWeight: 0,
+      thresholds: { low: 2, med: 2, high: 2 },
+      signers: [
+        { key: OMER, weight: 1 },
+        { key: ENSAR, weight: 1 },
+      ],
+      sequence: "25287766711468033",
+    });
+    expect(loadAccount).toHaveBeenCalledTimes(2);
+
+    // Ensar removed on Horizon (listed at weight 0): the fresh read shows it, and so does the cached state at once.
+    loadAccount.mockImplementation(async () => ({
+      ...onHorizon(),
+      signers: onHorizon().signers.map((s) => (s.key === ENSAR ? { ...s, weight: 0 } : s)),
+      sequence: "25287766711468034",
+    }));
+    expect(await arbiterAccountNow()).toMatchObject({ signers: [{ key: OMER, weight: 1 }], sequence: "25287766711468034" });
+    expect(await isArbiterSigner(ENSAR)).toBe(false);
+    expect(loadAccount).toHaveBeenCalledTimes(3);
+  });
+
+  it("throws when Horizon cannot be read", async () => {
+    loadAccount.mockRejectedValue(new Error("socket hang up"));
+    await expect(arbiterAccountNow()).rejects.toThrow("socket hang up");
   });
 });
 

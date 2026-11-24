@@ -11,7 +11,7 @@ import { Networks, TransactionBuilder, nativeToScVal, xdr, type Transaction } fr
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ARBITER_ACCOUNT, MILESTONE_DESCRIPTION, PLATFORM_ACCOUNT, TW_ESCROW_WASM_HASH, USDC_SAC } from "./config";
-import { EscrowNotFoundError, readEscrow, readWasmHash } from "./read";
+import { EscrowNotFoundError, readCodeTtl, readEscrow, readWasmHash } from "./read";
 import { checkEscrowTerms, expectedTerms } from "./terms";
 
 type Entry = { key: string; xdr: string; lastModifiedLedgerSeq: number; liveUntilLedgerSeq: number };
@@ -219,5 +219,20 @@ describe("readWasmHash", () => {
     const rec = recording("no-contract");
     replay(rec.calls[1]);
     await expect(readWasmHash(rec.contractId)).rejects.toBeInstanceOf(EscrowNotFoundError);
+  });
+});
+
+describe("readCodeTtl", () => {
+  it("reads how long Trustless Work's escrow code stays live, from its code entry alone (WP-14 C-2)", async () => {
+    const rec = recording("escrow-code");
+    const sent = replay(rec.calls[0]);
+    expect(await readCodeTtl(TW_ESCROW_WASM_HASH!)).toEqual({ latestLedger: 5901258, liveUntil: 6305674 });
+    expect(sent).toEqual([rec.calls[0].request]);
+  });
+
+  it("throws when the code is not on the network", async () => {
+    const [call] = recording("escrow-code").calls;
+    replay({ request: call.request, response: { ...call.response, result: { entries: [], latestLedger: 5901258 } } });
+    await expect(readCodeTtl(TW_ESCROW_WASM_HASH!)).rejects.toThrow(`Trustless Work's escrow code ${TW_ESCROW_WASM_HASH} is not on Stellar testnet.`);
   });
 });

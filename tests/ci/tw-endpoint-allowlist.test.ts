@@ -237,10 +237,13 @@ describe("tw-endpoint-allowlist", () => {
     expect(Object.keys(appRouter._def.lazy ?? {})).toEqual([]); // lazy routers would hide their inputs
     const procedures = procedureInputs(appRouter);
     // The check must see the real procedures: a rename would otherwise make it pass on nothing (WP-08 judge N3).
+    const arbiterWithInput = ["arbiter.byId", "arbiter.prepareResolution", "arbiter.addSignature", "arbiter.recordResolution"];
     expect(procedures.map((p) => p.path)).toEqual(
-      expect.arrayContaining(["escrow.prepareCreate", "escrow.prepareFund", "escrow.prepareRelease"]),
+      expect.arrayContaining(["escrow.prepareCreate", "escrow.prepareFund", "escrow.prepareRelease", ...arbiterWithInput]),
     );
     expect(procedures.filter((p) => p.path.startsWith("escrow.prepare")).every((p) => p.inputs.length > 0)).toBe(true);
+    // The arbiter procedures that take input are exactly these (me and list take none): a new or renamed one is named here first.
+    expect(procedures.filter((p) => p.path.startsWith("arbiter.") && p.inputs.length > 0).map((p) => p.path).sort()).toEqual([...arbiterWithInput].sort());
     expect(routerInputProblems(procedures)).toEqual([]);
   });
 
