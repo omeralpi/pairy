@@ -32,6 +32,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -92,12 +93,15 @@ describe.skipIf(!PG_TEST_URL)("listing-reservation-concurrency (postgres; set PG
   afterAll(async () => {
     // A failed setup leaves gate or pool unset, and may leave the database.
     await gate?.end();
-    await pool?.end();
+    // After a hang pool.end() waits for the hung call forever: give it 5 s,
+    // then drop the database anyway, which ends that session (the run is red
+    // already).
+    const ended = await Promise.race([(pool?.end() ?? Promise.resolve()).then(() => true), sleep(5_000, false, { ref: false })]);
     if (created) {
       // pool.end() resolves before the server has seen every disconnect; drop
       // only once the database has no sessions, or killing them surfaces as
       // unhandled client errors.
-      for (let i = 0; i < 100 && (await sessions()) > 0; i++) {
+      for (let i = 0; ended && i < 100 && (await sessions()) > 0; i++) {
         await new Promise((r) => setTimeout(r, 20));
       }
       await admin.query(`drop database "${dbName}" with (force)`);
