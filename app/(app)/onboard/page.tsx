@@ -75,7 +75,7 @@ export default function OnboardPage() {
         <section className="space-y-4 border-t border-line pt-8">
           <h2 className="text-xl font-semibold tracking-tight">You&apos;re signed in.</h2>
           <p className="text-sm text-slate">
-            {wallet.kind === "freighter" ? "Freighter" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"} ·{" "}
+            {wallet.kind === "freighter" ? "Varial (formerly Freighter)" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"} ·{" "}
             <span className="font-mono text-ink">{shortAddress(wallet.publicKey)}</span>
           </p>
           <Button asChild className="w-full">
@@ -91,16 +91,16 @@ export default function OnboardPage() {
       {error && (
         <ErrorNote title="That didn't work.">
           {error}
-          {error.includes("freighter.app") && (
+          {error.includes("varialwallet.com") && (
             <>
               {" "}
               <a
-                href="https://freighter.app"
+                href="https://varialwallet.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
               >
-                Get Freighter ↗
+                Get Varial ↗
               </a>
             </>
           )}
@@ -112,7 +112,7 @@ export default function OnboardPage() {
           <div className="space-y-1">
             <h2 className="font-semibold">Sign in again</h2>
             <p className="text-sm text-slate">
-              Your {wallet.kind === "freighter" ? "Freighter account" : wallet.kind === "privy" ? "email wallet (Privy)" : "key on this device"}{" "}
+              Your {wallet.kind === "freighter" ? "Varial (formerly Freighter) account" : wallet.kind === "privy" ? "email wallet (Privy)" : "key on this device"}{" "}
               <span className="font-mono text-ink">{shortAddress(wallet.publicKey)}</span> is connected but not signed in.
             </p>
             {wallet.kind === "privy" && privy.failed && <p className="text-sm text-ink">{PRIVY_DOWN}</p>}

@@ -69,7 +69,7 @@ export default function WalletPage() {
         <section className="space-y-4 border-t border-line pt-8">
           <h2 className="text-xl font-semibold tracking-tight">No wallet connected.</h2>
           <p className="text-sm text-slate">
-            {privy.enabled ? "Sign in with email or Google, make" : "Make"} a key on this device, use Freighter, or restore a backup file.
+            {privy.enabled ? "Sign in with email or Google, make" : "Make"} a key on this device, use Varial (formerly Freighter), or restore a backup file.
           </p>
           <Button asChild className="w-full">
             <Link href="/onboard">Get started</Link>
@@ -141,7 +141,7 @@ export default function WalletPage() {
   const acct = account.data;
 
   return (
-    <Page kind={wallet.kind === "freighter" ? "Freighter" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"}>
+    <Page kind={wallet.kind === "freighter" ? "Varial (formerly Freighter)" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"}>
       {justCreated && wallet.kind === "device" && <BackupPanel title="Export a backup now." onExport={backup} />}
 
       {sessionKey !== wallet.publicKey && (
@@ -324,12 +324,12 @@ function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExp
       <p className="text-xs text-slate">
         Export opens Privy&apos;s own screen. Pairy never sees the key.{" "}
         <a
-          href="https://github.com/omeralpi/pairy/blob/main/README.md#use-this-key-in-freighter"
+          href="https://github.com/omeralpi/pairy/blob/main/README.md#use-this-key-in-varial"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
         >
-          Using it in Freighter
+          Using it in Varial (formerly Freighter)
           <ArrowUpRight strokeWidth={1.5} className="size-3" />
         </a>
       </p>

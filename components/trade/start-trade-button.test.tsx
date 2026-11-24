@@ -132,7 +132,7 @@ describe("StartTradeButton protected toggle", () => {
       wallet: { wallet: { publicKey: "GBUYER", kind: "privy" }, ready: true },
     });
     expect(html).not.toMatch(toggle);
-    expect(html).toContain("Protected trades work with a key on this device or Freighter for now.");
+    expect(html).toContain("Protected trades work with a key on this device or Varial (formerly Freighter) for now.");
   });
 
   it("is hidden with no wallet connected, saying so", () => {

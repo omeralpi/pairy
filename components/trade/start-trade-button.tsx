@@ -20,7 +20,7 @@ import { useWallet, type WalletKind } from "@/lib/wallet/use-wallet";
 /** For the sentence that says which wallets can open a protected trade. */
 const KIND_NAME: Record<WalletKind, string> = {
   device: "a key on this device",
-  freighter: "Freighter",
+  freighter: "Varial (formerly Freighter)",
   privy: "an email wallet",
 };
 

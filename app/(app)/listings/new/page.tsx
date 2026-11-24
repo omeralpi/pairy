@@ -25,7 +25,7 @@ export default function NewListingPage() {
           <div className="rounded-xl bg-sand p-6">
             <p className="font-semibold text-ink">Sign in to post a listing.</p>
             <p className="mt-2 text-sm text-slate">
-              A listing belongs to a Stellar public key. Connect Freighter or create a testnet wallet on this device;
+              A listing belongs to a Stellar public key. Connect Varial (formerly Freighter) or create a testnet wallet on this device;
               the key stays with you.
             </p>
             <Button asChild className="mt-5">

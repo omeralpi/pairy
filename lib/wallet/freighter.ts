@@ -29,13 +29,13 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (e) {
     const message = (e as { message?: unknown })?.message;
-    throw new Error(typeof message === "string" && message ? message : "Freighter request failed.");
+    throw new Error(typeof message === "string" && message ? message : "The request to Varial (formerly Freighter) failed.");
   }
 }
 
-/** Shown when the extension is missing; the onboarding screen links freighter.app. */
+/** Shown when the extension is missing; the onboarding screen links varialwallet.com. */
 export const FREIGHTER_MISSING =
-  "Freighter isn't available in this browser. Install the extension from freighter.app, or make a key on this device instead.";
+  "Varial (formerly Freighter) isn't available in this browser. Install the extension from varialwallet.com, or make a key on this device instead.";
 
 /** Asks Freighter for access and returns the account's public key. */
 export async function connectFreighter(): Promise<string> {
@@ -45,14 +45,14 @@ export async function connectFreighter(): Promise<string> {
   const { address } = await call(() => k.fetchAddress());
   const { networkPassphrase } = await call(() => k.getNetwork());
   if (networkPassphrase !== Networks.TESTNET) {
-    throw new Error("Freighter is on another network. Switch it to Testnet and try again.");
+    throw new Error("Varial (formerly Freighter) is on another network. Switch it to Testnet and try again.");
   }
   return address;
 }
 
 function assertSigner(expected: string, signer: string | undefined) {
   if (signer && signer !== expected) {
-    throw new Error("Freighter signed with a different account. Switch Freighter to the connected account.");
+    throw new Error("Varial (formerly Freighter) signed with a different account. Switch Varial to the connected account.");
   }
 }
 

@@ -75,7 +75,7 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 
 **The residual risk.** The encrypted key lives in browser storage, so a cross-site scripting flaw on Pairy's own site could read the ciphertext. For an email or Google wallet, the same flaw could ask Privy to sign while you are logged in: Privy shows no screen of its own for these signatures, so Pairy's signing screen is the only check. This is a testnet demo. Passkey-wrapped storage is planned for evaluation before any mainnet work.
 
-### Use this key in Freighter
+### Use this key in Varial
 
 A wallet opened with an email or Google login (Privy) can leave Pairy. **Export key** on the wallet page opens Privy's own screen; its **Copy key** button copies the private key to the clipboard without showing it, and Pairy never sees it. The key has one destination: the import field of Varial (formerly Freighter), the Stellar wallet extension. Install it only from [varialwallet.com](https://varialwallet.com) (freighter.app leads there too). Never paste it anywhere else: not into Pairy, a chat, a note, a search box, or a website that offers to convert or check a key. The one exception is the offline converter below.
 

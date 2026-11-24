@@ -1,11 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { FREIGHTER_MISSING } from "@/lib/wallet/freighter";
+
 // The onboarding page as it renders for one wallet context; no browser, so
 // effects do not run and the markup is enough to see which choices are offered
 // and what the headline promises.
 const ctx = vi.hoisted(() => ({ value: {} as Record<string, unknown>, session: null as string | null }));
+// An error to show as if a wallet step had failed: the page's null states
+// start at it instead (only `error` is rendered on the choices screen).
+const failed = vi.hoisted(() => ({ error: null as string | null }));
 
+vi.mock("react", async (importOriginal) => {
+  const react = await importOriginal<typeof import("react")>();
+  return { ...react, useState: (v: unknown) => react.useState(v === null ? failed.error : v) };
+});
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
 vi.mock("@/lib/auth/use-login", () => ({ useLogin: () => ({ login: async () => {}, logout: async () => {}, pending: false }) }));
 vi.mock("@/lib/auth/use-session", () => ({ useSession: () => ({ publicKey: ctx.session, loading: false }) }));
@@ -93,6 +102,20 @@ describe("OnboardPage: the Freighter choice", () => {
     expect(html).toMatch(/Use Varial \(formerly Freighter\)<\/span><span[^>]*>For people who already have the Varial extension/);
     expect(html).not.toContain("Use Freighter");
   });
+
+  it("sends a browser without the extension to varialwallet.com, naming it Varial (formerly Freighter) first (O-30)", () => {
+    expect(FREIGHTER_MISSING.indexOf("Varial (formerly Freighter)")).toBe(0);
+    failed.error = FREIGHTER_MISSING;
+    try {
+      const html = render(base);
+      const link = html.match(/<a[^>]*href="([^"]*)"[^>]*>Get Varial ↗<\/a>/);
+      expect(link, "no Get Varial ↗ link under the error").not.toBeNull();
+      expect(new URL(link![1]).host).toBe("varialwallet.com");
+      expect(html).not.toContain("freighter.app");
+    } finally {
+      failed.error = null;
+    }
+  });
 });
 
 describe("OnboardPage: the wallet kind label", () => {
@@ -118,6 +141,12 @@ describe("OnboardPage: the wallet kind label", () => {
     expect(html).toMatch(new RegExp(`Sign in again(?:(?!</section>).)*${PRIVY_DOWN}`));
     expect(html).not.toContain("Opening Privy…");
     expect(html).toMatch(/<button[^>]*(?<!disabled="")>Sign in<\/button>/);
+  });
+
+  it("names a connected Freighter wallet Varial (formerly Freighter), signed in or not (O-30)", () => {
+    const freighterWallet = { ...privyWallet, kind: "freighter" };
+    expect(render({ ...base, wallet: freighterWallet }, freighterWallet.publicKey)).toMatch(/Varial \(formerly Freighter\) ·/);
+    expect(render({ ...base, wallet: freighterWallet })).toContain("Your Varial (formerly Freighter) account");
   });
 
   it("offers a way out of a Privy session on another account: Use a different account (N1)", () => {
