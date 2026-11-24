@@ -1,6 +1,6 @@
 // The escrow router (D2 §5.2): a protected trade's Trustless Work escrow,
 // created, funded and released, or disputed and answered by both traders.
-// The arbiter's resolution comes later (WP-29).
+// The arbiter's resolution is the arbiter router's (arbiter.ts).
 //
 // Pairy's server never signs and never submits (PLAN I1, I3). For each step it
 // asks Trustless Work for the unsigned transaction, built only from the trade
