@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -53,8 +56,19 @@ describe("WalletPage for a Privy wallet", () => {
     const html = render({ ...base, wallet: wallet("privy") });
     expect(html).toMatch(/<button[^>]*>(?:(?!<\/button>).)*Export key<\/button>/);
     expect(html).toContain("Pairy never sees the key");
-    expect(html).toMatch(/<a[^>]*href="https:\/\/github\.com\/omeralpi\/pairy\/blob\/main\/README\.md#[^"]+"[^>]*>(?:(?!<\/a>).)*Freighter/);
+    expect(html).toMatch(
+      /<a[^>]*href="https:\/\/github\.com\/omeralpi\/pairy\/blob\/main\/README\.md#use-this-key-in-freighter"[^>]*>(?:(?!<\/a>).)*Freighter/,
+    );
     expect(html).not.toContain("Export backup");
+  });
+
+  it("links to a README note that exists and tells the user where the exported key may go", () => {
+    const readme = readFileSync(path.join(process.cwd(), "README.md"), "utf8");
+    const note = readme.split(/^### Use this key in Freighter$/m)[1];
+    expect(note, "README.md has no '### Use this key in Freighter' heading").toBeDefined();
+    // The key's one destination, and that Pairy is not one of them.
+    expect(note).toContain("Import a Stellar secret key");
+    expect(note).toMatch(/never paste it anywhere else/i);
   });
 
   it("says that logging out also signs out of Privy", () => {
