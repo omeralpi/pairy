@@ -14,12 +14,15 @@ export function TrustlineButton({
   asset,
   buyer,
   locked = false,
+  escrow = false,
   onDone,
 }: {
   asset: AssetCode;
   buyer: string;
   /** The seller has already locked; the trustline is now needed for the claim itself. */
   locked?: boolean;
+  /** A protected trade: the escrow names the buyer as receiver, so it can't be created without the trustline. */
+  escrow?: boolean;
   onDone: () => unknown;
 }) {
   const { wallet, ready } = useWallet();
@@ -30,9 +33,11 @@ export function TrustlineButton({
   return (
     <div className="space-y-3 rounded-xl bg-sand p-5">
       <p className="text-sm leading-relaxed text-ink">
-        {locked
-          ? `Add ${label} to your wallet so your claim can go through.`
-          : `Add ${label} to your wallet before the seller locks it for you. Without it, your claim can't go through.`}{" "}
+        {escrow
+          ? `Add ${label} to your wallet before the seller creates the escrow. Without it, the escrow can't be created.`
+          : locked
+            ? `Add ${label} to your wallet so your claim can go through.`
+            : `Add ${label} to your wallet before the seller locks it for you. Without it, your claim can't go through.`}{" "}
         It sets aside 0.5 XLM in your wallet as a reserve.
       </p>
       <Button

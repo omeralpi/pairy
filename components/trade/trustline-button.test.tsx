@@ -24,6 +24,13 @@ describe("TrustlineButton", () => {
     expect(buttonText(html)).toBe("Add EURC to my wallet");
   });
 
+  it("says the escrow needs it in a protected trade, with no lock or claim", () => {
+    const html = renderToStaticMarkup(<TrustlineButton asset="USDC" buyer={BUYER} escrow onDone={() => {}} />);
+    expect(html).toContain("Add USDC to your wallet before the seller creates the escrow. Without it, the escrow can&#x27;t be created.");
+    expect(html).not.toMatch(/lock|claim/);
+    expect(buttonText(html)).toBe("Add USDC to my wallet");
+  });
+
   it("still says USDC for USDC", () => {
     const html = renderToStaticMarkup(<TrustlineButton asset="USDC" buyer={BUYER} onDone={() => {}} />);
     expect(buttonText(html)).toBe("Add USDC to my wallet");

@@ -10,6 +10,7 @@ vi.mock("@/lib/api", () => ({
       lockPreflight: { useQuery: query(undefined) },
       open: { useMutation: () => ({ mutate: () => {}, isPending: false, error: null }) },
     },
+    escrow: { config: { useQuery: query(undefined) } },
     listing: {
       byId: {
         useQuery: query({

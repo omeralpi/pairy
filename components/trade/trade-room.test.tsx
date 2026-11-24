@@ -92,3 +92,20 @@ describe("TradeRoom when a refresh fails", () => {
     expect(html).not.toContain("LOCK PANEL");
   });
 });
+
+describe("TradeRoom for a protected trade", () => {
+  const room = (t: Record<string, unknown>) => {
+    byId.result = { data: { ...trade, mode: "protected", asset: "USDC", windowSeconds: 0, ...t }, error: null, isLoading: false };
+    return renderToStaticMarkup(<TradeRoom id={id} />);
+  };
+
+  it("asks the peer to accept the protected-trade terms instead of the plain agree", () => {
+    const html = room({ state: "listed" });
+    expect(html).toContain("Agree and accept");
+    expect(html).not.toContain("Agree to trade");
+  });
+
+  it("never offers the claimable lock to the seller", () => {
+    expect(room({ state: "agreed" })).not.toContain("LOCK PANEL");
+  });
+});

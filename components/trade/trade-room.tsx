@@ -3,10 +3,10 @@
 import { ArrowLeft, Flag } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { toast } from "sonner";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmAction } from "@/components/confirm-action";
+import { ProtectedActions } from "@/components/escrow/protected-actions";
 import { friendlyError, isUnauthorized } from "@/components/friendly-error";
 import { shortAddress, trimAmount } from "@/components/listing/format";
 import {
@@ -22,6 +22,7 @@ import { LockPanel } from "@/components/trade/lock-panel";
 import { walletProblem } from "@/components/trade/step-feedback";
 import { Timeline } from "@/components/trade/timeline";
 import { TrustlineButton } from "@/components/trade/trustline-button";
+import { useMutationOpts } from "@/components/trade/use-mutation-opts";
 import { useNow } from "@/components/trade/use-now";
 import { useTradeSync } from "@/components/trade/use-trade-sync";
 import { Button } from "@/components/ui/button";
@@ -35,20 +36,6 @@ import { useWallet } from "@/lib/wallet/use-wallet";
 const linkClass = "text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function useMutationOpts() {
-  const utils = api.useUtils();
-  return {
-    onSuccess: () => utils.trade.invalidate(),
-    onError: (e: { message: string; data?: { code?: string } | null }) => {
-      toast.error(friendlyError(e));
-      // A lapsed session: let the page fall back to its sign-in prompt.
-      if (isUnauthorized(e)) void utils.auth.me.invalidate();
-      // The trade may have moved on in another tab; show where it stands now.
-      else void utils.trade.invalidate();
-    },
-  };
-}
 
 /** What the viewer can do now, by role and state. */
 function Actions({ trade }: { trade: TradeView }) {
@@ -347,7 +334,7 @@ function Room({ trade, publicKey }: { trade: TradeView; publicKey: string }) {
             {trade.state === "claimed" && <p className="text-success">✓ settled in person</p>}
           </div>
 
-          <Actions trade={trade} />
+          {trade.mode === "protected" ? <ProtectedActions trade={trade} /> : <Actions trade={trade} />}
 
           <section className="space-y-3">
             <h2 className="eyebrow">What happened</h2>
