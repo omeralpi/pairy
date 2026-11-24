@@ -1,9 +1,16 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import { Keypair, TransactionBuilder, TransactionFailedError, type Transaction } from "@stellar/stellar-sdk";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { shortWhen } from "@/components/trade/format";
 import { ARBITER_ACCOUNT, PLATFORM_ACCOUNT, USDC_SAC } from "@/lib/escrow/config";
-import { savePendingTx, setStepRunning } from "@/lib/trade/pending-tx";
+import { mergeSignatures } from "@/lib/escrow/multisig";
+import { submit } from "@/lib/stellar/horizon";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar/settlement";
+import { PENDING_TX_MAX_AGE_MS, savePendingTx, setStepRunning, stepRunning } from "@/lib/trade/pending-tx";
 
 // One dispute as the arbiter sees it (D2 §7.4, FIXES F-03): every state the
 // detail page can be in, from the markup it renders for one arbiter.byId
@@ -16,14 +23,33 @@ const mutated = vi.hoisted(() => [] as { path: string; input: unknown }[]);
 const effects = vi.hoisted(() => [] as (() => void | (() => void))[]);
 const depsOf = vi.hoisted(() => new Map<unknown, unknown[] | undefined>());
 const buttons = vi.hoisted(() => [] as { label: string; onClick?: () => unknown }[]);
+/** Stubbed answers per tRPC path; unlisted mutations answer {}. */
+const answers = vi.hoisted(() => ({}) as Record<string, (input: unknown) => Promise<unknown>>);
+// With `on`, useState keeps its values across renders, as a mounted component does: the page's own
+// state (the prepared resolution, the step's error) survives a press, so the next render shows it.
+const hooks = vi.hoisted(() => ({ on: false, store: [] as unknown[], i: 0 }));
 
-vi.mock("react", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("react")>()),
-  useEffect: (fn: () => void | (() => void), deps?: unknown[]) => {
-    effects.push(fn);
-    depsOf.set(fn, deps);
-  },
-}));
+vi.mock("react", async (importOriginal) => {
+  const React = await importOriginal<typeof import("react")>();
+  // React's own, for every render outside the mounted-panel tests (the mock below is not a component).
+  const reactState = React.useState;
+  return {
+    ...React,
+    useEffect: (fn: () => void | (() => void), deps?: unknown[]) => {
+      effects.push(fn);
+      depsOf.set(fn, deps);
+    },
+    useState: (init: unknown) => {
+      if (!hooks.on) return reactState(init);
+      const i = hooks.i++;
+      if (!(i in hooks.store)) hooks.store[i] = typeof init === "function" ? (init as () => unknown)() : init;
+      const set = (v: unknown) => {
+        hooks.store[i] = typeof v === "function" ? (v as (old: unknown) => unknown)(hooks.store[i]) : v;
+      };
+      return [hooks.store[i], set];
+    },
+  };
+});
 vi.mock("@/lib/api", () => {
   const node = (path: string[]): unknown =>
     new Proxy(() => undefined, {
@@ -33,19 +59,32 @@ vi.mock("@/lib/api", () => {
           return () => ({
             mutateAsync: async (input: unknown) => {
               mutated.push({ path: path.join("."), input });
-              return {};
+              return answers[path.join(".")] ? answers[path.join(".")](input) : {};
             },
             isPending: false,
           });
         }
         if (key === "useUtils") return () => node([]);
         if (key === "invalidate") return async () => {};
+        // The byId cache: fetch reads the stubbed answer, setData edits what the next render shows.
+        if (key === "fetch") return async () => (answers[`${path.join(".")}.fetch`] ? answers[`${path.join(".")}.fetch`](undefined) : undefined);
+        if (key === "setData") {
+          return (input: unknown, update: (old: unknown) => unknown) => {
+            mutated.push({ path: `${path.join(".")}.setData`, input });
+            byId.result = { ...byId.result, data: update(byId.result.data) };
+          };
+        }
         return node([...path, key]);
       },
     });
   return { api: node([]) };
 });
 vi.mock("@/lib/wallet/use-wallet", () => ({ useWallet: () => wallet.value }));
+vi.mock("@/lib/stellar/horizon", async (orig) => ({ ...(await orig<typeof import("@/lib/stellar/horizon")>()), submit: vi.fn() }));
+vi.mock("@/components/escrow/escrow-steps", async (orig) => ({
+  ...(await orig<typeof import("@/components/escrow/escrow-steps")>()),
+  readEscrowOnChain: vi.fn(),
+}));
 vi.mock("@/components/ui/button", () => ({
   Button: (p: { children: React.ReactNode; onClick?: () => unknown; disabled?: boolean }) => {
     buttons.push({ label: String(p.children), onClick: p.onClick });
@@ -54,6 +93,7 @@ vi.mock("@/components/ui/button", () => ({
 }));
 
 const { DisputePanel, ResolutionCard, ResolutionSection } = await import("./dispute-panel");
+const { readEscrowOnChain } = await import("@/components/escrow/escrow-steps");
 
 const OMER = "GDRJ7JMJPBAGHKLP5JZJ6S6CP3OZ2ZURM23RBHR2N56MDOFSOOLQLD5Q";
 const ENSAR = "GDH2MGKJYMEZEHR62RRFYGHHK74AQ2AFZKUEP6GWCK5BRFB2A3T2N6J7";
@@ -159,6 +199,9 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  hooks.on = false;
+  hooks.store = [];
+  for (const k of Object.keys(answers)) delete answers[k];
 });
 
 describe("DisputePanel while the dispute loads or cannot be shown", () => {
@@ -513,5 +556,198 @@ describe("ResolutionSection: the resolution part of the page, for each state the
     const html = section({ other: OTHER_ID });
     expect(text(html)).toMatch(new RegExp(`Another resolution is being signed \\(trade ${OTHER_ID.slice(0, 8)} ?\\)\\. Finish or let it expire first\\.`));
     expect(prepareButton()).toBeUndefined();
+  });
+});
+
+describe("DisputePanel and the last signer's send (FIXES F-03; WP-35's pending-tx steps)", () => {
+  // HD-3's real buyer exit, re-timed as Ömer and Ensar signed it: Pairy's own check passes it inside its window.
+  // The press runs the real browser check, signing hand-over, useChainStep, signAndSubmit and pending-tx code;
+  // Horizon's submit, the escrow read from Soroban RPC, Pairy's API and the wallet are stubs.
+  const EXIT = JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/tw/exits-real-resolve-buyer.json"), "utf8")) as {
+    escrow: { contractId: string; seller: string; buyer: string };
+    sacBalanceStroops: number;
+    rebuilt: { horizonTime: number; unsignedXdr: string; txHash: string };
+  };
+  const unsigned = TransactionBuilder.fromXDR(EXIT.rebuilt.unsignedXdr, NETWORK_PASSPHRASE) as Transaction;
+  const sigBy = (k: Keypair) => ({ signer: k.publicKey(), signature: Buffer.from(k.sign(unsigned.hash())).toString("base64") });
+  // Throwaway keys stand in for the two signatures: the server's merge is stubbed.
+  const merged = mergeSignatures(EXIT.rebuilt.unsignedXdr, [sigBy(Keypair.random()), sigBy(Keypair.random())]);
+  const expiresAt = new Date((EXIT.rebuilt.horizonTime + 3600) * 1000);
+  const disputeOnChain = {
+    ...dispute,
+    seller: EXIT.escrow.seller,
+    buyer: EXIT.escrow.buyer,
+    contractId: EXIT.escrow.contractId,
+    answers: { seller: true, buyer: true },
+    ready: true,
+    outcome: "buyer",
+    rule: 1,
+    ruleSentence: "If the seller answers yes, the buyer is paid.",
+    resolution: { id: "r1", signers: [ENSAR], threshold: 2, expiresAt },
+  };
+  const KEY = `pairy:pending-tx:${ID}`;
+
+  /** A mounted panel: hook state is kept, so each render shows what the presses before it left. */
+  const mounted = () => {
+    hooks.i = 0;
+    effects.length = 0;
+    buttons.length = 0;
+    return text(renderToStaticMarkup(<DisputePanel tradeId={ID} me={OMER} />));
+  };
+  const press = async (label: string) => {
+    const b = buttons.find((x) => x.label.startsWith(label));
+    expect(b, `button "${label}"`).toBeDefined();
+    await b!.onClick!();
+  };
+
+  beforeEach(() => {
+    vi.setSystemTime((EXIT.rebuilt.horizonTime + 60) * 1000);
+    hooks.on = true;
+    hooks.store = [];
+    mutated.length = 0;
+    byId.result = { data: disputeOnChain, error: null, isLoading: false };
+    wallet.value = { wallet: { kind: "freighter", publicKey: OMER, signTransaction: vi.fn(async (xdr: string) => xdr) }, ready: true };
+    answers["arbiter.prepareResolution"] = async () => ({
+      resolutionId: "r1",
+      unsignedXdr: EXIT.rebuilt.unsignedXdr,
+      txHash: EXIT.rebuilt.txHash,
+      summary: "",
+      expiresAt,
+      threshold: 2,
+      signers: [ENSAR],
+    });
+    // This signer's signature is the last one the resolution needs: the page sends the merged envelope.
+    answers["arbiter.addSignature"] = async () => ({ signedXdr: merged, signerCount: 2, threshold: 2, signers: [ENSAR, OMER] });
+    vi.mocked(readEscrowOnChain).mockReset().mockResolvedValue({
+      terms: { receiver: EXIT.escrow.buyer, releaseSigners: [EXIT.escrow.seller], disputeResolvers: [ARBITER_ACCOUNT] },
+      status: { disputed: true, released: false, resolved: false, balanceStroops: BigInt(EXIT.sacBalanceStroops) },
+      wasmHash: "",
+    } as never);
+    vi.mocked(submit).mockReset();
+  });
+
+  /** Ensar signed already; Ömer opens the prepared resolution and signs as the last signer. */
+  const signLast = async () => {
+    expect(mounted()).toContain("A resolution is prepared: 1 of 2 signed");
+    await press("Open the prepared resolution");
+    expect(mounted()).toContain("Sign as GDRJ…LD5Q");
+    await press("Sign as GDRJ…LD5Q");
+    expect(vi.mocked(submit)).toHaveBeenCalledOnce();
+    expect(Buffer.from(vi.mocked(submit).mock.calls[0][0].hash()).toString("hex")).toBe(EXIT.rebuilt.txHash);
+    expect(stepRunning(ID)).toBe(false);
+  };
+
+  it("when the network refuses the merged resolve, says F-03's sentence, offers Prepare and keeps no hash", async () => {
+    vi.mocked(submit).mockRejectedValueOnce(
+      new TransactionFailedError("Transaction submission failed. Server responded: 400 Bad Request", {
+        status: 400,
+        statusText: "Bad Request",
+        data: { extras: { result_codes: { transaction: "tx_bad_seq" } } },
+      } as never),
+    );
+    await signLast();
+
+    const words = mounted();
+    expect(words).toContain("This prepared transaction was not accepted by the network; prepare again.");
+    expect(words).toContain("(tx_bad_seq)");
+    expect(words).not.toContain("Recording it once");
+    expect(buttons.map((b) => b.label)).toContain("Prepare the resolution (all to the buyer)");
+    expect(buttons.some((b) => b.label.startsWith("Sign as"))).toBe(false);
+    // Refused outright: nothing is left to record later.
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(mutated.filter((m) => m.path === "arbiter.recordResolution")).toEqual([]);
+  });
+
+  it("when Horizon gives no verdict, keeps the hash and says it is recording: no F-03 sentence, no Prepare and no second send", async () => {
+    vi.mocked(submit).mockRejectedValueOnce(new Error("socket hang up"));
+    await signLast();
+
+    const words = mounted();
+    expect(words).toContain("A resolution was sent from this browser. Recording it once Stellar testnet shows it…");
+    expect(words).toContain("Stellar testnet didn't confirm this in time, but it may still go through.");
+    expect(words).not.toContain("not accepted by the network");
+    expect(buttons.map((b) => b.label).filter((l) => /^(Prepare|Open|Sign as)/.test(l))).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(KEY) ?? "null")).toMatchObject({ kind: "resolve", hash: EXIT.rebuilt.txHash });
+    // The page's retry only asks Pairy to record that hash; it never sends again.
+    effects.at(-1)!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mutated.filter((m) => m.path === "arbiter.recordResolution").map((m) => m.input)).toEqual([{ tradeId: ID, txHash: EXIT.rebuilt.txHash }]);
+    expect(vi.mocked(submit)).toHaveBeenCalledOnce();
+  });
+
+  it("records a landed resolve once, and takes the traders' sync having recorded it first as done (WP-35)", async () => {
+    vi.mocked(submit).mockImplementationOnce(async (tx) => ({ hash: Buffer.from(tx.hash()).toString("hex") }) as never);
+    answers["arbiter.recordResolution"] = async () => {
+      throw new Error("Cannot resolve a resolved_buyer trade: it already ended");
+    };
+    answers["arbiter.byId.fetch"] = async () => ({
+      ...disputeOnChain,
+      state: "resolved_buyer",
+      steps: [...dispute.steps, { step: "resolve", txHash: EXIT.rebuilt.txHash, url: "" }],
+    });
+    await signLast();
+
+    expect(mutated.filter((m) => m.path === "arbiter.recordResolution")).toHaveLength(1);
+    expect(mounted()).not.toContain("could not record it yet");
+    expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it("after a refusal that closes the resolution, drops it at once: no Sign, and no Open for the dead row before the refetch", async () => {
+    answers["arbiter.addSignature"] = async () => {
+      throw new Error("The arbiter account moved on; prepare again.");
+    };
+    mounted();
+    await press("Open the prepared resolution");
+    mounted();
+    await press("Sign as GDRJ…LD5Q");
+
+    const words = mounted();
+    expect(words).toContain("The arbiter account moved on; prepare again.");
+    expect(buttons.map((b) => b.label)).toEqual(["Prepare the resolution (all to the buyer)"]);
+    expect(mutated.filter((m) => m.path === "arbiter.byId.setData").map((m) => m.input)).toEqual([{ tradeId: ID }]);
+    expect(vi.mocked(submit)).not.toHaveBeenCalled();
+  });
+
+  it("tells the next signer when the resolution they opened was replaced, and shows the new one from 0 signatures", async () => {
+    answers["arbiter.prepareResolution"] = async () => ({
+      resolutionId: "r2",
+      unsignedXdr: EXIT.rebuilt.unsignedXdr,
+      txHash: EXIT.rebuilt.txHash,
+      summary: "",
+      expiresAt,
+      threshold: 2,
+      signers: [],
+    });
+    mounted();
+    await press("Open the prepared resolution");
+    byId.result = { data: { ...disputeOnChain, resolution: { id: "r2", signers: [], threshold: 2, expiresAt } }, error: null, isLoading: false };
+
+    const words = mounted();
+    expect(words).toContain("The earlier prepared transaction could no longer land (the arbiter account moved on), so this is a new one: every signer signs it.");
+    expect(words).toContain("0 of 2 signed");
+  });
+
+  it("asks Pairy to record a kept hash on each refetch while it fails, for PENDING_TX_MAX_AGE_MS (15 min), then drops it", async () => {
+    answers["arbiter.recordResolution"] = async () => {
+      throw new Error(`Transaction ${EXIT.rebuilt.txHash} was not found on Stellar testnet.`);
+    };
+    const sent = Date.now();
+    savePendingTx(ID, { kind: "resolve", hash: EXIT.rebuilt.txHash }, undefined, sent);
+    const refetch = async (at: number) => {
+      vi.setSystemTime(at);
+      byId.result = { data: disputeOnChain, error: null, isLoading: false, dataUpdatedAt: at };
+      expect(mounted()).toContain("Recording it once Stellar testnet shows it…");
+      effects.at(-1)!();
+      await vi.advanceTimersByTimeAsync(0);
+    };
+
+    await refetch(sent + 10_000);
+    expect(localStorage.getItem(KEY)).not.toBeNull();
+    await refetch(sent + PENDING_TX_MAX_AGE_MS - 1000);
+    expect(localStorage.getItem(KEY)).not.toBeNull();
+    await refetch(sent + PENDING_TX_MAX_AGE_MS + 1000);
+    expect(localStorage.getItem(KEY)).toBeNull();
+    expect(mutated.filter((m) => m.path === "arbiter.recordResolution")).toHaveLength(3);
+    expect(vi.mocked(submit)).not.toHaveBeenCalled();
   });
 });
