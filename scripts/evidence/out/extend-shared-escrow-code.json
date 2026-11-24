@@ -70,6 +70,374 @@
         "maxFeeStroops": "75679815",
         "feeChargedStroops": "65804752"
       }
+    },
+    {
+      "at": "2026-11-24T23:02:07Z",
+      "targetLedger": 6703112,
+      "target": "2027-01-10T00:00:00.000Z",
+      "entries": [
+        {
+          "label": "escrow code 1231807d01111bee78a846ddacdd0a6cf88b762115e70f5bce16ffabd660e47f",
+          "key": "AAAABxIxgH0BERvueKhG3azdCmz4i3YhFecPW84W/6vWYOR/",
+          "liveUntilBefore": 6305674,
+          "beforeAbout": "2026-12-18T00:00:12.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "factory instance",
+          "key": "AAAABgAAAAGw7N9IyFhbN6xDDQ+YDR/VICIiILa4SpLopyT6SlTnhQAAABQAAAAB",
+          "liveUntilBefore": 6305674,
+          "beforeAbout": "2026-12-18T00:00:12.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract instance",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAAB",
+          "liveUntilBefore": 8487243,
+          "beforeAbout": "2027-04-23T05:57:37.000Z",
+          "short": false,
+          "liveUntilAfter": 8487243,
+          "afterAbout": "2027-04-23T05:57:37.000Z"
+        },
+        {
+          "label": "EURC contract instance",
+          "key": "AAAABgAAAAGpQbOb4FmWYtgaJnLc42IrMxh+npHaKbfoZLuu3z1jxgAAABQAAAAB",
+          "liveUntilBefore": 7969907,
+          "beforeAbout": "2027-03-24T07:26:17.000Z",
+          "short": false,
+          "liveUntilAfter": 7969907,
+          "afterAbout": "2027-03-24T07:26:17.000Z"
+        },
+        {
+          "label": "factory [\"ApprovedWasmHash\"]",
+          "key": "AAAABgAAAAGw7N9IyFhbN6xDDQ+YDR/VICIiILa4SpLopyT6SlTnhQAAABAAAAABAAAAAQAAAA8AAAAQQXBwcm92ZWRXYXNtSGFzaAAAAAE=",
+          "liveUntilBefore": 6305674,
+          "beforeAbout": "2026-12-18T00:00:12.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "factory [\"Escrow\"]",
+          "key": "AAAABgAAAAGw7N9IyFhbN6xDDQ+YDR/VICIiILa4SpLopyT6SlTnhQAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": null,
+          "beforeAbout": null,
+          "short": false,
+          "liveUntilAfter": null,
+          "afterAbout": null
+        },
+        {
+          "label": "escrow CDQOPLC2P7JNMMT62WDCC5EW5ESLFCHSAVQ66X7EWFE7E3QPT674QO34 instance",
+          "key": "AAAABgAAAAHg56xaf9LWMn7VhiF0lukksojyBWHvX+SxSfJuD5+/yAAAABQAAAAB",
+          "liveUntilBefore": 6018006,
+          "beforeAbout": "2026-12-01T08:27:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CDQOPLC2P7JNMMT62WDCC5EW5ESLFCHSAVQ66X7EWFE7E3QPT674QO34 [\"Escrow\"]",
+          "key": "AAAABgAAAAHg56xaf9LWMn7VhiF0lukksojyBWHvX+SxSfJuD5+/yAAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6018006,
+          "beforeAbout": "2026-12-01T08:27:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CDQOPLC2P7JNMMT62WDCC5EW5ESLFCHSAVQ66X7EWFE7E3QPT674QO34\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAeDnrFp/0tYyftWGIXSW6SSyiPIFYe9f5LFJ8m4Pn7/IAAAAAQ==",
+          "liveUntilBefore": 6415448,
+          "beforeAbout": "2026-12-24T08:28:02.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCYX2DAOGUDNCUCOZPPPKTHPYHHZXLA4I73POY66ULQHB7ANTZJSG6M2 instance",
+          "key": "AAAABgAAAAGxfQwONQbRUE7L3vVM78HPm6wcR/b3Y96i4HD8DZ5TIwAAABQAAAAB",
+          "liveUntilBefore": 6019062,
+          "beforeAbout": "2026-12-01T09:55:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCYX2DAOGUDNCUCOZPPPKTHPYHHZXLA4I73POY66ULQHB7ANTZJSG6M2 [\"Escrow\"]",
+          "key": "AAAABgAAAAGxfQwONQbRUE7L3vVM78HPm6wcR/b3Y96i4HD8DZ5TIwAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6019062,
+          "beforeAbout": "2026-12-01T09:55:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CCYX2DAOGUDNCUCOZPPPKTHPYHHZXLA4I73POY66ULQHB7ANTZJSG6M2\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAbF9DA41BtFQTsve9Uzvwc+brBxH9vdj3qLgcPwNnlMjAAAAAQ==",
+          "liveUntilBefore": 6416504,
+          "beforeAbout": "2026-12-24T09:56:02.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CBHHSX7ZAVL4IXJZBEYVZVDWLZNZYCN46Y54THMJDWIGUSMABFYCNHNR instance",
+          "key": "AAAABgAAAAFOeV/5BVfEXTkJMVzUdl5bnAm89jvJnYkdkGpJgAlwJgAAABQAAAAB",
+          "liveUntilBefore": 6019445,
+          "beforeAbout": "2026-12-01T10:27:47.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CBHHSX7ZAVL4IXJZBEYVZVDWLZNZYCN46Y54THMJDWIGUSMABFYCNHNR [\"Escrow\"]",
+          "key": "AAAABgAAAAFOeV/5BVfEXTkJMVzUdl5bnAm89jvJnYkdkGpJgAlwJgAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6019445,
+          "beforeAbout": "2026-12-01T10:27:47.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CBHHSX7ZAVL4IXJZBEYVZVDWLZNZYCN46Y54THMJDWIGUSMABFYCNHNR\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAU55X/kFV8RdOQkxXNR2XlucCbz2O8mdiR2QakmACXAmAAAAAQ==",
+          "liveUntilBefore": 6416887,
+          "beforeAbout": "2026-12-24T10:27:57.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CDPCKAUFKLQS6GITK2XCBHGGZM6EGZ7YQXI3JGDHXXFPLX5V6YDQE3UW instance",
+          "key": "AAAABgAAAAHeJQKFUuEvGRNWriCcxss8Q2f4hdG0mGe9yvXftfYHAgAAABQAAAAB",
+          "liveUntilBefore": 6021464,
+          "beforeAbout": "2026-12-01T13:16:02.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CDPCKAUFKLQS6GITK2XCBHGGZM6EGZ7YQXI3JGDHXXFPLX5V6YDQE3UW [\"Escrow\"]",
+          "key": "AAAABgAAAAHeJQKFUuEvGRNWriCcxss8Q2f4hdG0mGe9yvXftfYHAgAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6021464,
+          "beforeAbout": "2026-12-01T13:16:02.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CDPCKAUFKLQS6GITK2XCBHGGZM6EGZ7YQXI3JGDHXXFPLX5V6YDQE3UW\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAd4lAoVS4S8ZE1auIJzGyzxDZ/iF0bSYZ73K9d+19gcCAAAAAQ==",
+          "liveUntilBefore": 6418909,
+          "beforeAbout": "2026-12-24T13:16:27.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CBR6V62IHRTKHE2ZMRBFXPAYJ47IYAEFZO2WS5SPGDRACXBIGNBFI5OC instance",
+          "key": "AAAABgAAAAFj6vtIPGajk1lkQlu8GE8+jACFy7Vpdk8w4gFcKDNCVAAAABQAAAAB",
+          "liveUntilBefore": 6023871,
+          "beforeAbout": "2026-12-01T16:36:37.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CBR6V62IHRTKHE2ZMRBFXPAYJ47IYAEFZO2WS5SPGDRACXBIGNBFI5OC [\"Escrow\"]",
+          "key": "AAAABgAAAAFj6vtIPGajk1lkQlu8GE8+jACFy7Vpdk8w4gFcKDNCVAAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6023871,
+          "beforeAbout": "2026-12-01T16:36:37.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CBR6V62IHRTKHE2ZMRBFXPAYJ47IYAEFZO2WS5SPGDRACXBIGNBFI5OC\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAWPq+0g8ZqOTWWRCW7wYTz6MAIXLtWl2TzDiAVwoM0JUAAAAAQ==",
+          "liveUntilBefore": 6421314,
+          "beforeAbout": "2026-12-24T16:36:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CDU6BFSMRYN3G6JFFZIAXUD7LNVQN46ACP6GQ5MALKNNHSMFTOMPSEXL instance",
+          "key": "AAAABgAAAAHp4JZMjhuzeSUuUAvQf1trBvPAE/xodYBamtPJhZuY+QAAABQAAAAB",
+          "liveUntilBefore": 6024175,
+          "beforeAbout": "2026-12-01T17:01:57.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CDU6BFSMRYN3G6JFFZIAXUD7LNVQN46ACP6GQ5MALKNNHSMFTOMPSEXL [\"Escrow\"]",
+          "key": "AAAABgAAAAHp4JZMjhuzeSUuUAvQf1trBvPAE/xodYBamtPJhZuY+QAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6024175,
+          "beforeAbout": "2026-12-01T17:01:57.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CDU6BFSMRYN3G6JFFZIAXUD7LNVQN46ACP6GQ5MALKNNHSMFTOMPSEXL\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAenglkyOG7N5JS5QC9B/W2sG88AT/Gh1gFqa08mFm5j5AAAAAQ==",
+          "liveUntilBefore": 6421620,
+          "beforeAbout": "2026-12-24T17:02:22.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CD7VRCAJIOPGX7LIV5YRTH7VCWOZD4GEE7N3QHONU6HY23SYAZWXK6LU instance",
+          "key": "AAAABgAAAAH/WIgJQ55r/WivcRmf9RWdkfDEJ9u4Hc2nj41uWAZtdQAAABQAAAAB",
+          "liveUntilBefore": 6026325,
+          "beforeAbout": "2026-12-01T20:01:07.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CD7VRCAJIOPGX7LIV5YRTH7VCWOZD4GEE7N3QHONU6HY23SYAZWXK6LU [\"Escrow\"]",
+          "key": "AAAABgAAAAH/WIgJQ55r/WivcRmf9RWdkfDEJ9u4Hc2nj41uWAZtdQAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6026325,
+          "beforeAbout": "2026-12-01T20:01:07.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CD7VRCAJIOPGX7LIV5YRTH7VCWOZD4GEE7N3QHONU6HY23SYAZWXK6LU\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAf9YiAlDnmv9aK9xGZ/1FZ2R8MQn27gdzaePjW5YBm11AAAAAQ==",
+          "liveUntilBefore": 6423769,
+          "beforeAbout": "2026-12-24T20:01:27.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCMAA6ZHRWCCYFFKB5WIYRKJXPB2ONI2F3AYYEOAIEUTFK7U2GQ5SJWH instance",
+          "key": "AAAABgAAAAGYAHsnjYQsFKoPbIxFSbvDpzUaLsGMEcBBKTKr9NGh2QAAABQAAAAB",
+          "liveUntilBefore": 6026286,
+          "beforeAbout": "2026-12-01T19:57:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCMAA6ZHRWCCYFFKB5WIYRKJXPB2ONI2F3AYYEOAIEUTFK7U2GQ5SJWH [\"Escrow\"]",
+          "key": "AAAABgAAAAGYAHsnjYQsFKoPbIxFSbvDpzUaLsGMEcBBKTKr9NGh2QAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6026286,
+          "beforeAbout": "2026-12-01T19:57:52.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CCMAA6ZHRWCCYFFKB5WIYRKJXPB2ONI2F3AYYEOAIEUTFK7U2GQ5SJWH\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAZgAeyeNhCwUqg9sjEVJu8OnNRouwYwRwEEpMqv00aHZAAAAAQ==",
+          "liveUntilBefore": 6423729,
+          "beforeAbout": "2026-12-24T19:58:07.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCKPK7HYKE6BHAS2HVFDJHF7ZTU27LO5F5REK7EBAYTDHS772CFW7DSM instance",
+          "key": "AAAABgAAAAGU9Xz4UTwTglo9SjScv8zpr63dL2JFfIEGJjPL/9CLbwAAABQAAAAB",
+          "liveUntilBefore": 6026302,
+          "beforeAbout": "2026-12-01T19:59:12.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCKPK7HYKE6BHAS2HVFDJHF7ZTU27LO5F5REK7EBAYTDHS772CFW7DSM [\"Escrow\"]",
+          "key": "AAAABgAAAAGU9Xz4UTwTglo9SjScv8zpr63dL2JFfIEGJjPL/9CLbwAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6026302,
+          "beforeAbout": "2026-12-01T19:59:12.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CCKPK7HYKE6BHAS2HVFDJHF7ZTU27LO5F5REK7EBAYTDHS772CFW7DSM\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAZT1fPhRPBOCWj1KNJy/zOmvrd0vYkV8gQYmM8v/0ItvAAAAAQ==",
+          "liveUntilBefore": 6423746,
+          "beforeAbout": "2026-12-24T19:59:32.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN instance",
+          "key": "AAAABgAAAAGMxfzRUO/NZxKV5Qxen4dPDYPO1LOXrdiqceFFwEnrHAAAABQAAAAB",
+          "liveUntilBefore": 6008405,
+          "beforeAbout": "2026-11-30T19:07:47.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN [\"Escrow\"]",
+          "key": "AAAABgAAAAGMxfzRUO/NZxKV5Qxen4dPDYPO1LOXrdiqceFFwEnrHAAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6008405,
+          "beforeAbout": "2026-11-30T19:07:47.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CCGML7GRKDX42ZYSSXSQYXU7Q5HQ3A6O2SZZPLOYVJY6CROAJHVRYAUN\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAYzF/NFQ781nEpXlDF6fh08Ng87Us5et2Kpx4UXASescAAAAAQ==",
+          "liveUntilBefore": 6405855,
+          "beforeAbout": "2026-12-23T19:08:37.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CBEHAVRIMTUBDHXXQQV56EDMOJSUL5PJAZL6S46RXRG4U35A33EIGMOG instance",
+          "key": "AAAABgAAAAFIcFYoZOgRnveEK98QbHJlRfXpBlfpc9G8TcpvoN7IgwAAABQAAAAB",
+          "liveUntilBefore": 6019202,
+          "beforeAbout": "2026-12-01T10:07:32.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "escrow CBEHAVRIMTUBDHXXQQV56EDMOJSUL5PJAZL6S46RXRG4U35A33EIGMOG [\"Escrow\"]",
+          "key": "AAAABgAAAAFIcFYoZOgRnveEK98QbHJlRfXpBlfpc9G8TcpvoN7IgwAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": 6019202,
+          "beforeAbout": "2026-12-01T10:07:32.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        },
+        {
+          "label": "USDC contract [\"Balance\",\"CBEHAVRIMTUBDHXXQQV56EDMOJSUL5PJAZL6S46RXRG4U35A33EIGMOG\"]",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAUhwVihk6BGe94Qr3xBscmVF9ekGV+lz0bxNym+g3siDAAAAAQ==",
+          "liveUntilBefore": 6416645,
+          "beforeAbout": "2026-12-24T10:07:47.000Z",
+          "short": true,
+          "liveUntilAfter": 6703115,
+          "afterAbout": "2027-01-10T00:00:17.000Z"
+        }
+      ],
+      "tx": {
+        "hash": "e087e47d19a0a7110a3a8ef3b12baa829ac06e4cd2fcfea728e1544d45d27014",
+        "url": "https://stellar.expert/explorer/testnet/tx/e087e47d19a0a7110a3a8ef3b12baa829ac06e4cd2fcfea728e1544d45d27014",
+        "ledger": 5907537,
+        "source": "GCL26LKHD5VCC5XC7GMF3DN7GTDWX55ZDNJJJYZ45PJTH4KUY7ZST4NJ",
+        "extendTo": 795578,
+        "simulatedFeeStroops": "120320937",
+        "maxFeeStroops": "120321516",
+        "feeChargedStroops": "104624404"
+      }
     }
   ]
 }

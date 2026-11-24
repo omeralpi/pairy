@@ -1,18 +1,23 @@
-// Keeps the Trustless Work storage that every protected-trade escrow shares
-// alive on testnet until after the 16 Dec 2026 reset (O-21; WP-14's C-1).
-// Without it the factory's instance and the escrow code are archived on
-// 2026-11-28, and restoring them inside an escrow call would cost about
-// 8.7 XLM, above the 2 XLM Pairy lets an escrow transaction cost (O-18).
+// Keeps alive on testnet, past day 30 (2026-12-23) with margin, the Trustless
+// Work storage that every protected-trade escrow shares (O-21; WP-14's C-1)
+// and the escrows the evidence links (O-46, WP-47). SDF cancelled the 16 Dec
+// 2026 testnet reset (O-46), so storage rent, not a reset, is what ends them.
+// Once the factory's instance and the escrow code are archived, restoring them
+// inside an escrow call costs about 8.7 XLM, above the 2 XLM Pairy lets an
+// escrow transaction cost (O-18). An escrow's own instance and ["Escrow"] entry
+// archive about 7 days after its deploy, and the day-30 checks open the
+// evidence escrows on Trustless Work's viewer.
 //
 // Which entries: the Soroban entries in the footprints of the deploy, fund,
 // release, dispute and resolve calls Trustless Work prepared
 // (tests/fixtures/tw) that serve more than one escrow, plus the pinned factory,
 // escrow code and USDC contract (lib/escrow/config.ts) and the EURC contract's
-// instance. An escrow's own entries are left to its trade (WP-14's decision in
-// docs/phase2-gates.md).
+// instance; and each EVIDENCE_ESCROWS escrow's instance, ["Escrow"] entry and
+// USDC balance entry (extend-targets.ts). Any other escrow's own entries are
+// left to its trade (WP-14's decision in docs/phase2-gates.md).
 //
 // Prints each entry's liveUntilLedgerSeq and simulates one ExtendFootprintTTL
-// for those that expire before TARGET (2026-12-17 00:00 UTC plus a day's
+// for those that expire before TARGET (2027-01-10 00:00 UTC, day 30 plus
 // margin). Changes nothing unless --apply is given. With --apply, a fresh
 // Friendbot account whose key exists only in memory signs and sends it, if the
 // fee is at most 20 XLM; every entry is then read back. Extending a TTL is
@@ -46,9 +51,8 @@ import { explorerAccountUrl, explorerTxUrl, soroban } from "../../lib/stellar/ho
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
 import { freshAccount, latestLedger, signAndSubmit, sourceAccount, txRecord } from "../../tests/integration/testnet";
 import { readOut, writeOut } from "../evidence/record";
+import { EVIDENCE_ESCROWS, TARGET, escrowEntries, instanceOf } from "./extend-targets";
 
-/** 2026-12-17 00:00 UTC, the day after the reset, plus one day's margin. */
-const TARGET = new Date("2026-12-18T00:00:00Z");
 const LEDGER_SECONDS = 5;
 const MAX_FEE_STROOPS = 200_000_000n; // 20 XLM
 /** Circle's testnet EURC (home domain circle.com). lib/stellar/assets.ts brings it to this branch with merge M2. */
@@ -61,16 +65,9 @@ const NAMES: Record<string, string> = {
   ...(TW_FACTORY_CONTRACT_ID ? { [TW_FACTORY_CONTRACT_ID]: "factory" } : {}),
   [USDC_SAC]: "USDC contract",
   [EURC_SAC]: "EURC contract",
+  ...Object.fromEntries(EVIDENCE_ESCROWS.map((id) => [id, `escrow ${id}`])),
 };
 
-const instanceOf = (contractId: string) =>
-  xdr.LedgerKey.contractData(
-    new xdr.LedgerKeyContractData({
-      contract: Address.fromString(contractId).toScAddress(),
-      key: xdr.ScVal.scvLedgerKeyContractInstance(),
-      durability: xdr.ContractDataDurability.persistent,
-    }),
-  );
 const codeOf = (wasmHashHex: string) =>
   xdr.LedgerKey.contractCode(new xdr.LedgerKeyContractCode({ hash: Buffer.from(wasmHashHex, "hex") }));
 
@@ -132,7 +129,7 @@ function candidates(): xdr.LedgerKey[] {
     instanceOf(USDC_SAC),
     instanceOf(EURC_SAC),
   ];
-  const byId = new Map([...pinned, ...sharedFromRecordedCalls()].map((k) => [k.toXDR("base64"), k] as const));
+  const byId = new Map([...pinned, ...sharedFromRecordedCalls(), ...EVIDENCE_ESCROWS.flatMap(escrowEntries)].map((k) => [k.toXDR("base64"), k] as const));
   return [...byId.values()];
 }
 
@@ -183,7 +180,7 @@ async function main() {
 
   const short = keys.filter((_, i) => entries[i].short);
   if (!short.length) {
-    console.log("Nothing to extend: every shared entry lives past the target.");
+    console.log("Nothing to extend: every entry lives past the target.");
     if (apply) appendRun({ at: new Date().toISOString(), targetLedger, target: TARGET.toISOString(), entries, tx: null });
     return;
   }
@@ -236,7 +233,7 @@ async function main() {
   console.log(`  paid by ${explorerAccountUrl(kp.publicKey())} (Friendbot; its key was never written down)`);
 }
 
-/** Earlier runs are kept (WP-46 runs this again after the reset). */
+/** Earlier runs are kept (WP-46 runs this again if a testnet reset is announced, O-46). */
 function appendRun(run: unknown) {
   const out = readOut<{ runs: unknown[] }>(OUT) ?? { runs: [] };
   out.runs.push(run);
