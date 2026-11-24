@@ -1,0 +1,626 @@
+{
+  "note": "F-03. Two resolves prepared back to back get the same arbiter sequence. The first one was rebuilt to a 30 min window and signed by both; the second was submitted first. The stale one is refused at submission (no ledger, no fee). Then the stale envelope was rebuilt locally with the next sequence, re-signed by both and landed.",
+  "arbiter": {
+    "account": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+    "signer1": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+    "signer2": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+    "setOptionsTx": "25225dc0f25aeb3068972a9c615e3d84b3f8b831947ade742b4caf58fd39a275",
+    "setOptionsUrl": "https://stellar.expert/explorer/testnet/tx/25225dc0f25aeb3068972a9c615e3d84b3f8b831947ade742b4caf58fd39a275",
+    "sequence": "25288093128982532",
+    "thresholds": {
+      "low_threshold": 2,
+      "med_threshold": 2,
+      "high_threshold": 2
+    },
+    "signers": [
+      {
+        "key": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+        "weight": 1,
+        "type": "ed25519_public_key"
+      },
+      {
+        "key": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+        "weight": 1,
+        "type": "ed25519_public_key"
+      },
+      {
+        "key": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+        "weight": 0,
+        "type": "ed25519_public_key"
+      }
+    ]
+  },
+  "sameSequenceForBoth": true,
+  "stale": {
+    "escrow": {
+      "label": "seq-stale",
+      "contractId": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "buyer",
+      "txs": {
+        "deploy": "8bf5b04137a944ad5508f0ca1a5b0550c3a9467916af3dbd1ee09f3d7bec907c",
+        "fund": "19c75afdc8d3ae906fa130ebb3677c13986a8f2da36973b7eda495bdb5122e2b",
+        "dispute": "fa1d47f3afbb2773bdca47cde70ffbce94080f07cd9221c6205a62526cb6bd6f",
+        "resolve": "645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c"
+      }
+    },
+    "endpoint": "resolve",
+    "request": {
+      "method": "POST",
+      "path": "/escrow/single-release/v2/resolve-dispute",
+      "apiKeyHeader": true,
+      "body": {
+        "contractId": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+        "disputeResolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+        "distributions": [
+          {
+            "address": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+            "amount": 5
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "body": {
+        "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThIAWddjAAAAAwAAAAEAAAAAAAAAAAAAAABrBJh+AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABRQzEDpleYp+rwP9HPBgnK1gKHorM7ampas4YGjBzl+cAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAALup14wF4//N9b9IxqTjEqmlaLZ5RsVq5fkz3Rh2dJ34AAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAFFDMQOmV5in6vA/0c8GCcrWAoeisztqalqzhgaMHOX5wAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAAAu6nXjAXj/831v0jGpOMSqaVotnlGxWrl+TPdGHZ0nfgAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABRQzEDpleYp+rwP9HPBgnK1gKHorM7ampas4YGjBzl+cAAAAUAAAAAQAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAC7qdeMBeP/zfW/SMak4xKppWi2eUbFauX5M90YdnSd+AAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAEAAAAAEAAAABAAAADwAAAAZFc2Nyb3cAAAAAAAEAAAAGAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAEAAAAAEAAAABAAAADwAAAApSZWVudHJhbmN5AAAAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAAQAa1UoAAADoAAAHjAAAAAAAAE2uAAAAAA==",
+        "txHash": "37c68a88dc3b09c82e20b206d1482f9521dc6076bbfb08496d1670050eff9c48"
+      }
+    },
+    "ms": 595,
+    "at": "2026-11-23T19:43:14.414Z",
+    "decoded": {
+      "envelopeType": "envelopeTypeTx",
+      "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "sequence": "25288093128982531",
+      "feeStroops": "19986",
+      "resourceFeeStroops": "19886",
+      "footprint": {
+        "readOnly": 3,
+        "readWrite": 5
+      },
+      "timeBounds": {
+        "minTime": "0",
+        "maxTime": "1795463294"
+      },
+      "validitySecondsFromPrepare": 299,
+      "memo": "none",
+      "signatures": 0,
+      "operations": [
+        {
+          "type": "invokeHostFunction",
+          "source": null,
+          "hostFunction": {
+            "type": "hostFunctionTypeInvokeContract",
+            "contract": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+            "function": "resolve_dispute",
+            "args": [
+              "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+              "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+              {
+                "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN": "50000000"
+              }
+            ]
+          },
+          "auth": [
+            {
+              "credentials": {
+                "type": "sourceAccount"
+              },
+              "rootInvocation": {
+                "type": "execute",
+                "args": {
+                  "source": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+                  "function": "resolve_dispute",
+                  "args": [
+                    "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+                    "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                    {
+                      "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN": "50000000"
+                    }
+                  ]
+                },
+                "invocations": []
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "checks": {
+      "function": "resolve_dispute",
+      "sourceIsArbiter": true,
+      "resolverArgIsArbiter": true,
+      "seqIsArbiterPlusOne": true,
+      "sacBalanceStroops": "50000000",
+      "distributionEqualsSacBalance": true,
+      "authCredentials": [
+        "sourceAccount"
+      ],
+      "validitySecondsFromPrepare": 299
+    },
+    "rebuilt30m": {
+      "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThIAWddjAAAAAwAAAAEAAAAAAAAAAAAAAABrBJ5bAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABRQzEDpleYp+rwP9HPBgnK1gKHorM7ampas4YGjBzl+cAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAALup14wF4//N9b9IxqTjEqmlaLZ5RsVq5fkz3Rh2dJ34AAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAFFDMQOmV5in6vA/0c8GCcrWAoeisztqalqzhgaMHOX5wAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAAAu6nXjAXj/831v0jGpOMSqaVotnlGxWrl+TPdGHZ0nfgAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABRQzEDpleYp+rwP9HPBgnK1gKHorM7ampas4YGjBzl+cAAAAUAAAAAQAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAC7qdeMBeP/zfW/SMak4xKppWi2eUbFauX5M90YdnSd+AAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAEAAAAAEAAAABAAAADwAAAAZFc2Nyb3cAAAAAAAEAAAAGAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAEAAAAAEAAAABAAAADwAAAApSZWVudHJhbmN5AAAAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAAQAa1UoAAADoAAAHjAAAAAAAAE2uAAAAAA==",
+      "compare": {
+        "operationsIdentical": true,
+        "hostFunctionIdentical": true,
+        "authEntriesIdentical": true,
+        "authEntries": 1,
+        "sorobanDataIdentical": true,
+        "sorobanResourcesIdentical": true,
+        "resourceFee": {
+          "before": "19886",
+          "after": "19886"
+        },
+        "sourceIdentical": true,
+        "memoIdentical": true,
+        "fee": {
+          "before": 19986,
+          "after": 19986
+        },
+        "seqNum": {
+          "before": "25288093128982531",
+          "after": "25288093128982531"
+        },
+        "timeBounds": {
+          "before": {
+            "minTime": "0",
+            "maxTime": "1795463294"
+          },
+          "after": {
+            "minTime": "0",
+            "maxTime": "1795464795"
+          }
+        },
+        "sha256": {
+          "operations": [
+            "a8e42be4d6099f7d427cd8c13b928d18c3b5953615a514f554796dac9777fa44",
+            "a8e42be4d6099f7d427cd8c13b928d18c3b5953615a514f554796dac9777fa44"
+          ],
+          "authEntries": [
+            "87a5e2029fcb3fb3af8792b698a98f92e68f338ebd16b04bfbc5241ebad38ed9",
+            "87a5e2029fcb3fb3af8792b698a98f92e68f338ebd16b04bfbc5241ebad38ed9"
+          ],
+          "sorobanData": [
+            "b41d8879be026da38bcc31d02a0836b61706d23b5a38ac3d2bc04cd59ae4b809",
+            "b41d8879be026da38bcc31d02a0836b61706d23b5a38ac3d2bc04cd59ae4b809"
+          ]
+        },
+        "envelopeBytes": [
+          1156,
+          1156
+        ],
+        "differingByteRanges": [
+          "70-71"
+        ],
+        "txHash": [
+          "37c68a88dc3b09c82e20b206d1482f9521dc6076bbfb08496d1670050eff9c48",
+          "092cb49f297fd3f07a712c3a62033c6617bd4847f44d569715906b3ecfc30f7f"
+        ]
+      }
+    },
+    "submit": {
+      "what": "seq-stale after the sequence moved",
+      "ok": false,
+      "hash": "092cb49f297fd3f07a712c3a62033c6617bd4847f44d569715906b3ecfc30f7f",
+      "at": "2026-11-23T19:43:18.766Z",
+      "maxTime": "1795464795",
+      "signatures": 2,
+      "codes": [
+        "tx_bad_seq"
+      ],
+      "resultXdr": "AAAAAAAAThL////7AAAAAA==",
+      "inLedger": false,
+      "url": null
+    }
+  },
+  "mover": {
+    "escrow": {
+      "label": "seq-mover",
+      "contractId": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "seller",
+      "txs": {
+        "deploy": "636997818d0d567c3875c0960b43b408f4bc8c2d9562560c1812b8867b62fcf7",
+        "fund": "633b76bc813411a6c34691abdcadbb03228a46b355290b0d643f8bfae0067a8a",
+        "dispute": "1e512c7ed4d272e75c3333d89f2a1c5bafb470657e594fbb06d800eb21d102bf",
+        "resolve": "cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a"
+      }
+    },
+    "endpoint": "resolve",
+    "request": {
+      "method": "POST",
+      "path": "/escrow/single-release/v2/resolve-dispute",
+      "apiKeyHeader": true,
+      "body": {
+        "contractId": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+        "disputeResolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+        "distributions": [
+          {
+            "address": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+            "amount": 5
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "body": {
+        "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThQAWddjAAAAAwAAAAEAAAAAAAAAAAAAAABrBJh/AAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABueH6Sz+fGV/yhsgRq9npWjc05/+apbUCWKqJLGF8vsoAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAAy/rpawWrB/6nyHPAWhtqCelXSMPiWWQ3O23ZTTFYQqkAAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAG54fpLP58ZX/KGyBGr2elaNzTn/5qltQJYqoksYXy+ygAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAADL+ulrBasH/qfIc8BaG2oJ6VdIw+JZZDc7bdlNMVhCqQAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAYAAAABueH6Sz+fGV/yhsgRq9npWjc05/+apbUCWKqJLGF8vsoAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMv66WsFqwf+p8hzwFobagnpV0jD4llkNztt2U0xWEKpAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAVBFzV7Acpp2j9WtAlBYUt9PAo3Ogw5axSIJukhIOy8BAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABueH6Sz+fGV/yhsgRq9npWjc05/+apbUCWKqJLGF8vsoAAAABAAAABgAAAAG54fpLP58ZX/KGyBGr2elaNzTn/5qltQJYqoksYXy+ygAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAABAAAABgAAAAG54fpLP58ZX/KGyBGr2elaNzTn/5qltQJYqoksYXy+ygAAABAAAAABAAAAAQAAAA8AAAAKUmVlbnRyYW5jeQAAAAAAAQAa6HQAAADoAAAHjAAAAAAAAE2wAAAAAA==",
+        "txHash": "cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a"
+      }
+    },
+    "ms": 339,
+    "at": "2026-11-23T19:43:15.388Z",
+    "decoded": {
+      "envelopeType": "envelopeTypeTx",
+      "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "sequence": "25288093128982531",
+      "feeStroops": "19988",
+      "resourceFeeStroops": "19888",
+      "footprint": {
+        "readOnly": 3,
+        "readWrite": 5
+      },
+      "timeBounds": {
+        "minTime": "0",
+        "maxTime": "1795463295"
+      },
+      "validitySecondsFromPrepare": 300,
+      "memo": "none",
+      "signatures": 0,
+      "operations": [
+        {
+          "type": "invokeHostFunction",
+          "source": null,
+          "hostFunction": {
+            "type": "hostFunctionTypeInvokeContract",
+            "contract": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+            "function": "resolve_dispute",
+            "args": [
+              "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+              "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+              {
+                "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K": "50000000"
+              }
+            ]
+          },
+          "auth": [
+            {
+              "credentials": {
+                "type": "sourceAccount"
+              },
+              "rootInvocation": {
+                "type": "execute",
+                "args": {
+                  "source": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+                  "function": "resolve_dispute",
+                  "args": [
+                    "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+                    "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                    {
+                      "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K": "50000000"
+                    }
+                  ]
+                },
+                "invocations": []
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "checks": {
+      "function": "resolve_dispute",
+      "sourceIsArbiter": true,
+      "resolverArgIsArbiter": true,
+      "seqIsArbiterPlusOne": true,
+      "sacBalanceStroops": "50000000",
+      "distributionEqualsSacBalance": true,
+      "authCredentials": [
+        "sourceAccount"
+      ],
+      "validitySecondsFromPrepare": 300
+    },
+    "submit": {
+      "what": "seq-mover (moves the arbiter sequence)",
+      "ok": true,
+      "hash": "cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a",
+      "url": "https://stellar.expert/explorer/testnet/tx/cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a",
+      "at": "2026-11-23T19:43:15.737Z",
+      "maxTime": "1795463295",
+      "signatures": 2,
+      "ledger": 5887871
+    },
+    "distribution": {
+      "distributionAsPrepared": true,
+      "checks": {
+        "recipient": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+        "toRecipient": [
+          "4.9850000"
+        ],
+        "toRecipientExpected": "4.9850000",
+        "toTwFeeAddress": [
+          "0.0150000"
+        ],
+        "toTwFeeAddressExpected": "0.0150000",
+        "otherTransfers": [],
+        "escrowSacBalanceAfter": "0"
+      },
+      "onChain": {
+        "hash": "cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a",
+        "url": "https://stellar.expert/explorer/testnet/tx/cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a",
+        "successful": true,
+        "ledger": 5887871,
+        "closedAt": "2026-11-23T19:43:17Z",
+        "feeChargedStroops": "15003",
+        "maxFeeStroops": "19988",
+        "envelopeSignatures": 2,
+        "horizonRecordHasResultMetaXdr": false,
+        "horizonOperation": [
+          {
+            "type": "invoke_host_function",
+            "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+            "assetBalanceChanges": [
+              {
+                "asset_type": "credit_alphanum4",
+                "asset_code": "USDC",
+                "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+                "type": "transfer",
+                "from": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+                "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                "amount": "0.0150000"
+              },
+              {
+                "asset_type": "credit_alphanum4",
+                "asset_code": "USDC",
+                "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+                "type": "transfer",
+                "from": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+                "to": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                "amount": "4.9850000"
+              }
+            ],
+            "address": "",
+            "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+          }
+        ],
+        "rpc": {
+          "status": "SUCCESS",
+          "returnValue": null,
+          "contractEvents": [
+            {
+              "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+              "type": "contract",
+              "topics": [
+                "transfer",
+                "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+                "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+              ],
+              "data": "150000"
+            },
+            {
+              "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+              "type": "contract",
+              "topics": [
+                "transfer",
+                "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+                "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+              ],
+              "data": "49850000"
+            },
+            {
+              "contractId": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+              "type": "contract",
+              "topics": [
+                "tw_disp_resolve",
+                "pairy-s19-seq-mover-1795462902636"
+              ],
+              "data": {
+                "dispute_resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+                "distributions": [
+                  {
+                    "address": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                    "amount": "49850000"
+                  }
+                ],
+                "platform_fee": "0",
+                "trustless_work_fee": "150000"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "recovery": {
+    "arbiterSequenceAtRecovery": "25288093128982531",
+    "unsignedXdr": "AAAAAgAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAThIAWddjAAAABAAAAAEAAAAAAAAAAAAAAABrBJ5bAAAAAAAAAAEAAAAAAAAAGAAAAAAAAAABRQzEDpleYp+rwP9HPBgnK1gKHorM7ampas4YGjBzl+cAAAAPcmVzb2x2ZV9kaXNwdXRlAAAAAAMAAAASAAAAAAAAAACV18u3wsNMUhbLwPWbPHYZvtGojVAfQEidhLCkfJS2lQAAABIAAAAAAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAEQAAAAEAAAABAAAAEgAAAAAAAAAALup14wF4//N9b9IxqTjEqmlaLZ5RsVq5fkz3Rh2dJ34AAAAKAAAAAAAAAAAAAAAAAvrwgAAAAAEAAAAAAAAAAAAAAAFFDMQOmV5in6vA/0c8GCcrWAoeisztqalqzhgaMHOX5wAAAA9yZXNvbHZlX2Rpc3B1dGUAAAAAAwAAABIAAAAAAAAAAJXXy7fCw0xSFsvA9Zs8dhm+0aiNUB9ASJ2EsKR8lLaVAAAAEgAAAAAAAAAAxr/zbNydbxm8O4CqdAIH4N34kShu0+Ohl87o6G90jMgAAAARAAAAAQAAAAEAAAASAAAAAAAAAAAu6nXjAXj/831v0jGpOMSqaVotnlGxWrl+TPdGHZ0nfgAAAAoAAAAAAAAAAAAAAAAC+vCAAAAAAAAAAAEAAAAAAAAAAwAAAAYAAAABRQzEDpleYp+rwP9HPBgnK1gKHorM7ampas4YGjBzl+cAAAAUAAAAAQAAAAYAAAABUEXNXsBymnaP1a0CUFhS308Cjc6DDlrFIgm6SEg7LwEAAAAUAAAAAQAAAAcSMYB9AREb7nioRt2s3Qps+It2IRXnD1vOFv+r1mDkfwAAAAUAAAABAAAAAC7qdeMBeP/zfW/SMak4xKppWi2eUbFauX5M90YdnSd+AAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAABAAAAAMa/82zcnW8ZvDuAqnQCB+Dd+JEobtPjoZfO6OhvdIzIAAAAAVVTREMAAAAAQj59BfLsr7/sGSshWj8b6WrtuNjnAlSr40E+AgfeVrIAAAAGAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAEAAAAAEAAAABAAAADwAAAAZFc2Nyb3cAAAAAAAEAAAAGAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAEAAAAAEAAAABAAAADwAAAApSZWVudHJhbmN5AAAAAAABAAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAUUMxA6ZXmKfq8D/RzwYJytYCh6KzO2pqWrOGBowc5fnAAAAAQAa1UoAAADoAAAHjAAAAAAAAE2uAAAAAA==",
+    "compareWithTwPrepared": {
+      "operationsIdentical": true,
+      "hostFunctionIdentical": true,
+      "authEntriesIdentical": true,
+      "authEntries": 1,
+      "sorobanDataIdentical": true,
+      "sorobanResourcesIdentical": true,
+      "resourceFee": {
+        "before": "19886",
+        "after": "19886"
+      },
+      "sourceIdentical": true,
+      "memoIdentical": true,
+      "fee": {
+        "before": 19986,
+        "after": 19986
+      },
+      "seqNum": {
+        "before": "25288093128982531",
+        "after": "25288093128982532"
+      },
+      "timeBounds": {
+        "before": {
+          "minTime": "0",
+          "maxTime": "1795463294"
+        },
+        "after": {
+          "minTime": "0",
+          "maxTime": "1795464795"
+        }
+      },
+      "sha256": {
+        "operations": [
+          "a8e42be4d6099f7d427cd8c13b928d18c3b5953615a514f554796dac9777fa44",
+          "a8e42be4d6099f7d427cd8c13b928d18c3b5953615a514f554796dac9777fa44"
+        ],
+        "authEntries": [
+          "87a5e2029fcb3fb3af8792b698a98f92e68f338ebd16b04bfbc5241ebad38ed9",
+          "87a5e2029fcb3fb3af8792b698a98f92e68f338ebd16b04bfbc5241ebad38ed9"
+        ],
+        "sorobanData": [
+          "b41d8879be026da38bcc31d02a0836b61706d23b5a38ac3d2bc04cd59ae4b809",
+          "b41d8879be026da38bcc31d02a0836b61706d23b5a38ac3d2bc04cd59ae4b809"
+        ]
+      },
+      "envelopeBytes": [
+        1156,
+        1156
+      ],
+      "differingByteRanges": [
+        "51",
+        "70-71"
+      ],
+      "txHash": [
+        "37c68a88dc3b09c82e20b206d1482f9521dc6076bbfb08496d1670050eff9c48",
+        "645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c"
+      ]
+    },
+    "signatures": [
+      {
+        "signer": "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+        "signature": "8T9fph+6O9a34Mur1FU9dglKB3bY2k3z50XMsytM4aLtUeCeJmZeF8wBSjyRki0vVKh0qFs8Vj34u0skzcnoBg==",
+        "signedAt": "2026-11-23T19:43:19.852Z"
+      },
+      {
+        "signer": "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP",
+        "signature": "REvbmiw/yWWB2fDoQV6XIp+cwkUazxuU1CUQ59X12EDusrRPV2RfJXP5GmluC3FTKFPdCytTWKZUQDqkjLllDw==",
+        "signedAt": "2026-11-23T19:43:19.854Z"
+      }
+    ],
+    "submit": {
+      "what": "seq-stale re-sequenced locally",
+      "ok": true,
+      "hash": "645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c",
+      "url": "https://stellar.expert/explorer/testnet/tx/645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c",
+      "at": "2026-11-23T19:43:19.856Z",
+      "maxTime": "1795464795",
+      "signatures": 2,
+      "ledger": 5887872
+    },
+    "distribution": {
+      "distributionAsPrepared": true,
+      "checks": {
+        "recipient": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+        "toRecipient": [
+          "4.9850000"
+        ],
+        "toRecipientExpected": "4.9850000",
+        "toTwFeeAddress": [
+          "0.0150000"
+        ],
+        "toTwFeeAddressExpected": "0.0150000",
+        "otherTransfers": [],
+        "escrowSacBalanceAfter": "0"
+      },
+      "onChain": {
+        "hash": "645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c",
+        "url": "https://stellar.expert/explorer/testnet/tx/645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c",
+        "successful": true,
+        "ledger": 5887872,
+        "closedAt": "2026-11-23T19:43:22Z",
+        "feeChargedStroops": "15001",
+        "maxFeeStroops": "19986",
+        "envelopeSignatures": 2,
+        "horizonRecordHasResultMetaXdr": false,
+        "horizonOperation": [
+          {
+            "type": "invoke_host_function",
+            "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+            "assetBalanceChanges": [
+              {
+                "asset_type": "credit_alphanum4",
+                "asset_code": "USDC",
+                "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+                "type": "transfer",
+                "from": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+                "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                "amount": "0.0150000"
+              },
+              {
+                "asset_type": "credit_alphanum4",
+                "asset_code": "USDC",
+                "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+                "type": "transfer",
+                "from": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+                "to": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+                "amount": "4.9850000"
+              }
+            ],
+            "address": "",
+            "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+          }
+        ],
+        "rpc": {
+          "status": "SUCCESS",
+          "returnValue": null,
+          "contractEvents": [
+            {
+              "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+              "type": "contract",
+              "topics": [
+                "transfer",
+                "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+                "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+              ],
+              "data": "150000"
+            },
+            {
+              "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+              "type": "contract",
+              "topics": [
+                "transfer",
+                "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+                "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+                "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+              ],
+              "data": "49850000"
+            },
+            {
+              "contractId": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+              "type": "contract",
+              "topics": [
+                "tw_disp_resolve",
+                "pairy-s19-seq-stale-1795462887666"
+              ],
+              "data": {
+                "dispute_resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+                "distributions": [
+                  {
+                    "address": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+                    "amount": "49850000"
+                  }
+                ],
+                "platform_fee": "0",
+                "trustless_work_fee": "150000"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
