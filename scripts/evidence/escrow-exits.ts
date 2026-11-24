@@ -299,6 +299,7 @@ async function release(arbiter: Arbiter) {
     releaseSigners: [seller.publicKey],
     disputeResolvers: [resolver],
     serviceProviders: [seller.publicKey],
+    otherRoles: [],
     amountStroops,
     platformFeePercent: 0,
     tokenContract: USDC_SAC,

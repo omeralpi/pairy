@@ -27,6 +27,7 @@ describe("expectedTerms", () => {
       releaseSigners: [SELLER],
       disputeResolvers: [ARBITER_ACCOUNT],
       serviceProviders: [SELLER],
+      otherRoles: [],
       amountStroops: 50_000_000n,
       platformFeePercent: 0,
       tokenContract: USDC_SAC,
@@ -66,6 +67,7 @@ describe("checkEscrowTerms", () => {
     releaseSigners: [STRANGER],
     disputeResolvers: [STRANGER],
     serviceProviders: [BUYER],
+    otherRoles: [`observers ${STRANGER}`],
     amountStroops: 50_000_001n,
     platformFeePercent: 1,
     tokenContract: "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
@@ -110,6 +112,7 @@ describe("checkEscrowTerms", () => {
       "platform",
       "admin",
       "serviceProviders",
+      "otherRoles",
       "amountStroops",
       "tokenContract",
       "milestones",
@@ -142,6 +145,42 @@ describe("termsOfEscrow", () => {
       trustline: { address: USDC_SAC },
     };
     expect(termsOfEscrow(struct)).toEqual(expected);
+  });
+
+  // O-21: Pairy never sets an observer or any role outside the seven above, so one that is set is refused.
+  const gateStruct = (roles: Record<string, unknown>) => ({
+    amount: 50_000_000n,
+    milestones: [{ description: MILESTONE_DESCRIPTION }],
+    platform_fee: 0,
+    roles: {
+      admin: ADMIN,
+      approvers: [SELLER],
+      dispute_resolvers: [ARBITER_ACCOUNT],
+      observers: [],
+      platform: PLATFORM_ACCOUNT,
+      receiver: BUYER,
+      release_signers: [SELLER],
+      service_providers: [SELLER],
+      ...roles,
+    },
+    trustline: { address: USDC_SAC },
+  });
+
+  it("refuses an escrow that names an observer (O-21)", () => {
+    expect(checkEscrowTerms(termsOfEscrow(gateStruct({ observers: [STRANGER] })), expected)).toEqual([
+      {
+        field: "otherRoles",
+        expected: "none",
+        found: `observers ${STRANGER}`,
+        message: `The escrow's roles Pairy never sets are observers ${STRANGER}, not none.`,
+      },
+    ]);
+  });
+
+  it("refuses any other role Pairy never sets, and ignores one left empty (O-21)", () => {
+    const problems = checkEscrowTerms(termsOfEscrow(gateStruct({ arbiters: [STRANGER], guardian: STRANGER, auditors: [] })), expected);
+    expect(problems.map((p) => p.found)).toEqual([`arbiters ${STRANGER}, guardian ${STRANGER}`]);
+    expect(checkEscrowTerms(termsOfEscrow(gateStruct({ auditors: [], note: null })), expected)).toEqual([]);
   });
 
   it("leaves a missing field missing, so the check reports it", () => {

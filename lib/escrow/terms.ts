@@ -17,6 +17,8 @@ export type EscrowTerms = {
   releaseSigners: string[];
   disputeResolvers: string[];
   serviceProviders: string[];
+  /** Every other role the escrow gives someone, as "role holders" (O-21: Pairy sets none, so this must be empty). */
+  otherRoles: string[];
   amountStroops: bigint;
   platformFeePercent: number;
   tokenContract: string;
@@ -47,6 +49,7 @@ export function expectedTerms(
     releaseSigners: [t.seller],
     disputeResolvers: [opts?.resolver ?? ARBITER_ACCOUNT],
     serviceProviders: [SERVICE_PROVIDER_ROLE === "seller" ? t.seller : t.buyer],
+    otherRoles: [],
     amountStroops: toStroops(t.amount),
     platformFeePercent: 0,
     tokenContract: USDC_SAC,
@@ -67,6 +70,7 @@ const LABEL: Record<keyof EscrowTerms, string> = {
   platform: "platform",
   admin: "admin",
   serviceProviders: "service providers",
+  otherRoles: "roles Pairy never sets",
   amountStroops: "amount",
   tokenContract: "token",
   milestones: "milestones",
@@ -92,6 +96,11 @@ export function checkEscrowTerms(found: EscrowTerms, expected: EscrowTerms): Ter
     });
 }
 
+/** The roles Pairy sets. Any other role in the struct, observers included, must be empty (O-21). */
+const PAIRY_ROLES = ["admin", "approvers", "dispute_resolvers", "platform", "receiver", "release_signers", "service_providers"];
+
+const isEmpty = (v: unknown) => v === null || v === undefined || (Array.isArray(v) && v.length === 0);
+
 /**
  * The terms in the contract's own escrow struct, as scValToNative decodes it
  * (snake_case roles, the amount as a bigint). A field the struct lacks stays
@@ -109,6 +118,9 @@ export function termsOfEscrow(struct: unknown): EscrowTerms {
     releaseSigners: roles.release_signers,
     disputeResolvers: roles.dispute_resolvers,
     serviceProviders: roles.service_providers,
+    otherRoles: Object.entries(roles)
+      .filter(([role, holders]) => !PAIRY_ROLES.includes(role) && !isEmpty(holders))
+      .map(([role, holders]) => `${role} ${Array.isArray(holders) ? holders.join(", ") : String(holders)}`),
     amountStroops: s.amount,
     platformFeePercent: s.platform_fee,
     tokenContract: s.trustline?.address,

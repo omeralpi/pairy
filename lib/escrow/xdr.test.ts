@@ -49,6 +49,7 @@ function terms(admin: string, amountStroops: bigint): EscrowTerms {
     releaseSigners: [SELLER],
     disputeResolvers: [RESOLVER],
     serviceProviders: [SELLER],
+    otherRoles: [],
     amountStroops,
     platformFeePercent: 0,
     tokenContract: USDC_SAC,
@@ -325,6 +326,11 @@ describe("validateEscrowCall", () => {
       refused(check("fund", d), new RegExp(`dispute resolvers are ${STRANGER}, not ${RESOLVER}`));
     });
 
+    it("refuses an expected_escrow that names an observer (O-21)", () => {
+      const d = mutated("fund", (tx) => calls(tx).forEach((c) => field(field(c.args[1], "roles"), "observers").vec.push(address(STRANGER))));
+      refused(check("fund", d), new RegExp(`roles Pairy never sets are observers ${STRANGER}, not none`));
+    });
+
     it("refuses an escrow that is already released", () => {
       const d = mutated("fund", (tx) => calls(tx).forEach((c) => setField(c.args[1], "released", scv(true))));
       refused(check("fund", d), /already marked released/);
@@ -554,6 +560,7 @@ describe("the Gate D2 release (WP-11): Pairy's own platform and arbiter, and the
       releaseSigners: [seller],
       disputeResolvers: [ARBITER_ACCOUNT],
       serviceProviders: [seller],
+      otherRoles: [],
       amountStroops,
       platformFeePercent: 0,
       tokenContract: USDC_SAC,

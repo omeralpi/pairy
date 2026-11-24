@@ -82,6 +82,7 @@ describe("readEscrow", () => {
       releaseSigners: [GATE.seller],
       disputeResolvers: [ARBITER_ACCOUNT],
       serviceProviders: [GATE.seller],
+      otherRoles: [],
       amountStroops: 50_000_000n,
       platformFeePercent: 0,
       tokenContract: USDC_SAC,
