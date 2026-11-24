@@ -248,7 +248,9 @@ describe("privySignTransaction: Pairy's dialog before every Privy signature (DEC
   it("asks the dialog first, describes the transaction, and hands Privy the hash only on Sign", async () => {
     const { calls, state } = fakeAdapter({ address: kp.publicKey() });
     const dialog = fakePrompt();
-    const signing = privySignTransaction(state, kp.publicKey(), xdr(), undefined, dialog.prompt);
+    // Built once: the claim transaction's time bounds come from the clock.
+    const unsigned = xdr();
+    const signing = privySignTransaction(state, kp.publicKey(), unsigned, undefined, dialog.prompt);
     await dialog.opened;
     expect(calls).toEqual([]);
     expect(dialog.asked).toEqual([
@@ -260,7 +262,7 @@ describe("privySignTransaction: Pairy's dialog before every Privy signature (DEC
     expect(calls).toEqual(["sign"]);
     expect((TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET) as Transaction).signatures).toHaveLength(1);
     // ed25519 is deterministic: the SDK's own signing with the same key gives the same envelope.
-    const expected = TransactionBuilder.fromXDR(xdr(), Networks.TESTNET) as Transaction;
+    const expected = TransactionBuilder.fromXDR(unsigned, Networks.TESTNET) as Transaction;
     expected.sign(kp);
     expect(signedXdr).toBe(expected.toXDR());
   });
