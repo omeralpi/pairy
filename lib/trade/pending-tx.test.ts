@@ -28,7 +28,7 @@ const blocked = {
 } as unknown as Storage;
 
 const HASH = "ab".repeat(32);
-const trade = { state: "agreed", lockTx: null, claimTx: null, reclaimTx: null, createTx: null, fundTx: null, releaseTx: null };
+const trade = { state: "agreed", lockTx: null, claimTx: null, reclaimTx: null, createTx: null, fundTx: null, releaseTx: null, disputeTx: null };
 
 describe("pending tx store (Q-1, Q-2)", () => {
   it("keeps a signed hash per trade until it is cleared", () => {
@@ -91,5 +91,21 @@ describe("pending tx store (Q-1, Q-2)", () => {
     const funded = { ...trade, state: "funded", createTx: HASH, fundTx: HASH };
     expect(pendingTxAction(funded, release)).toBe("record");
     expect(pendingTxAction({ ...funded, state: "released", releaseTx: HASH }, release)).toBe("clear");
+  });
+
+  it("keeps a dispute's hash too, and reports it only while the funded escrow has no dispute recorded (WP-37)", () => {
+    const s = new MemoryStorage() as unknown as Storage;
+    savePendingTx("t1", { kind: "dispute", hash: HASH }, s, 1000);
+    expect(readPendingTx("t1", s)).toEqual({ kind: "dispute", hash: HASH, savedAt: 1000 });
+
+    const dispute = { kind: "dispute" as const, hash: HASH, savedAt: 0 };
+    const funded = { ...trade, state: "funded", createTx: HASH, fundTx: HASH };
+    expect(pendingTxAction(funded, dispute)).toBe("record");
+    // Recorded already, by this browser, the other trader's or the sync: this one or the other side's.
+    expect(pendingTxAction({ ...funded, disputeTx: HASH }, dispute)).toBe("clear");
+    expect(pendingTxAction({ ...funded, disputeTx: "cd".repeat(32) }, dispute)).toBe("clear");
+    // Settled meanwhile: a release that landed first, or the arbiter's resolution.
+    expect(pendingTxAction({ ...funded, state: "released", releaseTx: HASH }, dispute)).toBe("clear");
+    expect(pendingTxAction({ ...funded, state: "resolved_seller", disputeTx: HASH }, dispute)).toBe("clear");
   });
 });

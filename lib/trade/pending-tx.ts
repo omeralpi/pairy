@@ -1,10 +1,10 @@
-// A signed lock or claim, or a protected trade's escrow creation, fund or
-// release, whose hash Pairy has not recorded yet, kept in this browser so a
-// reload, a closed tab or a failed request does not lose it. The hash is
-// public data; no key or signature is stored. Every storage access is
+// A signed lock or claim, or a protected trade's escrow creation, fund,
+// release or dispute, whose hash Pairy has not recorded yet, kept in this
+// browser so a reload, a closed tab or a failed request does not lose it. The
+// hash is public data; no key or signature is stored. Every storage access is
 // guarded: blocked storage (private mode, some WebViews) just means no retry.
 
-const KINDS = ["lock", "claim", "create", "fund", "release"] as const;
+const KINDS = ["lock", "claim", "create", "fund", "release", "dispute"] as const;
 
 export type PendingTx = { kind: (typeof KINDS)[number]; hash: string; savedAt: number };
 
@@ -84,6 +84,7 @@ export function pendingTxAction(
     createTx: string | null;
     fundTx: string | null;
     releaseTx: string | null;
+    disputeTx: string | null;
   },
   pending: PendingTx,
 ): "record" | "clear" {
@@ -102,5 +103,8 @@ export function pendingTxAction(
         : "clear";
     case "release":
       return trade.state === "funded" && trade.releaseTx === null ? "record" : "clear";
+    // An escrow has one dispute: once any is recorded (this one, the other trader's, or found by sync), drop it.
+    case "dispute":
+      return trade.state === "funded" && trade.disputeTx === null ? "record" : "clear";
   }
 }

@@ -59,6 +59,7 @@ export function useTradeSync(trade: TradeView) {
   const { mutateAsync: recordCreate } = api.escrow.recordCreate.useMutation();
   const { mutateAsync: recordFund } = api.escrow.recordFund.useMutation();
   const { mutateAsync: recordRelease } = api.escrow.recordRelease.useMutation();
+  const { mutateAsync: recordDispute } = api.escrow.recordDispute.useMutation();
   const { id } = trade;
   const active = needsSync(trade, Date.now(), readPendingTx(id)?.kind === "lock");
 
@@ -83,9 +84,14 @@ export function useTradeSync(trade: TradeView) {
           clearPendingTx(id);
         } else {
           try {
-            const report = { lock: recordLock, claim: recordClaim, create: recordCreate, fund: recordFund, release: recordRelease }[
-              pending.kind
-            ];
+            const report = {
+              lock: recordLock,
+              claim: recordClaim,
+              create: recordCreate,
+              fund: recordFund,
+              release: recordRelease,
+              dispute: recordDispute,
+            }[pending.kind];
             await report({ tradeId: id, txHash: pending.hash });
             clearPendingTx(id);
           } catch {
@@ -109,5 +115,5 @@ export function useTradeSync(trade: TradeView) {
       clearInterval(timer);
       clearTimeout(first);
     };
-  }, [active, id, utils, sync, recordLock, recordClaim, recordCreate, recordFund, recordRelease]);
+  }, [active, id, utils, sync, recordLock, recordClaim, recordCreate, recordFund, recordRelease, recordDispute]);
 }

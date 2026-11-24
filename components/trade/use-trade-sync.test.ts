@@ -172,6 +172,44 @@ describe("useTradeSync after a reload (WP-34)", () => {
     ]);
   });
 
+  it("reports the dispute this browser sent through escrow.recordDispute, then syncs (WP-37)", async () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    const trade = {
+      id: ID,
+      mode: "protected",
+      state: "funded",
+      disputed: false,
+      escrowAdmin: "GADMIN",
+      balanceId: null,
+      lockTx: null,
+      claimTx: null,
+      reclaimTx: null,
+      createTx: "c".repeat(64),
+      fundTx: "f".repeat(64),
+      releaseTx: null,
+      disputeTx: null,
+      events: [],
+    };
+    byId.data = trade;
+    savePendingTx(ID, { kind: "dispute", hash: HASH });
+
+    useTradeSync(trade as never);
+    const stop = effects[0]();
+    await vi.waitFor(() => expect(calls.map((c) => c.path)).toContain("trade.sync"));
+    if (typeof stop === "function") stop();
+
+    expect(calls).toEqual([
+      { path: "escrow.recordDispute", input: { tradeId: ID, txHash: HASH } },
+      { path: "trade.sync", input: { tradeId: ID } },
+    ]);
+    expect(readPendingTx(ID)).toBeNull();
+  });
+
   it("reports a kept hash once when React mounts the room twice (development's StrictMode)", async () => {
     const store = new Map<string, string>();
     vi.stubGlobal("localStorage", {
