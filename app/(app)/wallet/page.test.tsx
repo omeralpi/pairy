@@ -50,6 +50,10 @@ describe("WalletPage for a Privy wallet", () => {
       "Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy holds it in two pieces. Whoever controls that email or Google account controls this wallet.",
     );
     expect(html).toContain("a…@example.com");
+    // Privy's SDK copies its login token into a cookie the browser sends to Pairy's server, so the
+    // panel may promise only what Pairy's code does with it: nothing (O-43, as README says).
+    expect(html).toContain("Pairy never reads or stores this login; it knows this wallet only by its Stellar address.");
+    expect(html).not.toMatch(/server never receives this|only the Stellar address is sent/);
   });
 
   it("offers Export key through Privy's own screen, with the Varial note, and no device backup", () => {

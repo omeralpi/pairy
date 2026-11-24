@@ -63,5 +63,5 @@ Never: counterparty, liquidity, on-ramp, gas, Web3, DeFi, degen, moon.
 These are SOW evidence and must stay explicit, just in plain words:
 
 - **The lock screen states the bound:** once the seller locks, the buyer can claim at any moment in the next 72 hours whether or not the cash has changed hands; lock only when you are both at the meeting point.
-- **Honesty about status:** testnet only, no real money, Pairy's server holds no signing key and never signs or sends a transaction; in a protected trade the arbiter is named as the Pairy team. Never imply live users, cities "served", volumes or a product in use.
+- **Honesty about status:** testnet only, no real money, Pairy's server holds no Stellar signing key and never signs or sends a transaction; in a protected trade the arbiter is named as the Pairy team. Never imply live users, cities "served", volumes or a product in use.
 - **Proof is always one tap away:** every lock / claim / reclaim shows a receipt link to stellar.expert, set in mono. Technical terms (claimable balance, `BEFORE_RELATIVE_TIME`, CAP-23) may appear only inside a collapsed "How this is enforced" / proof section, never in headlines or buttons.

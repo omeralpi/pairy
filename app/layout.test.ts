@@ -17,7 +17,7 @@ vi.mock("@/components/ui/sonner", () => ({ Toaster: () => null }));
 const { metadata } = await import("./layout");
 const { default: manifest } = await import("./manifest");
 
-const CLAIM = "Pairy's server holds no signing key and never signs or sends a transaction.";
+const CLAIM = "Pairy's server holds no Stellar signing key and never signs or sends a transaction.";
 
 describe("the site description", () => {
   it("says what Pairy's server never does, in the metadata and the manifest", () => {

@@ -312,8 +312,8 @@ function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExp
         </p>
         {loginLabel && (
           <p className="text-sm text-slate">
-            Signed in with <span className="text-ink">{loginLabel}</span>. Pairy&apos;s server never receives this; only the
-            Stellar address is sent.
+            Signed in with <span className="text-ink">{loginLabel}</span>. Pairy never reads or stores this login; it knows this
+            wallet only by its Stellar address.
           </p>
         )}
       </div>
