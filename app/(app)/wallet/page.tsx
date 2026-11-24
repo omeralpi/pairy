@@ -307,8 +307,8 @@ function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExp
         <p className="eyebrow">Recovery</p>
         <h2 className="font-semibold">Recovery is your login.</h2>
         <p className="text-sm text-ink">
-          Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy
-          holds it in two pieces. Whoever controls that email or Google account controls this wallet.
+          Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy says it splits the key
+          and holds it for you. Whoever controls that email or Google account controls this wallet.
         </p>
         {loginLabel && (
           <p className="text-sm text-slate">

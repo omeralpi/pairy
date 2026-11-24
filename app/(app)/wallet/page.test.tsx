@@ -47,8 +47,10 @@ describe("WalletPage for a Privy wallet", () => {
     const html = render({ ...base, wallet: wallet("privy") });
     expect(html).toContain("Recovery is your login.");
     expect(html).toContain(
-      "Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy holds it in two pieces. Whoever controls that email or Google account controls this wallet.",
+      "Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy says it splits the key and holds it for you. Whoever controls that email or Google account controls this wallet.",
     );
+    // Privy's claim, credited to Privy (O-44).
+    expect(html).not.toContain("Privy holds it in two pieces");
     expect(html).toContain("a…@example.com");
     // Privy's SDK copies its login token into a cookie the browser sends to Pairy's server, so the
     // panel may promise only what Pairy's code does with it: nothing (O-43, as README says).

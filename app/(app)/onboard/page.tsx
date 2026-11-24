@@ -152,7 +152,7 @@ export default function OnboardPage() {
                         ? PRIVY_DOWN
                         : PRIVY_STEP_TEXT.login
                 }
-                description="A wallet is made for you and opens again wherever you sign in. The key is split and held by Privy, not by Pairy. Whoever controls that email or Google account controls this wallet."
+                description="A wallet is made for you and opens again wherever you sign in. Privy says it splits the key and holds it for you; Pairy never has it. Whoever controls that email or Google account controls this wallet."
                 disabled={busy || privyWaiting("privy")}
                 onClick={() => run(() => walletCtx.connectPrivy!(setPrivyStep), "/wallet?new=1")}
               />

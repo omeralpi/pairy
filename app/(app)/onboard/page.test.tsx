@@ -70,8 +70,10 @@ describe("OnboardPage: the Privy choice", () => {
     expect(privy).toBeLessThan(device);
     expect(html).toMatch(/New here\? Start here<\/span><span[^>]*>Continue with email or Google/);
     expect(html).toContain(
-      "A wallet is made for you and opens again wherever you sign in. The key is split and held by Privy, not by Pairy. Whoever controls that email or Google account controls this wallet.",
+      "A wallet is made for you and opens again wherever you sign in. Privy says it splits the key and holds it for you; Pairy never has it. Whoever controls that email or Google account controls this wallet.",
     );
+    // How Privy holds the key is Privy's claim, which Pairy cannot check, so it is credited to Privy (O-44).
+    expect(html).not.toContain("The key is split and held by Privy");
     // The headline's old promise now sits only on the choice it is true for.
     expect(html).toMatch(/Make a key on this device<\/span><span[^>]*>Your key stays on this device/);
     expect(html).not.toMatch(/New here\? Start here<\/span><span[^>]*>Make a key on this device/);
