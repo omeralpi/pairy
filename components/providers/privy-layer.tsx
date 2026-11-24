@@ -91,7 +91,13 @@ function AdapterBridge() {
           live.current.login();
         });
       },
-      logout: () => live.current.logout(),
+      logout: async () => {
+        await live.current.logout();
+        // Known here before the next render, as onComplete does for a login,
+        // so a login asked for right after this one opens Privy's modal.
+        live.current.user = null;
+        live.current.authenticated = false;
+      },
       stellarAddress: () => findStellarWallet(live.current.user?.linkedAccounts)?.address ?? null,
       createStellarWallet: async () => {
         // The returned wallet is the API shape (snake_case); only its address is needed here.

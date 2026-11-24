@@ -99,10 +99,50 @@ function livePrivy({ adapter, failed }: PrivyState): PrivyAdapter {
   return adapter;
 }
 
+/**
+ * A Privy logout the user asked for while Privy could not be reached. Pairy
+ * forgot the wallet at once; Privy's own session is ended as soon as Privy is
+ * usable again, and before any session is reused (R2-1). Kept in storage like
+ * the selection, so it survives the reload that usually follows a logout.
+ */
+export type OwedLogout = { owed(): boolean; owe(): void; clear(): void };
+const OWED_LOGOUT_KEY = "pairy:privy-logout";
+const storedOwedLogout: OwedLogout = {
+  owed: () => {
+    try {
+      return localStorage.getItem(OWED_LOGOUT_KEY) !== null;
+    } catch {
+      return false;
+    }
+  },
+  owe: () => localStorage.setItem(OWED_LOGOUT_KEY, "1"),
+  clear: () => localStorage.removeItem(OWED_LOGOUT_KEY),
+};
+
+/** Logs out of Privy when it can be asked; otherwise records that the logout is owed. */
+export async function logoutPrivy(adapter: PrivyAdapter | null, owed: OwedLogout = storedOwedLogout): Promise<void> {
+  if (!adapter?.ready) return owed.owe();
+  try {
+    await adapter.logout();
+  } catch (e) {
+    owed.owe();
+    throw e;
+  }
+}
+
+/** Pays an owed logout before Privy's session is used. True when Privy was logged out just now: the session is gone whatever `adapter` still says. */
+async function settleOwedLogout(adapter: PrivyAdapter, owed: OwedLogout): Promise<boolean> {
+  if (!owed.owed()) return false;
+  const hadSession = adapter.authenticated;
+  if (hadSession) await adapter.logout();
+  owed.clear();
+  return hadSession;
+}
+
 /** The Privy session a signature needs: logged in, and on this wallet's Stellar address. */
-export async function ensurePrivy(state: PrivyState, publicKey: string): Promise<PrivyAdapter> {
+export async function ensurePrivy(state: PrivyState, publicKey: string, owed: OwedLogout = storedOwedLogout): Promise<PrivyAdapter> {
   const adapter = livePrivy(state);
-  if (!adapter.authenticated) await adapter.login();
+  if ((await settleOwedLogout(adapter, owed)) || !adapter.authenticated) await adapter.login();
   if (adapter.stellarAddress() !== publicKey) throw new Error(PRIVY_OTHER_ACCOUNT);
   return adapter;
 }
@@ -114,9 +154,13 @@ export async function ensurePrivy(state: PrivyState, publicKey: string): Promise
  * told when each of those starts, and null when the wallet is connected.
  * Returns the G-address.
  */
-export async function connectPrivyWallet(state: PrivyState, onStep: (step: PrivyStep | null) => void = () => {}): Promise<string> {
+export async function connectPrivyWallet(
+  state: PrivyState,
+  onStep: (step: PrivyStep | null) => void = () => {},
+  owed: OwedLogout = storedOwedLogout,
+): Promise<string> {
   const adapter = livePrivy(state);
-  if (!adapter.authenticated) {
+  if ((await settleOwedLogout(adapter, owed)) || !adapter.authenticated) {
     onStep("login");
     await adapter.login();
   }
@@ -283,6 +327,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [adapter]);
 
+  // A logout owed from a logout made while Privy was down is paid as soon as
+  // Privy can be asked, before anyone clicks (R2-1).
+  useEffect(() => {
+    if (adapter?.ready) settleOwedLogout(adapter, storedOwedLogout).catch((e: unknown) => console.error(e));
+  }, [adapter]);
+
   const select = useCallback((next: Selection | null) => {
     if (next) localStorage.setItem(SELECTION_KEY, JSON.stringify(next));
     else localStorage.removeItem(SELECTION_KEY);
@@ -404,11 +454,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       disconnect: async () => {
         if (selection?.kind === "freighter") await (await freighter()).disconnectFreighter();
-        const privy = selection?.kind === "privy" ? privyRef.current.adapter : null;
+        const wasPrivy = selection?.kind === "privy";
         // The wallet is forgotten first: a Privy that is down or still loading
-        // cannot answer a logout, and must not keep the wallet selected.
+        // cannot answer a logout, and must not keep the wallet selected. Its
+        // session is then ended as soon as it can be asked.
         select(null);
-        if (privy?.ready) await privy.logout();
+        if (wasPrivy) await logoutPrivy(privyRef.current.adapter);
       },
     };
   }, [selection, ready, deviceWalletPublicKey, adapter, privyFailed, select, toWallet, withPrompt, confirm]);
