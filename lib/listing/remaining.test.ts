@@ -3,6 +3,7 @@
 // when it is claimed. The column is recomputed from the listing's trades on
 // every transition (DECISIONS 2), so every rule below falls out of one sum.
 
+import { Keypair } from "@stellar/stellar-sdk";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +11,8 @@ import { listings, trades } from "@/lib/db/schema";
 import { loadAccount } from "@/lib/stellar/horizon";
 import { findClaimTx, findLockTx, verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
 import { expireIdleTrades } from "@/lib/trade/expire";
-import { TX, tradeFixture } from "@/lib/trade/test-helpers";
+import { transitionTrade } from "@/lib/trade/persist";
+import { TX, openProtectedTrade, tradeFixture } from "@/lib/trade/test-helpers";
 import { closeResetTrades } from "@/lib/trade/testnet-reset";
 
 vi.mock("@/lib/stellar/verify", async (orig) => ({
@@ -139,5 +141,78 @@ describe("remaining amount", () => {
     vi.mocked(verifyClaimTx).mockResolvedValue({ claimant: f.owner });
     expect((await f.as(f.owner).trade.recordClaim({ tradeId: a.id, txHash: TX.reclaim })).state).toBe("reclaimed");
     expect(await left()).toBe("0.0000000");
+  });
+});
+
+// Protected trades (D2 §4): an escrow that holds or paid out the amount counts
+// against the listing like a lock or a claim; the arbiter's refund to the
+// seller gives the full gross amount back.
+describe("remaining amount, protected trades", () => {
+  let p: Awaited<ReturnType<typeof tradeFixture>>;
+  beforeEach(async () => {
+    p = await tradeFixture("sell_crypto", "USDC");
+  });
+
+  const leftOnUsdc = async () => (await p.as(null).listing.byId({ id: p.listing.id })).remainingAmount;
+  const now = () => new Date();
+  const agree = (id: string) => transitionTrade(p.db, id, { type: "agree", by: "seller", acceptedAt: now() });
+  /** prepareCreate stores the admin and the contract id (WP-24); the deploy then lands. */
+  async function create(id: string) {
+    const contractId = `C${id.replace(/-/g, "").toUpperCase().padEnd(55, "A")}`;
+    await p.db.update(trades).set({ escrowAdmin: Keypair.random().publicKey(), escrowContractId: contractId }).where(eq(trades.id, id));
+    return transitionTrade(p.db, id, { type: "escrowCreate", by: "seller", contractId, txHash: "d".repeat(64) });
+  }
+  const fund = (id: string, reconcile?: boolean) =>
+    transitionTrade(p.db, id, { type: "fund", by: "seller", txHash: "e".repeat(64), fundedAt: now(), reconcile });
+  const dispute = (id: string) =>
+    transitionTrade(p.db, id, { type: "escrowDispute", by: "buyer", txHash: "f".repeat(64), disputedAt: now() });
+  const resolve = (id: string, outcome: "buyer" | "seller") =>
+    transitionTrade(p.db, id, { type: "resolve", by: "arbiter", outcome, txHash: "9".repeat(64), resolvedAt: now() });
+  async function fundedTrade(amount: string, buyer = p.taker) {
+    const t = await openProtectedTrade(p, amount, buyer);
+    await agree(t.id);
+    await create(t.id);
+    await fund(t.id);
+    return t;
+  }
+
+  it("stays reserved through agree, escrow_created and funded, and is used up on release", async () => {
+    const t = await openProtectedTrade(p, "60");
+    expect(await leftOnUsdc()).toBe("40.0000000");
+    await agree(t.id);
+    expect(await leftOnUsdc()).toBe("40.0000000");
+    expect((await create(t.id)).state).toBe("escrow_created");
+    expect(await leftOnUsdc()).toBe("40.0000000");
+    expect((await fund(t.id)).state).toBe("funded");
+    expect(await leftOnUsdc()).toBe("40.0000000");
+    expect((await transitionTrade(p.db, t.id, { type: "release", by: "seller", txHash: "1".repeat(64) })).state).toBe("released");
+    expect(await leftOnUsdc()).toBe("40.0000000");
+  });
+
+  it("is used up when the arbiter pays the buyer and given back in full when it refunds the seller", async () => {
+    const a = await fundedTrade("30");
+    const b = await fundedTrade("50", p.stranger);
+    await dispute(a.id);
+    await dispute(b.id);
+    expect(await leftOnUsdc()).toBe("20.0000000");
+    expect((await resolve(a.id, "buyer")).state).toBe("resolved_buyer");
+    expect(await leftOnUsdc()).toBe("20.0000000");
+    expect((await resolve(b.id, "seller")).state).toBe("resolved_seller");
+    expect(await leftOnUsdc()).toBe("70.0000000");
+  });
+
+  it("is given back when an unfunded escrow is cancelled, and a fund found after the cancel takes it again, clamped at 0 (chain wins)", async () => {
+    const a = await openProtectedTrade(p, "100");
+    await agree(a.id);
+    await create(a.id);
+    await transitionTrade(p.db, a.id, { type: "cancel", by: "buyer" });
+    expect(await leftOnUsdc()).toBe("100.0000000");
+
+    const b = await openProtectedTrade(p, "100", p.stranger);
+    expect(await leftOnUsdc()).toBe("0.0000000");
+    expect((await fund(a.id, true)).state).toBe("funded");
+    expect(await leftOnUsdc()).toBe("0.0000000");
+    await transitionTrade(p.db, b.id, { type: "cancel", by: "buyer" });
+    expect(await leftOnUsdc()).toBe("0.0000000");
   });
 });

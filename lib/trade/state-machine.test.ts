@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { TradeStateMachine, TradeTransitionError } from "./state-machine";
+import {
+  TERMINAL_STATES,
+  TRADE_MODES,
+  TRADE_STATES,
+  TradeStateMachine,
+  TradeTransitionError,
+  type TradeMode,
+  type TradeState,
+} from "./state-machine";
 
 const lock = { type: "lock", by: "seller", balanceId: "00ab", txHash: "lockhash" } as const;
 
@@ -100,5 +108,199 @@ describe("TradeStateMachine", () => {
     const listed = TradeStateMachine.open("buyer");
     listed.apply({ type: "agree", by: "seller" });
     expect(listed.state).toBe("listed");
+  });
+});
+
+// Protected mode (D2 §4): the same machine, with escrow states recorded only
+// from the chain. Each mode refuses the other mode's events.
+const ESCROW = "CDQOPLC2P7JNMMT62WDCC5EW5ESLFCHSAVQ66X7EWFE7E3QPT674QO34";
+const at = new Date("2026-11-24T10:00:00Z");
+const escrowCreate = { type: "escrowCreate", by: "seller", contractId: ESCROW, txHash: "createhash" } as const;
+const fund = { type: "fund", by: "seller", txHash: "fundhash", fundedAt: at } as const;
+const release = { type: "release", by: "seller", txHash: "releasehash" } as const;
+const escrowDispute = { type: "escrowDispute", by: "buyer", txHash: "disputehash", disputedAt: at } as const;
+const resolve = { type: "resolve", by: "arbiter", outcome: "buyer", txHash: "resolvehash", resolvedAt: at } as const;
+
+/** Opened by the buyer, so the seller agrees, accepting the protected-trade terms. */
+function fundedTrade() {
+  return TradeStateMachine.open("buyer", "protected")
+    .apply({ type: "agree", by: "seller", acceptedAt: at })
+    .apply(escrowCreate)
+    .apply(fund);
+}
+
+describe("TradeStateMachine, mode × state × event", () => {
+  // One valid actor per event; actors are checked separately below.
+  const events = {
+    agree: { type: "agree", by: "seller", acceptedAt: at },
+    lock,
+    claim: { type: "claim", by: "buyer", txHash: "c" },
+    reclaim: { type: "reclaim", by: "seller", txHash: "r" },
+    cancel: { type: "cancel", by: "buyer" },
+    expire: { type: "expire", by: "system" },
+    reset: { type: "reset", by: "system" },
+    flagDispute: { type: "flagDispute", by: "buyer" },
+    escrowCreate,
+    fund,
+    release,
+    escrowDispute,
+    resolve,
+  } as const;
+  type Row = { state: TradeState; disputed?: boolean; allowed: (keyof typeof events)[] };
+
+  // Every state each mode can hold (trades_mode_states), and the events allowed there, in `events` order.
+  const table: Record<TradeMode, Row[]> = {
+    claimable: [
+      { state: "listed", allowed: ["agree", "cancel", "expire", "reset", "flagDispute"] },
+      { state: "agreed", allowed: ["lock", "cancel", "expire", "reset", "flagDispute"] },
+      { state: "locked", allowed: ["claim", "reclaim", "reset", "flagDispute"] },
+      { state: "claimed", allowed: [] },
+      { state: "reclaimed", allowed: [] },
+      { state: "cancelled", allowed: [] },
+    ],
+    protected: [
+      { state: "listed", allowed: ["agree", "cancel", "expire", "reset"] },
+      { state: "agreed", allowed: ["cancel", "expire", "reset", "escrowCreate"] },
+      { state: "escrow_created", allowed: ["cancel", "expire", "reset", "fund"] },
+      { state: "funded", allowed: ["reset", "release", "escrowDispute"] },
+      { state: "funded", disputed: true, allowed: ["reset", "resolve"] },
+      { state: "released", allowed: [] },
+      { state: "resolved_buyer", disputed: true, allowed: [] },
+      { state: "resolved_seller", disputed: true, allowed: [] },
+      { state: "cancelled", allowed: [] },
+    ],
+  };
+
+  for (const mode of TRADE_MODES) {
+    for (const { state, disputed = false, allowed } of table[mode]) {
+      it(`${mode} ${state}${disputed ? " (disputed)" : ""} allows exactly ${allowed.join(", ") || "nothing"}`, () => {
+        const m = new TradeStateMachine({ ...TradeStateMachine.open("buyer", mode).snapshot, state, disputed });
+        const got = (Object.keys(events) as (keyof typeof events)[]).filter((e) => m.can(events[e]));
+        expect(got).toEqual(allowed);
+      });
+    }
+  }
+
+  it("covers every state of both modes", () => {
+    const covered = new Set([...table.claimable, ...table.protected].map((r) => r.state));
+    expect([...covered].sort()).toEqual([...TRADE_STATES].sort());
+  });
+});
+
+describe("TradeStateMachine, protected mode", () => {
+  it("opens claimable unless told otherwise", () => {
+    expect(TradeStateMachine.open("buyer").snapshot.mode).toBe("claimable");
+    expect(TradeStateMachine.open("seller", "protected").snapshot).toMatchObject({
+      mode: "protected",
+      state: "listed",
+      escrowContractId: null,
+      createTx: null,
+      fundTx: null,
+      releaseTx: null,
+      disputeTx: null,
+      resolveTx: null,
+    });
+  });
+
+  it("walks listed → agreed → escrow_created → funded → released, recording each transaction", () => {
+    const funded = fundedTrade();
+    expect(funded.snapshot).toMatchObject({ state: "funded", escrowContractId: ESCROW, createTx: "createhash", fundTx: "fundhash" });
+    const m = funded.apply(release);
+    expect(m.state).toBe("released");
+    expect(m.isTerminal).toBe(true);
+    expect(m.snapshot.releaseTx).toBe("releasehash");
+  });
+
+  it("marks a dispute from the chain without changing state, then resolves to either side", () => {
+    const disputed = fundedTrade().apply(escrowDispute);
+    expect(disputed.snapshot).toMatchObject({ state: "funded", disputed: true, disputeTx: "disputehash" });
+    const toBuyer = disputed.apply(resolve);
+    expect(toBuyer.snapshot).toMatchObject({ state: "resolved_buyer", resolveTx: "resolvehash" });
+    expect(toBuyer.isTerminal).toBe(true);
+    const toSeller = disputed.apply({ ...resolve, outcome: "seller" });
+    expect(toSeller.state).toBe("resolved_seller");
+    expect(toSeller.isTerminal).toBe(true);
+  });
+
+  it("refuses a release while disputed and a resolve while not disputed", () => {
+    expect(() => fundedTrade().apply(escrowDispute).apply(release)).toThrow(
+      "Cannot release a funded trade: a disputed escrow is settled by the arbiter",
+    );
+    expect(() => fundedTrade().apply(resolve)).toThrow("Cannot resolve a funded trade: only a disputed escrow is resolved by the arbiter");
+    expect(fundedTrade().apply(escrowDispute).can({ ...escrowDispute, by: "seller" })).toBe(false);
+  });
+
+  it("lets either party dispute, and only the seller create, fund and release", () => {
+    expect(fundedTrade().can({ ...escrowDispute, by: "seller" })).toBe(true);
+    expect(fundedTrade().can({ ...escrowDispute, by: "buyer" })).toBe(true);
+    const agreed = TradeStateMachine.open("buyer", "protected").apply({ type: "agree", by: "seller", acceptedAt: at });
+    expect(agreed.can({ ...escrowCreate, by: "buyer" })).toBe(false);
+    expect(agreed.apply(escrowCreate).can({ ...fund, by: "buyer" })).toBe(false);
+    expect(fundedTrade().can({ ...release, by: "buyer" })).toBe(false);
+  });
+
+  it("refuses to agree to a protected trade without accepting its terms", () => {
+    const listed = TradeStateMachine.open("buyer", "protected");
+    expect(() => listed.apply({ type: "agree", by: "seller" })).toThrow(
+      "Cannot agree a listed trade: a protected trade is agreed only by accepting its terms",
+    );
+    expect(listed.apply({ type: "agree", by: "seller", acceptedAt: at }).state).toBe("agreed");
+    // A claimable trade has no terms to accept.
+    expect(TradeStateMachine.open("buyer").apply({ type: "agree", by: "seller" }).state).toBe("agreed");
+  });
+
+  it("records the escrow prepared for the trade, never a different one (F-02)", () => {
+    const agreed = TradeStateMachine.open("buyer", "protected").apply({ type: "agree", by: "seller", acceptedAt: at });
+    // prepareCreate stores the contract id while the trade is still agreed.
+    const prepared = new TradeStateMachine({ ...agreed.snapshot, escrowContractId: ESCROW });
+    expect(prepared.apply(escrowCreate).snapshot.escrowContractId).toBe(ESCROW);
+    expect(() => prepared.apply({ ...escrowCreate, contractId: "C" + "B".repeat(55) })).toThrow(
+      "Cannot escrowCreate a agreed trade: the escrow is not the one prepared for this trade",
+    );
+  });
+
+  it("records a fund found on the chain after a cancel only when the escrow was recorded (chain wins)", () => {
+    const created = TradeStateMachine.open("buyer", "protected")
+      .apply({ type: "agree", by: "seller", acceptedAt: at })
+      .apply(escrowCreate);
+    const cancelled = created.apply({ type: "cancel", by: "buyer" });
+    expect(cancelled.can(fund)).toBe(false);
+    const m = cancelled.apply({ ...fund, reconcile: true });
+    expect(m.snapshot).toMatchObject({ state: "funded", fundTx: "fundhash", createTx: "createhash" });
+
+    // Cancelled before any escrow was recorded: there is nothing to fund.
+    const bare = TradeStateMachine.open("buyer", "protected").apply({ type: "cancel", by: "buyer" });
+    expect(bare.can({ ...fund, reconcile: true })).toBe(false);
+    // reconcile never skips the escrow's creation.
+    const agreed = TradeStateMachine.open("buyer", "protected").apply({ type: "agree", by: "seller", acceptedAt: at });
+    expect(agreed.can({ ...fund, reconcile: true })).toBe(false);
+  });
+
+  it("never cancels or expires a funded trade", () => {
+    expect(() => fundedTrade().apply({ type: "cancel", by: "seller" })).toThrow(
+      "Cannot cancel a funded trade: once funded, the only ways out are the release and the arbiter",
+    );
+    expect(fundedTrade().can({ type: "expire", by: "system" })).toBe(false);
+  });
+
+  it("closes a funded trade after a testnet reset, keeping the escrow record", () => {
+    const wiped = fundedTrade().apply({ type: "reset", by: "system" });
+    expect(wiped.snapshot).toMatchObject({ state: "cancelled", escrowContractId: ESCROW, fundTx: "fundhash" });
+  });
+
+  it("refuses each mode's events in the other mode", () => {
+    expect(() => TradeStateMachine.open("buyer").apply({ type: "agree", by: "seller" }).apply(escrowCreate)).toThrow(
+      "Cannot escrowCreate a agreed trade: only a protected trade has an escrow",
+    );
+    expect(() => fundedTrade().apply({ type: "flagDispute", by: "buyer" })).toThrow(
+      "Cannot flagDispute a funded trade: a protected trade settles through its escrow",
+    );
+    const agreed = TradeStateMachine.open("buyer", "protected").apply({ type: "agree", by: "seller", acceptedAt: at });
+    expect(agreed.can(lock)).toBe(false);
+    expect(agreed.can({ ...lock, reconcile: true })).toBe(false);
+  });
+
+  it("treats released and both resolutions as terminal", () => {
+    expect(TERMINAL_STATES).toEqual(["claimed", "reclaimed", "cancelled", "released", "resolved_buyer", "resolved_seller"]);
   });
 });
