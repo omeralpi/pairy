@@ -74,7 +74,7 @@ import {
 } from "../../lib/escrow/config";
 import { makeCreationKey, type Signer } from "../../lib/escrow/creation-key";
 import { netAfterFee, twFee } from "../../lib/escrow/fee";
-import { extractSignatures, mergeSignatures } from "../../lib/escrow/multisig";
+import { mergeSignatures } from "../../lib/escrow/multisig";
 import {
   decodeEscrowCall,
   onlyMaxTimeChanged,
@@ -99,6 +99,7 @@ import {
 } from "../../tests/integration/testnet";
 import type { ArbiterTestState } from "../ops/setup-arbiter";
 import { readOut, readState, txEvidence, writeOut, writeState } from "./record";
+import { readSignedCopy, rentProblem } from "./resolve-checks";
 
 const AMOUNT = "5.0000000";
 const soroban = new rpc.Server("https://soroban-testnet.stellar.org");
@@ -536,19 +537,6 @@ function testSignerKeys(arbiter: Awaited<ReturnType<typeof arbiterNow>>): Keypai
   return keys;
 }
 
-/**
- * O-17's rent rule. The contract extends the ["Escrow"] entry only once fewer
- * than 17,280 ledgers are left; if that point falls inside the window, the
- * resolve would pay rent its simulation did not price. Ledgers close about
- * every 5 s.
- */
-function rentProblem(liveUntilLedger: number, latestLedgerSeq: number): string | null {
-  const left = liveUntilLedger - latestLedgerSeq;
-  const band = Math.ceil(RESOLVE_WINDOW_SECONDS / 5) + 60;
-  if (left < 17_280 || left >= 17_280 + band) return null;
-  return `The escrow's storage rent falls due in about ${Math.ceil(((left - 17_280) * 5) / 60)} minutes; prepare after that.`;
-}
-
 /** What a refused resolve means (S-19). None of these reaches a ledger, so nothing is charged. */
 function explain(codes: string[]): string {
   if (codes[0] === "tx_bad_auth") return "tx_bad_auth: not enough signatures; the arbiter needs both signers (thresholds 2, each signer weight 1)";
@@ -568,7 +556,7 @@ async function prepareResolve(contractId: string, resolver: string, recipient: s
   const escrow = await escrowOnChain(contractId, ledger);
   check(escrow.disputed && !escrow.resolved && !escrow.released, `Escrow ${contractId} is not in an open dispute.`);
   const latest = (await latestLedger()).sequence;
-  const rent = rentProblem(escrow.liveUntilLedgerSeq ?? 0, latest);
+  const rent = rentProblem(escrow.liveUntilLedgerSeq, latest);
   if (rent) throw new Error(rent);
   // The contract pays out its USDC SAC balance, never the stored amount (FIXES F-03, X-07).
   const balance = await escrowUsdc(contractId, ledger);
@@ -658,15 +646,16 @@ async function collectSignatures(run: string, prep: Prepared, testKeys: Keypair[
     for (const f of fs.readdirSync(STATE_DIR).filter((f) => f.startsWith(`${name}.`) && f.endsWith(".xdr")).sort()) {
       const text = fs.readFileSync(path.join(STATE_DIR, f), "utf8").trim();
       if (!text || ignored.has(`${f}\n${text}`)) continue;
-      try {
-        for (const s of extractSignatures(text, rebuilt.txHash, arbiter.signers)) {
-          if (found.has(s.signer)) continue;
-          found.set(s.signer, { signature: s.signature, receivedAt: new Date().toISOString() });
-          console.log(`${f}: a signature by ${s.signer}`);
-        }
-      } catch (e) {
+      const copy = readSignedCopy(text, rebuilt.txHash, arbiter.signers);
+      if (copy.problem) {
         ignored.add(`${f}\n${text}`);
-        console.log(`${f}: ${e instanceof Error ? e.message : String(e)} Ignored; save a new copy to try again.`);
+        console.log(`${f}: ${copy.problem}`);
+        continue;
+      }
+      for (const s of copy.signatures) {
+        if (found.has(s.signer)) continue;
+        found.set(s.signer, { signature: s.signature, receivedAt: new Date().toISOString() });
+        console.log(`${f}: a signature by ${s.signer}`);
       }
     }
     const chosen: { signer: string; signature: string; receivedAt: string }[] = [];
@@ -688,10 +677,18 @@ async function collectSignatures(run: string, prep: Prepared, testKeys: Keypair[
  * before sending, the arbiter's sequence is checked again; then each signature
  * alone is sent and must be refused, and then both. A closed window or a moved
  * sequence costs nothing, so the resolve is prepared again, up to
- * RESOLVE_ATTEMPTS times.
+ * RESOLVE_ATTEMPTS times. Each attempt is pushed to `attempts`, which the
+ * caller keeps for the run record even when this throws.
  */
-async function resolveDispute(run: string, contractId: string, resolver: string, recipient: string, ledger: number, testKeys: Keypair[] | null) {
-  const attempts: unknown[] = [];
+async function resolveDispute(
+  run: string,
+  contractId: string,
+  resolver: string,
+  recipient: string,
+  ledger: number,
+  testKeys: Keypair[] | null,
+  attempts: unknown[],
+) {
   for (let attempt = 1; attempt <= RESOLVE_ATTEMPTS; attempt++) {
     const prep = await prepareResolve(contractId, resolver, recipient, ledger);
     const summary = {
@@ -741,7 +738,19 @@ async function resolveDispute(run: string, contractId: string, resolver: string,
       singleSignatures.push(refused);
     }
 
-    const sent = await trySend("resolve", merged);
+    let sent: Sent;
+    try {
+      sent = await trySend("resolve", merged);
+    } catch (e) {
+      // N6: both signatures are on an envelope Horizon may still include, so nobody signs again.
+      const why = `Horizon gave no clear answer to the resolve (${e instanceof Error ? e.message : String(e)})`;
+      attempts.push({ ...summary, singleSignatures, outcome: why });
+      console.error(
+        `${why}. It may still land: look up hash ${prep.rebuilt.txHash} before anything else. ` +
+          `The signed copies are in scripts/evidence/.state/resolve-${run}-${attempt}.*.xdr. Do not sign again; tell the orchestrator this hash.`,
+      );
+      throw e;
+    }
     if (!sent.ok) {
       const why = explain(sent.codes);
       check(sent.codes[0] === "tx_too_late" || sent.codes[0] === "tx_bad_seq", `The resolve ${sent.hash} was refused: ${why}`);
@@ -779,8 +788,11 @@ async function resolveDispute(run: string, contractId: string, resolver: string,
   throw new Error(`No resolve landed after ${RESOLVE_ATTEMPTS} prepares; escrow ${contractId} is still in dispute.`);
 }
 
+/** What a dispute run has done so far: main() records it if the run throws (N2, FIXES X-05). */
+type Progress = { at?: string; contractId?: string; viewerUrl?: string; accounts?: Record<string, unknown>; steps: unknown[]; resolveAttempts: unknown[] };
+
 /** dispute-buyer / dispute-seller: that side disputes, and the arbiter pays that side the whole escrow less the fee. */
-async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter) {
+async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter, progress: Progress) {
   const startedAt = new Date().toISOString();
   const exit: Exit = `dispute-${side}`;
   const run = `${exit}-${arbiter}-${startedAt.replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z")}`;
@@ -788,6 +800,16 @@ async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter) {
   const testKeys = arbiter === "test" ? testSignerKeys(arbiterAtStart) : null;
   const o = await openEscrow(arbiter, exit);
   const { contractId, amountStroops, parties, seller, buyer, before } = o;
+  const accounts = {
+    creation: o.creation.publicKey,
+    seller: seller.publicKey,
+    buyer,
+    platform: PLATFORM_ACCOUNT,
+    resolver: o.resolver,
+    arbiterSigners: arbiterAtStart.signers,
+    trustlessWorkFee: TW_FEE_ADDRESS,
+  };
+  Object.assign(progress, { at: startedAt, contractId, viewerUrl: twViewerUrl(contractId), accounts, steps: [o.deploy, o.fund] });
 
   const disputer = side === "buyer" ? walletOf(o.buyerKp) : seller;
   const dispute = await step(
@@ -797,6 +819,7 @@ async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter) {
     disputer,
     () => ({ kind: "dispute", contractId, signer: disputer.publicKey }),
   );
+  progress.steps.push(dispute);
   check(dispute.transfers.length === 0, `The dispute moved ${JSON.stringify(dispute.transfers)}.`);
   const disputed = await escrowOnChain(contractId, dispute.ledger);
   check(disputed.disputed && !disputed.resolved && !disputed.released, "The escrow on chain is not in dispute.");
@@ -804,7 +827,7 @@ async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter) {
   check(afterDispute.escrow === amountStroops, "The escrow does not hold the amount after the dispute.");
 
   const recipient = disputer.publicKey;
-  const res = await resolveDispute(run, contractId, o.resolver, recipient, dispute.ledger, testKeys);
+  const res = await resolveDispute(run, contractId, o.resolver, recipient, dispute.ledger, testKeys, progress.resolveAttempts);
   const afterResolve = await holdings("after resolve", parties, { contractId, ledger: res.ledger });
   const net = netAfterFee(amountStroops);
   const fee = twFee(amountStroops);
@@ -831,15 +854,7 @@ async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter) {
     exit,
     contractId,
     viewerUrl: twViewerUrl(contractId),
-    accounts: {
-      creation: o.creation.publicKey,
-      seller: seller.publicKey,
-      buyer,
-      platform: PLATFORM_ACCOUNT,
-      resolver: o.resolver,
-      arbiterSigners: arbiterAtStart.signers,
-      trustlessWorkFee: TW_FEE_ADDRESS,
-    },
+    accounts,
     trustlessWork: { factory: o.deploy.contract, wasmHash: o.wasmHash, feeAddress: TW_FEE_ADDRESS },
     escrowAfterDeploy: o.created,
     escrowAfterDispute: disputed,
@@ -866,6 +881,12 @@ async function disputeExit(side: "buyer" | "seller", arbiter: Arbiter) {
 
 type Out = { exit: Exit; arbiter: Arbiter; runs: unknown[] };
 
+/** Appends one run to scripts/evidence/out/escrow-<exit>-<arbiter>.json and keeps the earlier ones (FIXES X-05). */
+function appendRun(exit: Exit, arbiter: Arbiter, run: unknown) {
+  const name = `escrow-${exit}-${arbiter}`;
+  writeOut(name, { exit, arbiter, runs: [...(readOut<Out>(name)?.runs ?? []), run] } satisfies Out);
+}
+
 async function main() {
   dotenv.config({ path: path.join(__dirname, "../../.env.local"), quiet: true });
   const [exit, ...flags] = process.argv.slice(2);
@@ -891,18 +912,24 @@ async function main() {
     );
     return;
   }
-  const name = `escrow-${exit}-${arbiter}`;
-  const prev = readOut<Out>(name);
   if (exit === "release") {
     const run = await release(arbiter);
-    writeOut(name, { exit, arbiter, runs: [...(prev?.runs ?? []), run] } satisfies Out);
+    appendRun(exit, arbiter, run);
     console.log(
       `buyer received ${run.result.buyerReceivedStroops} stroops (${run.result.buyerSharePercent}%), fee ${run.result.feeStroops} to ${run.result.feeTo}`,
     );
     return;
   }
-  const run = await disputeExit(exit === "dispute-buyer" ? "buyer" : "seller", arbiter);
-  writeOut(name, { exit, arbiter, runs: [...(prev?.runs ?? []), run] } satisfies Out);
+  const progress: Progress = { steps: [], resolveAttempts: [] };
+  const run = await disputeExit(exit === "dispute-buyer" ? "buyer" : "seller", arbiter, progress).catch((e: unknown) => {
+    // N2: once the escrow exists, a run that stops keeps its escrow id, its steps and its resolve attempts.
+    if (progress.contractId) {
+      appendRun(exit, arbiter, { ...progress, network: "testnet", asset: "USDC", amount: AMOUNT, exit, partial: true, error: e instanceof Error ? e.message : String(e) });
+      console.error(`The run stopped after escrow ${progress.contractId} was funded; its partial record is in scripts/evidence/out/escrow-${exit}-${arbiter}.json.`);
+    }
+    throw e;
+  });
+  appendRun(exit, arbiter, run);
   console.log(
     `${run.result.paidTo} received ${run.result.recipientReceivedStroops} stroops (${run.result.recipientSharePercent}%), fee ${run.result.feeStroops} to ${run.result.feeTo}; ${run.result.oneSignatureRefused.join("; ")}`,
   );
