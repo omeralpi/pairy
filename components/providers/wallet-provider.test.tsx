@@ -67,7 +67,7 @@ function fakeAdapter(
 
 /** Pairy's dialog as the signing paths see it: records what it is asked, runs `fn` only on sign(). */
 function fakePrompt() {
-  const asked: { title: string; description: string; summary?: string }[] = [];
+  const asked: { title: string; description: string; summary?: string; signal?: AbortSignal }[] = [];
   let pending: { fn: () => Promise<unknown>; resolve: (v: unknown) => void; reject: (e: unknown) => void } | null = null;
   let open!: () => void;
   // Resolves once the dialog has been asked (the signing paths load their
@@ -78,7 +78,7 @@ function fakePrompt() {
   ]);
   const prompt: ConfirmPrompt = (title, description, fn, opts) =>
     new Promise((resolve, reject) => {
-      asked.push({ title, description, summary: opts?.summary });
+      asked.push({ title, description, summary: opts?.summary, signal: opts?.signal });
       pending = { fn, resolve: resolve as (v: unknown) => void, reject };
       open();
     });
@@ -267,6 +267,8 @@ describe("privySignTransaction: Pairy's dialog before every Privy signature (DEC
     );
     await dialog.opened;
     expect(dialog.asked[0].summary).toBe("Lock 25 USDC for GABC…WXYZ");
+    // The dialog gets the caller's signal, so a screen going away closes it.
+    expect(dialog.asked[0].signal).toBe(controller.signal);
   });
 
   it("never calls Privy when the dialog is cancelled", async () => {
