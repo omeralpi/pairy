@@ -83,7 +83,9 @@ T created "Selling 10 to 100 USDC" (L9). Its page said **"100 of 100 USDC left"*
    ```sql
    BEGIN;
    SELECT 1 FROM "listings" FOR UPDATE;
-   -- 0006's backfill UPDATE, unchanged
+   UPDATE "listings" l SET "remaining_amount" = GREATEST(0, l."max_amount" - COALESCE((
+     SELECT SUM(t."amount") FROM "trades" t
+     WHERE t."listing_id" = l."id" AND t."state"::text IN ('listed', 'agreed', 'locked', 'claimed')), 0));
    COMMIT;
    ```
 
