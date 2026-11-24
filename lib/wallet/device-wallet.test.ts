@@ -164,6 +164,8 @@ describe("device wallet", () => {
     // A fresh key exists only in this browser: locking now risks the reclaim.
     expect(lockBackupProblem(wallet, browserA)).toMatch(/Export a backup of your key first/);
     expect(lockBackupProblem({ kind: "freighter", publicKey }, browserA)).toBeNull();
+    // A Privy wallet is recovered by logging in again, so it needs no backup file (D1 §1.1).
+    expect(lockBackupProblem({ kind: "privy", publicKey }, browserA)).toBeNull();
 
     const backup = JSON.parse(JSON.stringify(await exportDeviceWallet(publicKey, browserA)));
     expect(lockBackupProblem(wallet, browserA)).toBeNull();
