@@ -13,20 +13,29 @@ import { safeNextPath } from "@/lib/auth/next-path";
 import { useLogin } from "@/lib/auth/use-login";
 import { useSession } from "@/lib/auth/use-session";
 import { PINCODE_MIN_LENGTH, pincodeIsWeak, pincodeProblem } from "@/lib/wallet/pincode";
-import { useWalletContext, type Wallet } from "@/lib/wallet/use-wallet";
+import { PRIVY_LOGIN_CLOSED } from "@/lib/wallet/privy-adapter";
+import { useWalletContext, type PrivyStep, type Wallet } from "@/lib/wallet/use-wallet";
 
 type Mode = "choose" | "create" | "import" | "replace";
 
 const message = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong.");
 
+/** What the Privy choice reads while connectPrivy waits on that step (D1 §7.1). */
+const PRIVY_STEP_TEXT: Record<PrivyStep, string> = {
+  login: "Opening Privy…",
+  creating: "Creating your Stellar wallet…",
+  funding: "Asking Friendbot…",
+};
+
 export default function OnboardPage() {
   const router = useRouter();
   const walletCtx = useWalletContext();
-  const { wallet, ready, deviceWalletPublicKey } = walletCtx;
+  const { wallet, ready, deviceWalletPublicKey, privy } = walletCtx;
   const { publicKey: sessionKey } = useSession();
   const { login } = useLogin();
   const [mode, setMode] = useState<Mode>("choose");
   const [busy, setBusy] = useState(false);
+  const [privyStep, setPrivyStep] = useState<PrivyStep | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Back to the page that sent the user here (e.g. a trade link), if any.
   const [next, setNext] = useState<string | null>(null);
@@ -46,11 +55,16 @@ export default function OnboardPage() {
       await login(w, pincode);
       router.push(after);
     } catch (e) {
-      setError(message(e));
+      // Closing Privy's login is not a failure: back to the choices.
+      if (message(e) !== PRIVY_LOGIN_CLOSED) setError(message(e));
     } finally {
       setBusy(false);
+      setPrivyStep(null);
     }
   };
+
+  // A Privy wallet signs through Privy, so its buttons wait for Privy's chunk.
+  const privyWaiting = (kind: Wallet["kind"] | undefined) => kind === "privy" && !privy.ready;
 
   if (!ready) return <Shell><p className="text-sm text-slate">Loading your wallet…</p></Shell>;
 
@@ -60,7 +74,7 @@ export default function OnboardPage() {
         <section className="space-y-4 border-t border-line pt-8">
           <h2 className="text-xl font-semibold tracking-tight">You&apos;re signed in.</h2>
           <p className="text-sm text-slate">
-            {wallet.kind === "freighter" ? "Freighter" : "Key on this device"} ·{" "}
+            {wallet.kind === "freighter" ? "Freighter" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"} ·{" "}
             <span className="font-mono text-ink">{shortAddress(wallet.publicKey)}</span>
           </p>
           <Button asChild className="w-full">
@@ -97,11 +111,11 @@ export default function OnboardPage() {
           <div className="space-y-1">
             <h2 className="font-semibold">Sign in again</h2>
             <p className="text-sm text-slate">
-              Your {wallet.kind === "freighter" ? "Freighter account" : "key on this device"}{" "}
+              Your {wallet.kind === "freighter" ? "Freighter account" : wallet.kind === "privy" ? "email wallet (Privy)" : "key on this device"}{" "}
               <span className="font-mono text-ink">{shortAddress(wallet.publicKey)}</span> is connected but not signed in.
             </p>
           </div>
-          <Button className="w-full" disabled={busy} onClick={() => run(() => wallet)}>
+          <Button className="w-full" disabled={busy || privyWaiting(wallet.kind)} onClick={() => run(() => wallet)}>
             Sign in
           </Button>
         </section>
@@ -110,6 +124,15 @@ export default function OnboardPage() {
       {mode === "choose" && (
         <div className="space-y-8">
           <ul className="divide-y divide-line border-y border-line">
+            {walletCtx.connectPrivy && (
+              <Choice
+                note="New here? Start here"
+                title={privyStep ? PRIVY_STEP_TEXT[privyStep] : privy.ready ? "Continue with email or Google" : PRIVY_STEP_TEXT.login}
+                description="A wallet is made for you and opens again wherever you sign in. The key is split and held by Privy, not by Pairy. Whoever controls that email or Google account controls this wallet."
+                disabled={busy || !privy.ready}
+                onClick={() => run(() => walletCtx.connectPrivy!(setPrivyStep), "/wallet?new=1")}
+              />
+            )}
             {deviceWalletPublicKey ? (
               <Choice
                 note="Already on this phone"
@@ -125,9 +148,9 @@ export default function OnboardPage() {
               />
             ) : (
               <Choice
-                note="New here? Start here"
+                note={walletCtx.connectPrivy ? undefined : "New here? Start here"}
                 title="Make a key on this device"
-                description="Your browser makes the key and keeps it here, locked with a pincode you choose."
+                description="Your key stays on this device: your browser makes it and keeps it here, locked with a pincode you choose."
                 disabled={busy}
                 onClick={() => setMode("create")}
               />
@@ -197,9 +220,9 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="space-y-4">
         <p className="eyebrow">Get started · testnet</p>
         <h1 className="text-4xl font-bold leading-[1.05] tracking-tight">
-          Your key stays <em className="font-serif font-normal italic">on this phone.</em>
+          Pick how <em className="font-serif font-normal italic">you&apos;ll sign.</em>
         </h1>
-        <p className="text-slate">Pick how you&apos;ll sign. Then you sign one message to log in.</p>
+        <p className="text-slate">Then you sign one message to log in.</p>
       </header>
       {children}
     </div>
