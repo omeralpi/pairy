@@ -2,6 +2,9 @@
 // These play the part of the user's wallet: they hold throwaway keys and sign
 // with Keypair.sign. Pairy's own code never does any of this.
 
+import fs from "node:fs";
+import path from "node:path";
+
 import {
   Account,
   Asset,
@@ -14,11 +17,23 @@ import {
   type Transaction,
 } from "@stellar/stellar-sdk";
 
-import { TESTNET_USDC_ISSUER } from "../../lib/stellar/assets";
+import { TESTNET_USDC_ISSUER, toAsset, type AssetCode, type IssuedCode } from "../../lib/stellar/assets";
 import { fundWithFriendbot, horizon } from "../../lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
+import type { TreasuryState } from "../../scripts/ops/create-treasury";
 
 export const USDC = new Asset("USDC", TESTNET_USDC_ISSUER);
+
+/**
+ * What one evidence run or testnet suite moves per asset. Test XLM and USDC
+ * are free (Friendbot, the testnet DEX); EURC comes from Circle's faucet a few
+ * at a time, so each run spends 1 (FIXES X-04, DECISIONS O-16).
+ */
+export const EVIDENCE_AMOUNTS = {
+  XLM: "5.0000000",
+  USDC: "5.0000000",
+  EURC: "1.0000000",
+} as const satisfies Record<AssetCode, string>;
 
 export type Submitted =
   | { ok: true; hash: string; ledger: number }
@@ -76,13 +91,15 @@ function setupTx(source: Awaited<ReturnType<typeof loadAccount>>) {
   });
 }
 
-export async function addUsdcTrustline(kp: Keypair) {
+export async function addTrustline(kp: Keypair, code: IssuedCode) {
   const tx = setupTx(await loadAccount(kp))
-    .addOperation(Operation.changeTrust({ asset: USDC }))
+    .addOperation(Operation.changeTrust({ asset: toAsset(code) }))
     .setTimeout(300)
     .build();
   return signAndSubmit(tx, kp);
 }
+
+export const addUsdcTrustline = (kp: Keypair) => addTrustline(kp, "USDC");
 
 /** What `xlm` XLM buys in testnet USDC on the DEX right now, or null if nothing. */
 export async function quoteUsdc(xlm: string): Promise<string | null> {
@@ -111,6 +128,62 @@ export async function buyUsdc(kp: Keypair, xlm: string) {
     .setTimeout(300)
     .build();
   return signAndSubmit(tx, kp);
+}
+
+/** scripts/evidence/.state/treasury-<code>.json: a team test key a human filled from a faucet (HX-7). */
+function treasuryFile(code: IssuedCode) {
+  return path.join(__dirname, "../../scripts/evidence/.state", `treasury-${code.toLowerCase()}.json`);
+}
+
+/** The DEX quote that delivers the whole `amount` of `code` for XLM, or null (X-04: a partial fill is not a source). */
+async function dexQuote(code: IssuedCode, amount: string) {
+  const { records } = await horizon.strictReceivePaths([Asset.native()], toAsset(code), amount).call();
+  return records.find((r) => toStroops(r.destination_amount) >= toStroops(amount)) ?? null;
+}
+
+/** Where `acquire` would get `amount` of `code` right now, or null when nowhere; the suites gate on it. */
+export async function acquireSource(code: IssuedCode, amount: string): Promise<"dex" | "treasury" | null> {
+  if (await dexQuote(code, amount)) return "dex";
+  return fs.existsSync(treasuryFile(code)) ? "treasury" : null;
+}
+
+/**
+ * Puts `amount` of `code` into `kp`'s own (already trusted) account: bought on
+ * the testnet DEX when a path delivers the whole amount, otherwise paid from
+ * the team treasury. `kp` needs the trustline first (op_no_trust otherwise).
+ */
+export async function acquire(kp: Keypair, code: IssuedCode, amount: string) {
+  const asset = toAsset(code);
+  const quote = await dexQuote(code, amount);
+  if (quote) {
+    const tx = setupTx(await loadAccount(kp))
+      .addOperation(
+        Operation.pathPaymentStrictReceive({
+          sendAsset: Asset.native(),
+          // Allow 10% slippage between quote and execution.
+          sendMax: (Number(quote.source_amount) * 1.1).toFixed(7),
+          destination: kp.publicKey(),
+          destAsset: asset,
+          destAmount: amount,
+          path: quote.path.map((p) =>
+            p.asset_type === "native" ? Asset.native() : new Asset(p.asset_code, p.asset_issuer),
+          ),
+        }),
+      )
+      .setTimeout(300)
+      .build();
+    return { ...(await signAndSubmit(tx, kp)), source: "dex" as const };
+  }
+  const file = treasuryFile(code);
+  if (!fs.existsSync(file)) {
+    throw new Error(`The testnet DEX has no path to ${amount} ${code}, and there is no treasury at ${file} (HX-7).`);
+  }
+  const treasury = Keypair.fromSecret((JSON.parse(fs.readFileSync(file, "utf8")) as TreasuryState).secret);
+  const tx = setupTx(await loadAccount(treasury))
+    .addOperation(Operation.payment({ destination: kp.publicKey(), asset, amount }))
+    .setTimeout(300)
+    .build();
+  return { ...(await signAndSubmit(tx, treasury)), source: "treasury" as const };
 }
 
 /** Horizon amounts always carry 7 decimal places. */
