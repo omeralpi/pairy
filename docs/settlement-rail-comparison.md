@@ -4,6 +4,8 @@ This note explains why Pairy v1 settles trades with Stellar's built-in claimable
 
 Sources were read on 2026-10-15. Trustless Work publishes two documentation versions (V1 and V2) and keeps separate contract branches for each, so every quote below names the version it comes from. GitHub links are pinned to a commit so they keep pointing at the text quoted.
 
+The dated [Phase 2 section](#phase-2-2026-11-24) at the end records what has changed since, and why Pairy's opt-in protected trades now use Trustless Work's escrow while the default trade does not.
+
 ## The trade we need to settle
 
 Two people meet in person. The seller has crypto (testnet XLM or testnet USDC). The buyer has cash. We need:
@@ -140,3 +142,35 @@ This probe is not deliverable evidence. Nobody reclaims it, so it matures on 202
 ## Upstream
 
 The SOW commits to proposing gaps upstream rather than forking a contract. The upstream issue asks Trustless Work for an optional on-chain deadline after which the funder can recover the funds without a resolver. With that, a two-party trade like this one would not need a third address. The issue is filed as [Trustless-Work/trustlesswork-smart-contract-stellar#132](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues/132).
+
+## Phase 2 (2026-11-24)
+
+Written on 2026-11-24. Everything above is the 2026-10-15 reading and still describes the default trade, which is unchanged: a claimable balance with exactly two claimants and no third role.
+
+### What changed since 2026-10-15
+
+- **Pairy now offers a protected trade, opt-in and for USDC only.** Its USDC sits in a Trustless Work V2 single-release escrow instead of a claimable balance. Pairy writes and deploys no contract: every escrow comes from Trustless Work's own factory, and Pairy's server only asks Trustless Work's API for unsigned transactions and never signs one. The rule, the arbiter and the acceptance text are in [arbitration.md](arbitration.md); the dated test runs behind every point below are in [phase2-gates.md](phase2-gates.md).
+- **Requirement 4 is given up, for protected trades only.** Finding 2 holds: the resolver must be a third address. In a protected trade it is the arbiter account, which only the two Pairy builders together can sign for (two signers at weight 1, its own key at weight 0, every threshold 2). The platform role goes to a separate account whose own key is switched off, at a fee of 0, so nobody can use the platform's right to open a dispute.
+- **Findings 1, 3 and 4 still hold for the escrow Pairy uses.** There is no deadline: a stalled protected trade goes back to the seller only through a dispute. Once a dispute is open, the resolver can pay any address; only Pairy's code holds the arbiter to the rule's two outcomes.
+- **What testnet showed in November 2026.**
+  - A classic 2-of-2 Stellar account works as the only dispute resolver. Trustless Work's API and the V2 contract accepted it, and its `resolve_dispute` needs only the account's envelope signatures. On the day-12 gate (2026-11-24) each builder's signature alone was refused (`tx_bad_auth`) and the two together paid out, once to the buyer and once to the seller.
+  - The seller, as approver, service provider and release signer, releases alone with one signature, through Trustless Work's `/approve-and-release-milestones` call. No milestone-status step comes first.
+  - Every exit, refunds included, pays 0.3% to Trustless Work's fee address, which each release and resolve names as an argument. Pairy pins that address and refuses a transaction that names another.
+  - Trustless Work prepares each transaction valid for 300 seconds. Before the two arbiter signers sign a resolution, Pairy moves only its time limit to one hour; every other field stays byte for byte as Trustless Work prepared it.
+  - Trustless Work's read model kept a resolved escrow's status at "active", so Pairy reads an escrow's state from Soroban RPC instead, in the server and in each trader's browser.
+  - An escrow's storage lives about 7 days after its creation. A longer-idle escrow can still be read, and its next call restores it for a small extra fee.
+- **A new dependency.** Pairy builds no contract call itself, so a protected trade can move only while Trustless Work's hosted V2 API (in beta) prepares its transactions. If the API is down, nothing moves and the USDC stays in the escrow.
+
+### Why the resolver is accepted now
+
+The October reading rejected a resolver because nothing required one: a two-person trade only needs two claimants. What it cannot do is settle a disagreement (see [What claimable balances do not do](#what-claimable-balances-do-not-do)), and that takes someone able to decide. Phase 2 accepts that someone only under three limits:
+
+1. **Only in a protected trade.** The default trade keeps its two claimants. Its "Flag a problem" moves no money, and no arbiter ever sees it.
+2. **Only by opt-in.** A protected trade starts off. The trader who opens a trade must switch it on, and both traders must accept the acceptance text, word for word from [arbitration.md](arbitration.md), before any escrow exists. A server switch can stop new protected trades at any time.
+3. **Only under a fixed rule.** The rule was committed on 2026-11-23, before the first test escrow. The arbiter cannot open a dispute, does not read the chat and does not judge: the outcome follows from each trader's yes-or-no answer to "Was the cash handed over in full?", and is either all to the buyer or all back to the seller. The arbiter page prepares only that outcome, and every resolution is public on chain and in Trustless Work's escrow viewer.
+
+What a protected trade still cannot promise, said plainly in arbitration.md and on the acceptance screen: the arbiter's keys could sign something else outside Pairy's page, a lost arbiter key leaves a disputed trade's USDC locked in the escrow, and the escrow has no deadline.
+
+### Issue #132, as of 2026-11-24
+
+[#132](https://github.com/Trustless-Work/trustlesswork-smart-contract-stellar/issues/132) is open. No maintainer has replied; it has no label, no assignee and no linked pull request. Its only comments are two requests to be assigned from outside contributors (2026-10-19 and 2026-10-24), the last activity on it. Nothing in Phase 2 waits for it: with an on-chain deadline, a stalled protected trade could go back to the seller without a dispute, but protected trades work without one. This paragraph is checked again, and dated again, on the closeout day.
