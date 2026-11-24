@@ -1,0 +1,43 @@
+[
+  {
+    "asset": "EURC",
+    "amount": "1.0000000",
+    "seller": "GCO5DTQO2DTQ7IVAOU5TX6QMLH2ARSJCDIBN5X4JX5UGQKPF345D5PPJ",
+    "buyer": "GAEQ72ZCL6KSFBOFJMOE33LNNRECH5NNB2TSHU424RZQYBGUWJRZMCPD",
+    "balanceId": "000000007d6d4a5bce4650a3a08b84b2579b05e8e46d3c03eeb7b10f68f2c30d80a07f14",
+    "lock": {
+      "step": "lock (259200s window)",
+      "hash": "34f45a50f8f562eab11f1f730b3e5f34fde6de76ea98d196102799330566acfa",
+      "url": "https://stellar.expert/explorer/testnet/tx/34f45a50f8f562eab11f1f730b3e5f34fde6de76ea98d196102799330566acfa",
+      "successful": true,
+      "resultCodes": null,
+      "ledger": 5898607,
+      "closedAt": "2026-11-24T10:37:57Z",
+      "feeChargedStroops": "100"
+    },
+    "createdAt": "2026-11-24T10:37:57Z",
+    "maturesAt": "2026-11-27T10:37:57.000Z",
+    "snapshots": [
+      {
+        "label": "seller before lock",
+        "account": "GCO5DTQO2DTQ7IVAOU5TX6QMLH2ARSJCDIBN5X4JX5UGQKPF345D5PPJ",
+        "at": "2026-11-24T10:37:52Z",
+        "xlmBalanceStroops": "99999999900",
+        "EURCBalanceStroops": "10000000",
+        "numSponsoring": 0,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "15000000"
+      },
+      {
+        "label": "seller after lock",
+        "account": "GCO5DTQO2DTQ7IVAOU5TX6QMLH2ARSJCDIBN5X4JX5UGQKPF345D5PPJ",
+        "at": "2026-11-24T10:37:57Z",
+        "xlmBalanceStroops": "99999999800",
+        "EURCBalanceStroops": "0",
+        "numSponsoring": 2,
+        "baseReserveStroops": "5000000",
+        "minimumBalanceStroops": "25000000"
+      }
+    ]
+  }
+]
