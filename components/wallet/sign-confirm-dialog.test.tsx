@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { Dialog } from "@/components/ui/dialog";
 
-import { PRIVY_LOGIN_TEXT, SignConfirmContent } from "./sign-confirm-dialog";
+import { PRIVY_LOGIN_TEXT, SignConfirmContent, SignConfirmDialog } from "./sign-confirm-dialog";
 
 // The dialog's body as it renders inside the dialog, whose content is a portal
 // and so has no server markup: the body is enough to see what the user is
@@ -37,17 +37,27 @@ describe("SignConfirmContent", () => {
     expect(html).not.toContain('disabled=""');
   });
 
-  it("the login prompt carries DECISIONS 12's one line", () => {
+  it("the login prompt's description is exactly DECISIONS 12's one line, with nothing run into it", () => {
     expect(PRIVY_LOGIN_TEXT).toBe("Sign in: this signs a message and moves no funds");
     const html = render({ ...base, title: "Sign in", description: PRIVY_LOGIN_TEXT });
     expect(html).toMatch(/<p[^>]*class="eyebrow"[^>]*>Sign in<\/p>/);
-    expect(html).toContain(PRIVY_LOGIN_TEXT);
+    const description = /<p id="radix-[^"]*" class="text-sm text-slate">([^<]*)<\/p>/.exec(html);
+    expect(description?.[1]).toBe(PRIVY_LOGIN_TEXT);
   });
 
   it("while Privy signs, the button reads Waiting for Privy… and both buttons are disabled", () => {
     const html = render({ ...base, busy: true });
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Waiting for Privy…<\/button>/);
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Cancel<\/button>/);
+  });
+
+  it("a cancelled or finished request closes the dialog: with open=false nothing of it is rendered", () => {
+    // The provider derives `open` from its request and clears the request on
+    // Cancel, so the dialog cannot stay open after Cancel (WP-06 judge N1).
+    const html = renderToStaticMarkup(
+      <SignConfirmDialog open={false} title="Sign transaction" description="text" summary="Lock 1 XLM" onConfirm={async () => {}} onCancel={() => {}} />,
+    );
+    expect(html).toBe("");
   });
 
   it("announces an error with role=alert and leaves Sign enabled for a retry", () => {

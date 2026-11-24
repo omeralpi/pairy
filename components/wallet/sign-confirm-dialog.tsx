@@ -101,9 +101,7 @@ export function SignConfirmContent({
       <DialogHeader className="space-y-2 text-left">
         <p className="eyebrow">{title}</p>
         <DialogTitle className="text-xl font-semibold tracking-tight">Confirm with Privy</DialogTitle>
-        <DialogDescription className="text-sm text-slate">
-          {description} Privy receives only the hash of this; Pairy never sees the key.
-        </DialogDescription>
+        <DialogDescription className="text-sm text-slate">{description}</DialogDescription>
       </DialogHeader>
       {summary && (
         <p className="whitespace-pre-wrap rounded-md bg-sand px-3 py-2.5 font-mono text-sm text-ink [overflow-wrap:anywhere]">
