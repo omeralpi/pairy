@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLogin } from "@/lib/auth/use-login";
 import { useSession } from "@/lib/auth/use-session";
+import { ASSETS, ASSET_CODES, needsTrustline, type AssetCode } from "@/lib/stellar/assets";
 import {
   LAB_FUND_URL,
   balanceOf,
@@ -25,7 +26,7 @@ import {
   submit,
 } from "@/lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "@/lib/stellar/settlement";
-import { buildUsdcTrustlineTransaction } from "@/lib/stellar/trustline";
+import { buildTrustlineTransaction } from "@/lib/stellar/trustline";
 import { describeStellarError } from "@/lib/trade/stellar-errors";
 import { useWalletContext } from "@/lib/wallet/use-wallet";
 
@@ -75,13 +76,13 @@ export default function WalletPage() {
     );
   }
 
-  const act = async (kind: NonNullable<typeof busy>, fn: () => Promise<void>) => {
+  const act = async (kind: NonNullable<typeof busy>, fn: () => Promise<void>, asset?: AssetCode) => {
     setBusy(kind);
     try {
       await fn();
     } catch (e) {
       // Horizon's "400 Bad Request" says nothing; the result code does (Q-10).
-      toast.error(describeStellarError(e));
+      toast.error(describeStellarError(e, asset));
     } finally {
       setBusy(null);
     }
@@ -101,21 +102,26 @@ export default function WalletPage() {
     });
   };
 
-  const addTrustline = () =>
-    act("trust", async () => {
-      const current = await loadAccount(wallet.publicKey);
-      if (!current) throw new Error("Get test XLM first.");
-      const tx = buildUsdcTrustlineTransaction(
-        new Account(current.accountId(), current.sequenceNumber()),
-        await networkDeadline(300),
-      );
-      const signed = await wallet.signTransaction(tx.toXDR());
-      const res = await submit(TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE) as Transaction);
-      await account.refetch();
-      toast.success("This wallet can now hold USDC.", {
-        action: { label: "Receipt", onClick: () => window.open(explorerTxUrl(res.hash), "_blank", "noopener") },
-      });
-    });
+  const addTrustline = (code: AssetCode) =>
+    act(
+      "trust",
+      async () => {
+        const current = await loadAccount(wallet.publicKey);
+        if (!current) throw new Error("Get test XLM first.");
+        const tx = buildTrustlineTransaction(
+          new Account(current.accountId(), current.sequenceNumber()),
+          code,
+          await networkDeadline(300),
+        );
+        const signed = await wallet.signTransaction(tx.toXDR());
+        const res = await submit(TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE) as Transaction);
+        await account.refetch();
+        toast.success(`This wallet can now hold ${ASSETS[code].label}.`, {
+          action: { label: "Receipt", onClick: () => window.open(explorerTxUrl(res.hash), "_blank", "noopener") },
+        });
+      },
+      code,
+    );
 
   const signOut = () =>
     act("logout", async () => {
@@ -203,20 +209,25 @@ export default function WalletPage() {
         ) : (
           <>
             <div className="grid grid-cols-2 divide-x divide-line">
-              <Balance code="XLM" amount={balanceOf(acct, "XLM")} />
-              <Balance code="USDC" amount={hasTrustline(acct, "USDC") ? balanceOf(acct, "USDC") : null} />
+              {ASSET_CODES.map((code) => (
+                <Balance
+                  key={code}
+                  code={ASSETS[code].label}
+                  amount={hasTrustline(acct, code) ? balanceOf(acct, code) : null}
+                />
+              ))}
             </div>
-            {!hasTrustline(acct, "USDC") && (
-              <div className="space-y-3 border-t border-line pt-6">
+            {ASSET_CODES.filter((code) => needsTrustline(code) && !hasTrustline(acct, code)).map((code) => (
+              <div key={code} className="space-y-3 border-t border-line pt-6">
                 <p className="text-sm text-slate">
-                  To receive test USDC in a trade, this wallet has to accept it first. That reserves 0.5 XLM of your
-                  balance.
+                  To receive test {ASSETS[code].label} in a trade, this wallet has to accept it first. That reserves 0.5
+                  XLM of your balance.
                 </p>
-                <Button className="w-full" disabled={busy !== null} onClick={addTrustline}>
-                  {busy === "trust" ? "Waiting for your signature…" : "Add USDC to this wallet"}
+                <Button className="w-full" disabled={busy !== null} onClick={() => addTrustline(code)}>
+                  {busy === "trust" ? "Waiting for your signature…" : `Add ${ASSETS[code].label} to this wallet`}
                 </Button>
               </div>
-            )}
+            ))}
           </>
         )}
       </section>

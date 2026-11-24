@@ -242,6 +242,16 @@ describe("verifyLockTx", () => {
     ).rejects.toThrow(/is not in XLM/);
   });
 
+  it("rejects USDC from another issuer, the same code notwithstanding", async () => {
+    const lookalike = buildLockTransaction(new Account(seller, "1"), {
+      asset: new Asset("USDC", Keypair.random().publicKey()),
+      amount: "25.5",
+      buyer,
+    });
+    const hash = land(lookalike, sellerKey);
+    await expect(verifyLockTx(hash, expected)).rejects.toThrow(/is not in USDC/);
+  });
+
   it("rejects the wrong amount", async () => {
     const hash = land(lockTx(), sellerKey);
     await expect(

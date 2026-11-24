@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type RouterInputs } from "@/lib/api";
 import { FIAT_CODES } from "@/lib/fiat";
+import { ASSETS, ASSET_CODES } from "@/lib/stellar/assets";
 import { cn } from "@/lib/utils";
 
 import { CityPicker, type PickedCity } from "./city-picker";
@@ -47,15 +48,22 @@ function Segmented<T extends string>({
   );
 }
 
-function FieldError({ messages }: { messages?: string[] }) {
+function FieldError({ messages, className }: { messages?: string[]; className?: string }) {
   if (!messages?.length) return null;
-  return <p className="text-sm text-danger">{messages[0]}</p>;
+  return <p className={cn("text-sm text-danger", className)}>{messages[0]}</p>;
 }
 
 // Label ships text-sm/font-medium as utilities, which beat .eyebrow; override them here.
 const LABEL = "eyebrow text-[11px] font-normal";
 const FIELD = "border-line bg-paper text-ink placeholder:text-slate focus-visible:ring-ink";
 const NUMBER = cn(FIELD, "font-mono text-lg tabular-nums");
+
+/** The asset a new listing starts on; it is offered first, the others follow in registry order. */
+const DEFAULT_ASSET: CreateInput["asset"] = "USDC";
+const ASSET_OPTIONS = [DEFAULT_ASSET, ...ASSET_CODES.filter((c) => c !== DEFAULT_ASSET)].map((code) => ({
+  value: code,
+  label: ASSETS[code].label,
+}));
 
 /** "1,000" or "1 000" is not taken as a number; say why before the server does. */
 const dotHint = (v: string) =>
@@ -65,7 +73,7 @@ export function ListingForm() {
   const router = useRouter();
   const utils = api.useUtils();
   const [side, setSide] = useState<CreateInput["side"]>("sell_crypto");
-  const [asset, setAsset] = useState<CreateInput["asset"]>("USDC");
+  const [asset, setAsset] = useState<CreateInput["asset"]>(DEFAULT_ASSET);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
   const [fiatCode, setFiatCode] = useState<CreateInput["fiatCode"]>("USD");
@@ -118,24 +126,21 @@ export function ListingForm() {
           labelledBy="asset-label"
           value={asset}
           onChange={setAsset}
-          options={[
-            { value: "USDC", label: "USDC" },
-            { value: "XLM", label: "XLM" },
-          ]}
+          options={ASSET_OPTIONS}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="min" className={LABEL}>Min {asset}</Label>
-          <Input id="min" className={NUMBER} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
-          <FieldError messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="max" className={LABEL}>Max {asset}</Label>
-          <Input id="max" className={NUMBER} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
-          <FieldError messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
-        </div>
+      {/* Labels, inputs and errors are rows of one grid, so a label that wraps on a
+          narrow screen ("Total to offer (USDC)") cannot push its input below the other.
+          Each field's three parts stay together in the DOM for screen readers; the
+          grid classes place them. */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        <Label htmlFor="min" className={cn(LABEL, "col-start-1 row-start-1 self-end")}>Min {asset}</Label>
+        <Input id="min" className={cn(NUMBER, "col-start-1 row-start-2")} inputMode="decimal" required placeholder="10" value={minAmount} onChange={(e) => setMinAmount(e.target.value.trim())} />
+        <FieldError className="col-start-1 row-start-3" messages={dotHint(minAmount) ?? fieldErrors.minAmount} />
+        <Label htmlFor="max" className={cn(LABEL, "col-start-2 row-start-1 self-end")}>{side === "sell_crypto" ? "Total to offer" : "Total to buy"} ({asset})</Label>
+        <Input id="max" className={cn(NUMBER, "col-start-2 row-start-2")} inputMode="decimal" required placeholder="500" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value.trim())} />
+        <FieldError className="col-start-2 row-start-3" messages={dotHint(maxAmount) ?? fieldErrors.maxAmount} />
       </div>
 
       <div className="grid grid-cols-[1fr_7rem] gap-3">

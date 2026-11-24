@@ -70,7 +70,10 @@ describe("trade.open", () => {
     await expect(openTrade("100.0000001")).rejects.toThrow(/between 10 and 100 XLM/);
     await expect(openTrade("0")).rejects.toThrow();
     await expect(openTrade("1.12345678")).rejects.toThrow();
-    expect((await openTrade("10")).state).toBe("listed");
+    const ten = await openTrade("10");
+    expect(ten.state).toBe("listed");
+    // The 10 is reserved until it is cancelled; only then is the whole 100 open again.
+    await f.as(f.owner).trade.cancel({ tradeId: ten.id });
     expect((await openTrade("100")).state).toBe("listed");
   });
 

@@ -34,6 +34,10 @@ jobs:
         run: pnpm vitest run tests/ci/coordination-purge-on-terminal.test.ts
       - name: tw-endpoint-allowlist
         run: pnpm vitest run tests/ci/tw-endpoint-allowlist.test.ts
+      - name: listing-reservation-concurrency
+        run: pnpm vitest run tests/ci/listing-reservation-concurrency.test.ts
+      - name: no-privy-signers
+        run: pnpm vitest run tests/ci/no-privy-signers.test.ts
 
       - name: build
         run: pnpm build
@@ -41,3 +45,45 @@ jobs:
           # Build-time placeholders only; nothing connects to them.
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci-not-used
           SESSION_SECRET: ci-build-placeholder-at-least-32-characters
+
+  # The listing reservation race on a real Postgres: pglite runs one
+  # transaction at a time, so only this job proves the listing row lock.
+  pg-concurrency:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pairy
+          POSTGRES_PASSWORD: pairy
+          POSTGRES_DB: pairy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pairy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://pairy:pairy@localhost:5432/pairy
+      PG_TEST_URL: postgresql://pairy:pairy@localhost:5432/pairy
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # Version comes from package.json "packageManager".
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Applies the migrations to a real Postgres 16; the test then migrates
+      # its own fresh database.
+      - name: migrate
+        run: pnpm db:migrate
+      - name: listing-reservation-concurrency (postgres)
+        run: pnpm test:pg
+        env:
+          # The test skips itself without PG_TEST_URL and vitest then exits 0;
+          # with this it fails instead, so the job cannot pass by skipping.
+          REQUIRE_PG: "1"

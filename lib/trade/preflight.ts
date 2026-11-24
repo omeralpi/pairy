@@ -4,7 +4,7 @@
 
 import type { Horizon } from "@stellar/stellar-sdk";
 
-import { TESTNET_USDC_ISSUER, needsTrustline, type AssetCode } from "@/lib/stellar/assets";
+import { isLineOf, needsTrustline, type AssetCode } from "@/lib/stellar/assets";
 import { hasTrustline } from "@/lib/stellar/horizon";
 import { SETTLEMENT_FEE_BID } from "@/lib/stellar/settlement";
 
@@ -44,11 +44,7 @@ export function minimumBalance(
 
 /** Balance minus what open offers already promise to sell. */
 function spendable(account: Horizon.AccountResponse, code: AssetCode): bigint {
-  const line = account.balances.find((b) =>
-    code === "XLM"
-      ? b.asset_type === "native"
-      : "asset_code" in b && b.asset_code === code && b.asset_issuer === TESTNET_USDC_ISSUER,
-  );
+  const line = account.balances.find((b) => isLineOf(b, code));
   if (!line) return 0n;
   const selling = "selling_liabilities" in line ? toStroops(line.selling_liabilities) : 0n;
   return toStroops(line.balance) - selling;
@@ -61,9 +57,12 @@ function receivable(
   amount: bigint,
 ): "ok" | "missing" | "unauthorized" | "full" {
   if (!hasTrustline(account, code)) return "missing";
-  const line = account.balances.find(
-    (b) => "asset_code" in b && b.asset_code === code && b.asset_issuer === TESTNET_USDC_ISSUER,
-  ) as { balance: string; limit?: string; is_authorized?: boolean; buying_liabilities?: string };
+  const line = account.balances.find((b) => isLineOf(b, code)) as {
+    balance: string;
+    limit?: string;
+    is_authorized?: boolean;
+    buying_liabilities?: string;
+  };
   if (line.is_authorized === false) return "unauthorized";
   if (line.limit !== undefined) {
     const room = toStroops(line.limit) - toStroops(line.balance) - toStroops(line.buying_liabilities ?? "0");

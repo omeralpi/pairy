@@ -4,6 +4,7 @@ import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { listings, tradeEvents, trades, users } from "@/lib/db/schema";
+import { recomputeRemaining } from "@/lib/listing/remaining";
 import { CLAIM_WINDOW_SECONDS } from "@/lib/stellar/settlement";
 import { explorerAccountUrl, explorerTxUrl, horizon, loadAccount } from "@/lib/stellar/horizon";
 import { verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
@@ -35,28 +36,7 @@ export const tradeRouter = createTRPCRouter({
     .input(z.object({ listingId: z.string().uuid(), amount: amountInput }))
     .mutation(async ({ ctx, input }) => {
       const me = ctx.session.publicKey;
-      const [listing] = await ctx.db.select().from(listings).where(eq(listings.id, input.listingId));
-      if (!listing || listing.status !== "active") {
-        throw new TRPCError({ code: "NOT_FOUND", message: "This listing is not available" });
-      }
-      if (listing.owner === me) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "You cannot trade on your own listing" });
-      }
       const amount = toStroops(input.amount);
-      if (amount < toStroops(listing.minAmount) || amount > toStroops(listing.maxAmount)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Amount must be between ${trimAmount(listing.minAmount)} and ${trimAmount(listing.maxAmount)} ${listing.asset}`,
-        });
-      }
-
-      const fiatAmount = fiatTotal(input.amount, listing.rate);
-      if (fiatAmount === "0.00") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `At this rate the cash side must be at least 0.01 ${listing.fiatCode}; enter a larger amount`,
-        });
-      }
 
       // Each agreed trade can be searched on Horizon by sync; one account
       // cannot hold an unbounded number of them open.
@@ -79,13 +59,51 @@ export const tradeRouter = createTRPCRouter({
         });
       }
 
-      // sell_crypto: the owner holds the crypto, so the owner is the seller.
-      const ownerIsSeller = listing.side === "sell_crypto";
-      const openedBy: TradeRole = ownerIsSeller ? "buyer" : "seller";
-      const { snapshot } = TradeStateMachine.open(openedBy);
-
       await ctx.db.insert(users).values({ publicKey: me }).onConflictDoNothing();
       return ctx.db.transaction(async (tx) => {
+        // The listing row lock holds every other open and every transition on
+        // this listing until this one commits, so what is left is checked and
+        // reserved as one step (lock order everywhere: listing, then trade).
+        const [listing] = await tx.select().from(listings).where(eq(listings.id, input.listingId)).for("update");
+        if (!listing || listing.status !== "active") {
+          throw new TRPCError({ code: "NOT_FOUND", message: "This listing is not available" });
+        }
+        if (listing.owner === me) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "You cannot trade on your own listing" });
+        }
+        if (amount < toStroops(listing.minAmount) || amount > toStroops(listing.maxAmount)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Amount must be between ${trimAmount(listing.minAmount)} and ${trimAmount(listing.maxAmount)} ${listing.asset}`,
+          });
+        }
+        const left = toStroops(listing.remainingAmount);
+        if (left < toStroops(listing.minAmount)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This listing has less than its minimum left, so it isn't taking trades right now.",
+          });
+        }
+        if (amount > left) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Only ${trimAmount(listing.remainingAmount)} ${listing.asset} left on this listing. Enter ${trimAmount(listing.minAmount)} to ${trimAmount(listing.remainingAmount)}.`,
+          });
+        }
+
+        const fiatAmount = fiatTotal(input.amount, listing.rate);
+        if (fiatAmount === "0.00") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `At this rate the cash side must be at least 0.01 ${listing.fiatCode}; enter a larger amount`,
+          });
+        }
+
+        // sell_crypto: the owner holds the crypto, so the owner is the seller.
+        const ownerIsSeller = listing.side === "sell_crypto";
+        const openedBy: TradeRole = ownerIsSeller ? "buyer" : "seller";
+        const { snapshot } = TradeStateMachine.open(openedBy);
+
         const [trade] = await tx
           .insert(trades)
           .values({
@@ -101,6 +119,7 @@ export const tradeRouter = createTRPCRouter({
           })
           .returning();
         await tx.insert(tradeEvents).values({ tradeId: trade.id, type: "open", by: openedBy });
+        await recomputeRemaining(tx, listing.id);
         return trade;
       });
     }),

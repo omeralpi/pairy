@@ -52,6 +52,10 @@ describe("listing.create", () => {
     });
   });
 
+  it("starts with the whole maximum left", async () => {
+    expect((await as(ALICE).create(valid)).remainingAmount).toBe("250.5000000");
+  });
+
   it("refuses client-supplied coordinates instead of ignoring them", async () => {
     await rejects(as(ALICE).create({ ...valid, latitude: 1.23456, longitude: 2.34567 } as never), "BAD_REQUEST");
     expect(await db.select().from(listings)).toHaveLength(0);
@@ -119,6 +123,12 @@ describe("listing.create", () => {
     const created = await as(ALICE).create({ ...valid, minAmount: "1.0000001", maxAmount: "1.0000001" });
     expect(created.maxAmount).toBe("1.0000001");
   });
+
+  it.each(["THB", "IDR"] as const)("quotes cash in %s and filters the map by it", async (fiatCode) => {
+    const created = await as(ALICE).create({ ...valid, fiatCode });
+    expect(created.fiatCode).toBe(fiatCode);
+    expect((await as(null).list({ fiatCode })).map((l) => l.id)).toEqual([created.id]);
+  });
 });
 
 describe("listing.list", () => {
@@ -145,6 +155,18 @@ describe("listing.list", () => {
     const [mine] = await as(ALICE).mine();
     await as(ALICE).setStatus({ id: mine.id, status: "paused" });
     expect((await as(null).list()).map((l) => l.owner)).toEqual([BOB]);
+  });
+
+  it("hides a listing with less than its minimum left, which byId and mine still return", async () => {
+    const [mine] = await as(ALICE).mine();
+    await db.update(listings).set({ remainingAmount: "9.9999999" }).where(eq(listings.id, mine.id));
+    expect((await as(null).list()).map((l) => l.owner)).toEqual([BOB]);
+    expect((await as(null).byId({ id: mine.id })).remainingAmount).toBe("9.9999999");
+    expect((await as(ALICE).mine()).map((l) => l.id)).toEqual([mine.id]);
+
+    // Exactly the minimum left can still be traded, so it stays on the map.
+    await db.update(listings).set({ remainingAmount: "10" }).where(eq(listings.id, mine.id));
+    expect(await as(null).list()).toHaveLength(2);
   });
 });
 
@@ -180,7 +202,7 @@ describe("listing.byId / mine", () => {
     expect(Object.keys(got).sort()).toEqual(
       [
         "asset", "cityId", "cityName", "countryCode", "createdAt", "fiatCode", "id", "latitude",
-        "longitude", "maxAmount", "minAmount", "note", "owner", "rate", "side", "status",
+        "longitude", "maxAmount", "minAmount", "note", "owner", "rate", "remainingAmount", "side", "status",
       ].sort(),
     );
     expect((await as(ALICE).mine()).map((l) => l.id)).toEqual([id]);

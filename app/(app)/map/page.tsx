@@ -8,6 +8,7 @@ import { countryName } from "@/components/listing/format";
 import { ListingsMap, groupByCity } from "@/components/map";
 import { api, type RouterInputs } from "@/lib/api";
 import { FIAT_CODES } from "@/lib/fiat";
+import { ASSETS, ASSET_CODES } from "@/lib/stellar/assets";
 import { cn } from "@/lib/utils";
 
 type Filters = Exclude<RouterInputs["listing"]["list"], void | undefined>;
@@ -50,9 +51,9 @@ export default function MapPage() {
             Buying crypto
           </Chip>
           <span className="h-5 w-px shrink-0 bg-line" />
-          {(["XLM", "USDC"] as const).map((a) => (
+          {ASSET_CODES.map((a) => (
             <Chip key={a} active={filters.asset === a} onClick={() => toggle("asset", a)}>
-              {a}
+              {ASSETS[a].label}
             </Chip>
           ))}
           <span className="h-5 w-px shrink-0 bg-line" />

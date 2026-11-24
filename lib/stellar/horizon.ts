@@ -3,7 +3,7 @@
 
 import { Horizon, NotFoundError, rpc, type Transaction } from "@stellar/stellar-sdk";
 
-import { TESTNET_USDC_ISSUER, type AssetCode } from "./assets";
+import { isLineOf, needsTrustline, type AssetCode } from "./assets";
 
 export const HORIZON_URL = "https://horizon-testnet.stellar.org";
 export const FRIENDBOT_URL = "https://friendbot.stellar.org";
@@ -40,21 +40,12 @@ export function hasTrustline(
   account: Horizon.AccountResponse,
   code: AssetCode,
 ): boolean {
-  if (code === "XLM") return true;
-  return account.balances.some(
-    (b) =>
-      "asset_code" in b &&
-      b.asset_code === code &&
-      b.asset_issuer === TESTNET_USDC_ISSUER,
-  );
+  if (!needsTrustline(code)) return true;
+  return account.balances.some((b) => isLineOf(b, code));
 }
 
 export function balanceOf(account: Horizon.AccountResponse, code: AssetCode): string {
-  const line = account.balances.find((b) =>
-    code === "XLM"
-      ? b.asset_type === "native"
-      : "asset_code" in b && b.asset_code === code && b.asset_issuer === TESTNET_USDC_ISSUER,
-  );
+  const line = account.balances.find((b) => isLineOf(b, code));
   return line?.balance ?? "0";
 }
 

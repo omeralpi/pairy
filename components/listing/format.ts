@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@/lib/api";
+import { toStroops } from "@/lib/trade/amount";
 
 export type Listing = RouterOutputs["listing"]["list"][number];
 
@@ -38,6 +39,16 @@ export function amountRange(l: Pick<Listing, "minAmount" | "maxAmount" | "asset"
   const min = trimAmount(l.minAmount);
   const max = trimAmount(l.maxAmount);
   return min === max ? `${min} ${l.asset}` : `${min} to ${max} ${l.asset}`;
+}
+
+/** "40 of 100 USDC left": what open trades have not reserved or used up. */
+export function leftLabel(l: Pick<Listing, "remainingAmount" | "maxAmount" | "asset">): string {
+  return `${trimAmount(l.remainingAmount)} of ${trimAmount(l.maxAmount)} ${l.asset} left`;
+}
+
+/** Less than the minimum is left: the map hides the listing and `trade.open` refuses it. */
+export function belowMinimum(l: Pick<Listing, "remainingAmount" | "minAmount">): boolean {
+  return toStroops(l.remainingAmount) < toStroops(l.minAmount);
 }
 
 export function rateLabel(l: Pick<Listing, "rate" | "fiatCode" | "asset">): string {

@@ -17,6 +17,7 @@ vi.mock("@/lib/api", () => ({
           status: "active",
           minAmount: "10",
           maxAmount: "100",
+          remainingAmount: "100",
           asset: "XLM",
           side: "sell_crypto",
           rate: "40",

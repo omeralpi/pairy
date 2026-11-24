@@ -3,7 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-import { amountRange, countryName, rateLabel, shortAddress } from "@/components/listing/format";
+import { amountRange, belowMinimum, countryName, leftLabel, rateLabel, shortAddress } from "@/components/listing/format";
 import { StartTradeButton } from "@/components/trade/start-trade-button";
 import { api } from "@/lib/api";
 
@@ -49,6 +49,14 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           <dl className="divide-y divide-line border-y border-line">
             <Term label="Rate">{rateLabel(listing)}</Term>
             <Term label="Amount">{amountRange(listing)}</Term>
+            <Term label="Left">
+              {leftLabel(listing)}
+              {listing.status === "active" && belowMinimum(listing) && (
+                <span className="mt-1 block font-sans text-slate">
+                  Not taking new trades until an open trade on it is cancelled.
+                </span>
+              )}
+            </Term>
             <Term label="Asset">{listing.asset} · testnet</Term>
             <Term label="City">
               <span className="font-sans text-base">
