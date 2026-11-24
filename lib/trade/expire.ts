@@ -9,13 +9,21 @@
 // - A locked trade can't be cancelled: the money is on the ledger. Once the
 //   buyer's claim window closed a week ago there is nothing left to arrange,
 //   so its chat is deleted and the trade stays as the chain has it.
-// - A flagged (disputed) trade is never touched: its chat is the evidence a
-//   Phase 2 arbiter would need. Nor is an agreed trade with an identical
-//   agreed twin, since a lock on chain could belong to either.
+// - A flagged (disputed) trade is never touched: its chat stays with the two
+//   traders while they sort it out. Pairy's arbiter never reads chat; a
+//   protected trade's dispute is settled from the two answers alone
+//   (docs/arbitration.md). Nor is an agreed trade with an identical agreed
+//   twin, since a lock on chain could belong to either.
+// - A protected trade's escrow is checked on chain first, as a cancel does
+//   (lib/escrow/sync.ts): a created escrow is expired only while it holds
+//   nothing, and a prepared creation only once it can no longer land. A
+//   funded trade is never expired; up to 10 of them a run are synced with
+//   the chain instead, the least recently synced first.
 
 import { and, asc, eq, exists, gte, inArray, lt, ne, notExists, sql } from "drizzle-orm";
 
 import { chatMessages, trades } from "@/lib/db/schema";
+import { mayCancelProtected, syncProtectedTrade } from "@/lib/escrow/sync";
 
 import { transitionTrade, type Database, type TradeRow } from "./persist";
 import { syncTrade } from "./sync";
@@ -25,17 +33,19 @@ export const IDLE_TRADE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Trades looked at per run and per kind; an agreed one costs a Horizon search. */
 const BATCH = 25;
+/** Funded protected trades synced per run: each costs a Soroban RPC read and up to a few Horizon searches (FIXES F-12). */
+const BATCH_PROTECTED = 10;
 
 export async function expireIdleTrades(db: Database, now = new Date()) {
   const cutoff = new Date(now.getTime() - IDLE_TRADE_MS);
-  const result = { expired: 0, skipped: 0, purged: 0 };
+  const result = { expired: 0, skipped: 0, purged: 0, synced: 0 };
 
   const idle = await db
     .select()
     .from(trades)
     .where(
       and(
-        inArray(trades.state, ["listed", "agreed"]),
+        inArray(trades.state, ["listed", "agreed", "escrow_created"]),
         eq(trades.disputed, false),
         lt(trades.updatedAt, cutoff),
         notExists(
@@ -51,7 +61,10 @@ export async function expireIdleTrades(db: Database, now = new Date()) {
     .limit(BATCH);
   for (const trade of idle) {
     try {
-      if (trade.state === "agreed") {
+      if (trade.mode === "protected") {
+        // Refuses (and the trade is skipped) when the escrow holds the amount or a creation may still land.
+        await mayCancelProtected(db, trade);
+      } else if (trade.state === "agreed") {
         if (await hasAgreedTwin(db, trade)) {
           result.skipped++;
           await stamp(db, trade.id, now);
@@ -91,6 +104,25 @@ export async function expireIdleTrades(db: Database, now = new Date()) {
       if ((await syncTrade(db, trade)).state !== "locked") continue;
       const deleted = await db.delete(chatMessages).where(eq(chatMessages.tradeId, trade.id)).returning();
       if (deleted.length > 0) result.purged++;
+    } catch {
+      result.skipped++;
+    }
+  }
+
+  // A funded escrow holds the seller's USDC until a release or the arbiter
+  // ends it, so the trade is never expired. Read-only reconciliation instead:
+  // a release, dispute or resolution nobody reported is recorded.
+  const funded = await db
+    .select()
+    .from(trades)
+    .where(and(eq(trades.mode, "protected"), eq(trades.state, "funded")))
+    // syncProtectedTrade stamps last_synced_at, so the next run starts with the others.
+    .orderBy(sql`${trades.lastSyncedAt} asc nulls first`)
+    .limit(BATCH_PROTECTED);
+  for (const trade of funded) {
+    try {
+      await syncProtectedTrade(db, trade);
+      result.synced++;
     } catch {
       result.skipped++;
     }

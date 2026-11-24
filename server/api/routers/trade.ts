@@ -7,6 +7,7 @@ import { disputeAnswers, listings, tradeEvents, trades, users } from "@/lib/db/s
 import { ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 import { FUNDED_NUDGE_MS, twViewerUrl } from "@/lib/escrow/config";
 import { answerDeadline, promiseDeadline } from "@/lib/escrow/rule";
+import { mayCancelProtected } from "@/lib/escrow/sync";
 import { recomputeRemaining } from "@/lib/listing/remaining";
 import { ASSETS } from "@/lib/stellar/assets";
 import { CLAIM_WINDOW_SECONDS } from "@/lib/stellar/settlement";
@@ -213,10 +214,14 @@ export const tradeRouter = createTRPCRouter({
 
   cancel: protectedProcedure.input(tradeIdInput).mutation(async ({ ctx, input }) => {
     const { trade, role } = await tradeForParticipant(ctx.db, input.tradeId, ctx.session.publicKey);
-    // The seller may already have locked on-chain while the record is in
-    // flight; cancelling then would leave a live lock the app calls cancelled.
-    // Record that lock instead and refuse.
-    if (trade.state === "agreed" && (await syncTrade(ctx.db, trade)).state !== "agreed") {
+    if (trade.mode === "protected") {
+      // The escrow is checked on chain first: a landed creation or fund is
+      // recorded, and a funded escrow is never cancelled (D2 §1.1, O-23).
+      await mayCancelProtected(ctx.db, trade);
+    } else if (trade.state === "agreed" && (await syncTrade(ctx.db, trade)).state !== "agreed") {
+      // The seller may already have locked on-chain while the record is in
+      // flight; cancelling then would leave a live lock the app calls cancelled.
+      // Record that lock instead and refuse.
       throw new TRPCError({
         code: "BAD_REQUEST",
         message: "The seller has already locked this trade on Stellar, so it can't be cancelled. The buyer can claim it, or the seller takes it back after the window.",

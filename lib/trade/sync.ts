@@ -13,6 +13,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq, gt, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
 
 import { tradeEvents, trades } from "@/lib/db/schema";
+import { syncProtectedTrade } from "@/lib/escrow/sync";
 import {
   VerifyError,
   findClaimTx,
@@ -153,9 +154,10 @@ export async function syncTrade(db: Database, trade: TradeRow): Promise<TradeRow
 }
 
 /**
- * syncTrade at most once per SYNC_INTERVAL_MS per trade, however many tabs or
- * callers poll it. Returns null when a search ran too recently. A failed sync
- * gives its slot back so the next call searches again.
+ * syncTrade (for a protected trade, syncProtectedTrade) at most once per
+ * SYNC_INTERVAL_MS per trade, however many tabs or callers poll it. Returns
+ * null when a search ran too recently. A failed sync gives its slot back so
+ * the next call searches again.
  */
 export async function syncIfDue(db: Database, trade: TradeRow): Promise<TradeRow | null> {
   const [due] = await db
@@ -171,7 +173,7 @@ export async function syncIfDue(db: Database, trade: TradeRow): Promise<TradeRow
     .returning();
   if (!due) return null;
   try {
-    return await syncTrade(db, due);
+    return await (due.mode === "protected" ? chain(syncProtectedTrade(db, due)) : syncTrade(db, due));
   } catch (e) {
     await db.update(trades).set({ lastSyncedAt: trade.lastSyncedAt }).where(eq(trades.id, trade.id));
     throw e;
