@@ -29,11 +29,20 @@ export type PrivyAdapter = {
 /** The user closed Privy's modal: not an error to show, just back to the choices. */
 export const PRIVY_LOGIN_CLOSED = "Login cancelled.";
 
-export type PrivyAdapterSlot = {
+/** Privy as the signing paths see it: the adapter once its chunk has loaded, or the fact that it will not. */
+export type PrivyState = {
   /** null until PrivyLayer has loaded, and always null without an App ID. */
   adapter: PrivyAdapter | null;
+  /** Privy's chunk failed to load, Privy threw while mounting, or it never became ready in time. */
+  failed: boolean;
+};
+
+export type PrivyAdapterSlot = {
+  adapter: PrivyAdapter | null;
   setAdapter: (adapter: PrivyAdapter | null) => void;
+  /** Called by the error boundary around PrivyLayer. */
+  setFailed: () => void;
 };
 
 /** Provided by WalletProvider; filled by PrivyLayer. */
-export const PrivyAdapterContext = createContext<PrivyAdapterSlot>({ adapter: null, setAdapter: () => {} });
+export const PrivyAdapterContext = createContext<PrivyAdapterSlot>({ adapter: null, setAdapter: () => {}, setFailed: () => {} });

@@ -50,7 +50,8 @@ export type WalletContextValue = {
   connectPrivy: (() => Promise<Wallet>) | null;
   /** Opens Privy's own export screen for the selected Privy wallet. Pairy never sees the key. null without an App ID. */
   exportPrivyKey: (() => Promise<void>) | null;
-  privy: { enabled: boolean; ready: boolean; authenticated: boolean; loginLabel: string | null };
+  /** `failed`: Privy's code did not load, or Privy did not answer in time; the Privy option should say so or hide. */
+  privy: { enabled: boolean; ready: boolean; failed: boolean; authenticated: boolean; loginLabel: string | null };
 };
 
 export const WalletContext = createContext<WalletContextValue | null>(null);
