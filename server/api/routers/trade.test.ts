@@ -1,10 +1,12 @@
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { listings, tradeEvents, trades } from "@/lib/db/schema";
+import { ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 import { horizon, loadAccount } from "@/lib/stellar/horizon";
 import { LockMismatchError, findClaimTx, findLockTx, verifyClaimTx, verifyLockTx } from "@/lib/stellar/verify";
 import { TX, tradeFixture } from "@/lib/trade/test-helpers";
+import { isArbiterSigner } from "@/server/api/arbiter-auth";
 
 vi.mock("@/lib/stellar/verify", async (orig) => ({
   // The real error classes, so verification messages reach the caller as they would.
@@ -17,6 +19,10 @@ vi.mock("@/lib/stellar/verify", async (orig) => ({
 vi.mock("@/lib/stellar/horizon", async (orig) => ({
   ...(await orig<typeof import("@/lib/stellar/horizon")>()),
   loadAccount: vi.fn(async () => null),
+}));
+vi.mock("@/server/api/arbiter-auth", async (orig) => ({
+  ...(await orig<typeof import("@/server/api/arbiter-auth")>()),
+  isArbiterSigner: vi.fn(async () => false),
 }));
 
 const BALANCE = "00000000" + "d".repeat(64);
@@ -379,5 +385,145 @@ describe("timing data for the UI (Q-17, Q-4)", () => {
     );
     const [row] = (await f.as(f.owner).trade.mine()).filter((x) => x.id === t.id);
     expect(row.lockedAt).toEqual(lockEvent.createdAt);
+  });
+});
+
+describe("protected trades: open and agree (D2 §5.1)", () => {
+  /** A sell_crypto USDC listing: owner = seller, taker = buyer and the opener. */
+  async function usdc() {
+    f = await tradeFixture("sell_crypto", "USDC");
+  }
+  const openProtected = (acceptanceVersion = ACCEPTANCE_VERSION) =>
+    f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20", mode: "protected", acceptanceVersion });
+
+  beforeEach(() => {
+    vi.stubEnv("PROTECTED_MODE", "on");
+    vi.mocked(isArbiterSigner).mockReset().mockResolvedValue(false);
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("opens a protected trade the opener has accepted, with no claim window", async () => {
+    await usdc();
+    const before = new Date();
+    const t = await openProtected();
+    expect(t).toMatchObject({
+      mode: "protected",
+      state: "listed",
+      openedBy: "buyer",
+      windowSeconds: 0,
+      acceptanceVersion: ACCEPTANCE_VERSION,
+      sellerAcceptedAt: null,
+    });
+    expect(t.buyerAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(isArbiterSigner).toHaveBeenCalledWith(f.taker);
+    expect(isArbiterSigner).toHaveBeenCalledWith(f.owner);
+    // The amount is reserved like any open trade's.
+    expect((await f.db.select().from(listings).where(eq(listings.id, f.listing.id)))[0].remainingAmount).toBe("80.0000000");
+  });
+
+  it("opens claimable trades as before, without asking Horizon about the arbiter", async () => {
+    await usdc();
+    const t = await f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20" });
+    expect(t).toMatchObject({ mode: "claimable", windowSeconds: 259_200, acceptanceVersion: null, buyerAcceptedAt: null });
+    vi.stubEnv("PROTECTED_MODE", "off");
+    expect((await f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20", mode: "claimable" })).mode).toBe("claimable");
+    expect(isArbiterSigner).not.toHaveBeenCalled();
+  });
+
+  it("refuses a new protected trade while PROTECTED_MODE is not on (DECISIONS 6)", async () => {
+    await usdc();
+    for (const off of ["off", "", "ON"]) {
+      vi.stubEnv("PROTECTED_MODE", off);
+      await expect(openProtected()).rejects.toThrow("Protected trades are switched off right now.");
+    }
+    vi.unstubAllEnvs();
+    delete process.env.PROTECTED_MODE;
+    await expect(openProtected()).rejects.toThrow("Protected trades are switched off right now.");
+    expect(await f.db.select().from(trades)).toEqual([]);
+  });
+
+  it("refuses a protected trade on an asset the escrow does not hold", async () => {
+    f = await tradeFixture("sell_crypto", "XLM");
+    await expect(openProtected()).rejects.toThrow("Protected trades work with USDC only for now.");
+    f = await tradeFixture("sell_crypto", "EURC");
+    await expect(openProtected()).rejects.toThrow("Protected trades work with USDC only for now.");
+  });
+
+  it("refuses an open without the current acceptance text", async () => {
+    await usdc();
+    await expect(f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20", mode: "protected" })).rejects.toThrow(
+      "The protected-trade text changed. Read it again.",
+    );
+    await expect(openProtected("0".repeat(64))).rejects.toThrow("The protected-trade text changed. Read it again.");
+  });
+
+  it("refuses a protected trade when either party is an arbiter signer (I13), and when Horizon can't say", async () => {
+    await usdc();
+    vi.mocked(isArbiterSigner).mockImplementation(async (k) => k === f.taker);
+    await expect(openProtected()).rejects.toThrow("Arbiter signer keys can't trade in protected mode.");
+    vi.mocked(isArbiterSigner).mockImplementation(async (k) => k === f.owner);
+    await expect(openProtected()).rejects.toThrow("Arbiter signer keys can't trade in protected mode.");
+    vi.mocked(isArbiterSigner).mockRejectedValue(new Error("Request failed with status code 503"));
+    await expect(openProtected()).rejects.toThrow("Couldn't check the arbiter account; try again.");
+    expect(await f.db.select().from(trades)).toEqual([]);
+  });
+
+  it("agrees only with the same acceptance text the opener accepted", async () => {
+    await usdc();
+    const t = await openProtected();
+    await expect(f.as(f.owner).trade.agree({ tradeId: t.id })).rejects.toThrow("The protected-trade text changed. Read it again.");
+    await expect(f.as(f.owner).trade.agree({ tradeId: t.id, acceptanceVersion: "0".repeat(64) })).rejects.toThrow(
+      "The protected-trade text changed. Read it again.",
+    );
+    // A trade opened on an older text cannot be agreed on the new one.
+    await f.db.update(trades).set({ acceptanceVersion: "1".repeat(64) }).where(eq(trades.id, t.id));
+    await expect(f.as(f.owner).trade.agree({ tradeId: t.id, acceptanceVersion: ACCEPTANCE_VERSION })).rejects.toThrow(
+      "The protected-trade text changed. Read it again.",
+    );
+    expect((await f.db.select().from(trades).where(eq(trades.id, t.id)))[0].state).toBe("listed");
+  });
+
+  it("records the agreeing side's acceptance, even with PROTECTED_MODE off (existing trades go on)", async () => {
+    await usdc();
+    const t = await openProtected();
+    vi.stubEnv("PROTECTED_MODE", "off");
+    const before = new Date();
+    const agreed = await f.as(f.owner).trade.agree({ tradeId: t.id, acceptanceVersion: ACCEPTANCE_VERSION });
+    expect(agreed.state).toBe("agreed");
+    expect(agreed.sellerAcceptedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(agreed.buyerAcceptedAt).toEqual(t.buyerAcceptedAt);
+    expect(isArbiterSigner).toHaveBeenLastCalledWith(f.owner);
+  });
+
+  it("refuses an agree by an arbiter signer, and when Horizon can't say", async () => {
+    await usdc();
+    const t = await openProtected();
+    vi.mocked(isArbiterSigner).mockResolvedValue(true);
+    await expect(f.as(f.owner).trade.agree({ tradeId: t.id, acceptanceVersion: ACCEPTANCE_VERSION })).rejects.toThrow(
+      "Arbiter signer keys can't trade in protected mode.",
+    );
+    vi.mocked(isArbiterSigner).mockRejectedValue(new Error("socket hang up"));
+    await expect(f.as(f.owner).trade.agree({ tradeId: t.id, acceptanceVersion: ACCEPTANCE_VERSION })).rejects.toThrow(
+      "Couldn't check the arbiter account; try again.",
+    );
+  });
+
+  it("keeps a claimable agree as it was: no acceptance asked, none stored", async () => {
+    await usdc();
+    const t = await f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20" });
+    const agreed = await f.as(f.owner).trade.agree({ tradeId: t.id });
+    expect(agreed).toMatchObject({ state: "agreed", sellerAcceptedAt: null, buyerAcceptedAt: null });
+    expect(isArbiterSigner).not.toHaveBeenCalled();
+  });
+
+  it("sends a protected trade's problem flag and lock preflight to the escrow instead", async () => {
+    await usdc();
+    const t = await openProtected();
+    await f.as(f.owner).trade.agree({ tradeId: t.id, acceptanceVersion: ACCEPTANCE_VERSION });
+    await expect(f.as(f.taker).trade.flagDispute({ tradeId: t.id })).rejects.toThrow(
+      "In a protected trade, Flag a problem opens a dispute on the escrow.",
+    );
+    await expect(f.as(f.owner).trade.lockPreflight({ tradeId: t.id })).rejects.toThrow(/protected trade/);
+    expect((await f.db.select().from(trades).where(eq(trades.id, t.id)))[0].disputed).toBe(false);
   });
 });

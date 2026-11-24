@@ -83,6 +83,14 @@ function hostProblems(files: Source[]): string[] {
   );
 }
 
+/**
+ * The whole first argument of the client's fetch: the allowlisted path, with
+ * only the read's contract address filled in, and nothing after it (WP-08
+ * judge N1: a "/../x" suffix would reach another path).
+ */
+const FETCH_URL =
+  /\bfetch\(\s*TW_API_BASE \+ TW_ENDPOINTS\[ep\]\.path(?:\.replace\("\{contractId\}", \(\) => \(body as TwInput\["read"\]\)\.contractId\))?\s*[,)]/;
+
 /** #3: one fetch, to TW_API_BASE + an allowlisted path, and the key read nowhere else. */
 function clientProblems(files: Source[]): string[] {
   const client = files.find((s) => s.file === CLIENT);
@@ -91,9 +99,7 @@ function clientProblems(files: Source[]): string[] {
   const fetches = code.match(/\bfetch\s*\(/g)?.length ?? 0;
   return [
     ...(fetches === 1 ? [] : [`${CLIENT}: calls fetch ${fetches} times, not once`]),
-    ...(/\bfetch\(\s*TW_API_BASE \+ TW_ENDPOINTS\[ep\]\.path\b/.test(code)
-      ? []
-      : [`${CLIENT}: the fetch URL is not TW_API_BASE + TW_ENDPOINTS[ep].path`]),
+    ...(FETCH_URL.test(code) ? [] : [`${CLIENT}: the fetch URL is not TW_API_BASE + TW_ENDPOINTS[ep].path`]),
     ...(/process\.env\.TRUSTLESS_WORK_API_KEY\b/.test(code) ? [] : [`${CLIENT}: does not read TRUSTLESS_WORK_API_KEY`]),
     ...flag([client], (s) => imports(s.text, "lib/db"), "imports from lib/db"),
     ...flag(
@@ -134,7 +140,21 @@ function inputKeys(schema: unknown, seen = new Set<unknown>()): string[] {
     def.typeName === "ZodObject"
       ? Object.entries(def.shape() as Record<string, unknown>).flatMap(([k, v]) => [k, ...inputKeys(v, seen)])
       : [];
-  const inner = [def.innerType, def.schema, def.type, def.in, def.out, def.left, def.right, ...(def.options ?? []), ...(def.items ?? [])];
+  const inner = [
+    def.innerType,
+    def.schema,
+    def.type,
+    def.in,
+    def.out,
+    def.left,
+    def.right,
+    ...(def.options ?? []),
+    ...(def.items ?? []),
+    // z.record, z.map, z.set and z.lazy (WP-08 judge N2).
+    def.keyType,
+    def.valueType,
+    typeof def.getter === "function" ? def.getter() : undefined,
+  ];
   return [...own, ...inner.flatMap((s) => inputKeys(s, seen))];
 }
 
@@ -215,7 +235,13 @@ describe("tw-endpoint-allowlist", () => {
 
   it("6: arbiter and escrow-prepare inputs carry no address, amount, outcome or request shape", () => {
     expect(Object.keys(appRouter._def.lazy ?? {})).toEqual([]); // lazy routers would hide their inputs
-    expect(routerInputProblems(procedureInputs(appRouter))).toEqual([]);
+    const procedures = procedureInputs(appRouter);
+    // The check must see the real procedures: a rename would otherwise make it pass on nothing (WP-08 judge N3).
+    expect(procedures.map((p) => p.path)).toEqual(
+      expect.arrayContaining(["escrow.prepareCreate", "escrow.prepareFund", "escrow.prepareRelease"]),
+    );
+    expect(procedures.filter((p) => p.path.startsWith("escrow.prepare")).every((p) => p.inputs.length > 0)).toBe(true);
+    expect(routerInputProblems(procedures)).toEqual([]);
   });
 
   it("7: no source builds a contract call outside lib/escrow/read.ts", () => {
@@ -283,6 +309,24 @@ describe("tw-endpoint-allowlist", () => {
         [`${CLIENT}: the fetch URL is not TW_API_BASE + TW_ENDPOINTS[ep].path`, `${CLIENT}: does not read TRUSTLESS_WORK_API_KEY`].sort(),
       );
       expect(clientProblems([])).toEqual([`${CLIENT}: missing`]);
+      // Anything after the allowlisted path is refused, with or without the read's placeholder filled in.
+      const key = "process.env.TRUSTLESS_WORK_API_KEY;\n";
+      for (const call of [
+        'await fetch(TW_API_BASE + TW_ENDPOINTS[ep].path + "/../x", {',
+        'await fetch(TW_API_BASE + TW_ENDPOINTS[ep].path.replace("{contractId}", () => (body as TwInput["read"]).contractId) + "/../x", {',
+        'await fetch(TW_API_BASE + TW_ENDPOINTS[ep].path.replace("{contractId}", () => "../x"), {',
+        "await fetch(TW_API_BASE + TW_ENDPOINTS[ep].pathname, {",
+      ]) {
+        expect(clientProblems([{ file: CLIENT, text: key + call }]), call).toEqual([
+          `${CLIENT}: the fetch URL is not TW_API_BASE + TW_ENDPOINTS[ep].path`,
+        ]);
+      }
+      for (const call of [
+        'await fetch(TW_API_BASE + TW_ENDPOINTS[ep].path.replace("{contractId}", () => (body as TwInput["read"]).contractId), {',
+        "await fetch(TW_API_BASE + TW_ENDPOINTS[ep].path, {",
+      ]) {
+        expect(clientProblems([{ file: CLIENT, text: key + call }]), call).toEqual([]);
+      }
       expect(clientProblems([...planted, { file: "next.config.mjs", text: "env: { TRUSTLESS_WORK_API_KEY: x }" }])).toContain(
         "next.config.mjs: names TRUSTLESS_WORK_API_KEY (only the client reads it)",
       );
@@ -324,6 +368,19 @@ describe("tw-endpoint-allowlist", () => {
       expect(routerInputProblems(procs)).toEqual([
         "arbiter.prepareResolution: input key recipient",
         "escrow.prepareCreate: input key roles",
+      ]);
+      // Keys inside a record, a map, a set or a lazy schema are seen too.
+      const nested = [
+        { path: "escrow.prepareCreate", inputs: [z.object({ tradeId: z.string(), meta: z.record(z.object({ body: z.string() })) })] },
+        { path: "escrow.prepareFund", inputs: [z.object({ tradeId: z.string(), m: z.map(z.string(), z.object({ url: z.string() })) })] },
+        { path: "escrow.prepareRelease", inputs: [z.object({ tradeId: z.string(), s: z.set(z.object({ path: z.string() })) })] },
+        { path: "arbiter.addSignature", inputs: [z.object({ resolutionId: z.string(), l: z.lazy(() => z.object({ amount: z.string() })) })] },
+      ];
+      expect(routerInputProblems(nested)).toEqual([
+        "escrow.prepareCreate: input key body",
+        "escrow.prepareFund: input key url",
+        "escrow.prepareRelease: input key path",
+        "arbiter.addSignature: input key amount",
       ]);
     });
 
