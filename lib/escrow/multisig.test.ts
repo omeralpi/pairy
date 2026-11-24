@@ -77,3 +77,51 @@ describe("extractSignatures", () => {
     expect(() => extractSignatures(tx.toXDR(), unsignedHash, SIGNERS)).toThrow(/not from one of/);
   });
 });
+
+/** The transaction-level result code in a Horizon result_xdr, e.g. "txBadAuth". */
+const resultCode = (resultXdr: string) => xdr.TransactionResult.fromXDR(resultXdr, "base64").result.type;
+
+describe("one signature alone is not enough (S-19)", () => {
+  it("each signer's envelope carries one signature on the hash that later landed, and was refused with tx_bad_auth outside any ledger", () => {
+    for (const sig of [one, two]) {
+      const alone = mergeSignatures(unsignedXdr, [sig]);
+      expect(Buffer.from(TransactionBuilder.fromXDR(alone, Networks.TESTNET).hash()).toString("hex")).toBe(s19.twoSignatures.submit.hash);
+      expect(extractSignatures(alone, unsignedHash, SIGNERS)).toEqual([sig]);
+    }
+    for (const attempt of s19.singleSignature) {
+      expect(attempt.codes).toEqual(["tx_bad_auth"]);
+      expect(resultCode(attempt.resultXdr)).toBe("txBadAuth");
+      expect(attempt.inLedger).toBe(false);
+    }
+  });
+});
+
+// WP-15: recorded by scripts/evidence/escrow-exits.ts dispute-<side> --arbiter=test.
+describe.each(["buyer", "seller"])("the arbiter's signatures on the dispute exit to the %s (WP-15, test 2-of-2)", (side) => {
+  const r = read(`exits-test-resolve-${side}`);
+  const sigs = (r.signatures as { signer: string; signature: string }[]).map(({ signer, signature }) => ({ signer, signature }));
+
+  it("merge, from two signatures made apart on the re-timed resolve, into the envelope that landed", () => {
+    expect(sigs).toHaveLength(2);
+    expect(mergeSignatures(r.rebuilt.unsignedXdr, sigs)).toBe(r.landed.signedXdr);
+    expect(extractSignatures(r.landed.signedXdr, r.rebuilt.txHash, r.arbiter.signers)).toEqual(sigs);
+  });
+
+  it("do not count against Trustless Work's original hash (O-17)", () => {
+    expect(() => extractSignatures(r.landed.signedXdr, r.response.body.txHash, r.arbiter.signers)).toThrow(/different transaction/);
+  });
+
+  it("each alone is not enough: that envelope was refused with tx_bad_auth outside any ledger, and the arbiter's sequence did not move", () => {
+    expect(r.arbiter.thresholds).toEqual({ low: 2, med: 2, high: 2 });
+    expect(r.singleSignatures.map((s: { signer: string }) => s.signer)).toEqual(sigs.map((s) => s.signer));
+    sigs.forEach((sig, i) => {
+      const refused = r.singleSignatures[i];
+      expect(mergeSignatures(r.rebuilt.unsignedXdr, [sig])).toBe(refused.envelopeXdr);
+      expect(refused.hash).toBe(r.landed.hash);
+      expect(refused.codes).toEqual(["tx_bad_auth"]);
+      expect(resultCode(refused.resultXdr)).toBe("txBadAuth");
+      expect(refused.inLedger).toBe(false);
+      expect(refused.arbiterSequenceAfter).toBe(r.arbiter.sequence);
+    });
+  });
+});
