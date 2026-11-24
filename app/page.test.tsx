@@ -14,4 +14,16 @@ describe("Home: where your key lives", () => {
     );
     expect(html).not.toContain("Your key is made on your device");
   });
+
+  it("says who asks who you are, which with email or Google is Privy, not Pairy (O-41)", () => {
+    const html = renderToStaticMarkup(<Home />);
+    expect(html).toContain("You don&#x27;t sign up with Pairy.");
+    expect(html).toContain(
+      "With a key on your device or Varial, nobody asks who you are. With email or Google, that login goes to Privy; Pairy itself knows you only by your Stellar address.",
+    );
+    expect(html).not.toContain("Pairy never asks who you are");
+    // The card comes after the safety section, so the first mention there names Varial (formerly Freighter) (O-30).
+    const first = html.search(/Varial|Freighter/);
+    expect(html.slice(first, first + "Varial (formerly Freighter)".length)).toBe("Varial (formerly Freighter)");
+  });
 });

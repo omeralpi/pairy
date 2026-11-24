@@ -37,8 +37,8 @@ const WHY = [
     figure: "100 stroops = 0.00001 XLM",
   },
   {
-    title: "You don't sign up.",
-    body: "Pairy never asks who you are. Your key is the whole account.",
+    title: "You don't sign up with Pairy.",
+    body: "With a key on your device or Varial, nobody asks who you are. With email or Google, that login goes to Privy; Pairy itself knows you only by your Stellar address.",
   },
 ];
 

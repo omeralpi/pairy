@@ -43,10 +43,11 @@ describe("EscrowProof", () => {
     expect(html).not.toMatch(/claimable balance|CAP-23|BEFORE_RELATIVE_TIME|claim/i);
   });
 
-  it("says what the escrow is and who can move it, with Pairy holding no key", () => {
+  it("says what the escrow is and who can move it: the arbiter is the Pairy team, and Pairy's server holds no key (O-41)", () => {
     const html = render({});
     expect(html).toContain("Trustless Work escrow");
-    expect(html).toContain("Pairy holds no key, is not a signer and cannot move it.");
+    expect(html).toContain("That account is the Pairy team&#x27;s, and both builders must sign. Pairy&#x27;s server holds no key to it and signs nothing.");
+    expect(html).not.toContain("Pairy holds no key, is not a signer and cannot move it.");
     expect(html).toContain("Only the seller can release it, and only the arbiter account can resolve a dispute");
   });
 

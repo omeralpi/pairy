@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Pairy · Trade in person.",
   description:
-    "Meet a peer nearby and swap cash for XLM, USDC or EURC face to face. Stellar testnet demo: Pairy holds no key and never touches the funds.",
+    "Meet a peer nearby and swap cash for XLM, USDC or EURC face to face. Stellar testnet demo: Pairy's server holds no signing key and never signs or sends a transaction.",
 };
 
 export const viewport: Viewport = {

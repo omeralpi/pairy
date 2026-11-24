@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Pairy",
     short_name: "Pairy",
-    description: "Trade in person. A Stellar testnet demo: Pairy holds no key and never touches the funds.",
+    description: "Trade in person. A Stellar testnet demo: Pairy's server holds no signing key and never signs or sends a transaction.",
     start_url: "/map",
     display: "standalone",
     background_color: "#F5F1EA",

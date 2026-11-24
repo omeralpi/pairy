@@ -63,8 +63,8 @@ export function EscrowProof({ trade }: { trade: TradeView }) {
         <p>
           The {trade.asset} goes into a <span className="text-ink">Trustless Work escrow</span>, a contract on Stellar
           testnet created from a one-time key made in the seller&apos;s browser. Only the seller can release it, and
-          only the arbiter account can resolve a dispute, by the published rule. Pairy holds no key, is not a signer
-          and cannot move it.
+          only the arbiter account can resolve a dispute, by the published rule. That account is the Pairy team&apos;s,
+          and both builders must sign. Pairy&apos;s server holds no key to it and signs nothing.
         </p>
         {exists ? (
           <dl className="divide-y divide-line border-y border-line font-mono text-xs">
