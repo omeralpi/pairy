@@ -82,7 +82,8 @@ export function useTradeSync(trade: TradeView) {
       if (pending && current) {
         if (pendingTxAction(current, pending) === "clear") {
           clearPendingTx(id);
-        } else {
+        } else if (pending.kind !== "resolve") {
+          // A resolve is the arbiter page's to report (components/arbiter): a signer is never a party.
           try {
             const report = {
               lock: recordLock,
