@@ -6,6 +6,7 @@
 import { Networks, TransactionBuilder, type Transaction } from "@stellar/stellar-sdk";
 
 import { shortAddress, trimAmount } from "@/components/listing/format";
+import { decodeEscrowCall, describeEscrowCall } from "@/lib/escrow/xdr";
 
 function hours(seconds: string): string {
   const s = Number(seconds);
@@ -39,10 +40,18 @@ function describeOperation(op: Transaction["operations"][number]): string {
   }
 }
 
-/** "Lock 25 USDC for GABC…WXYZ, claimable by them for 72 hours" on Stellar testnet. */
+/**
+ * "Lock 25 USDC for GABC…WXYZ, claimable by them for 72 hours" on Stellar
+ * testnet; "Fund this trade's escrow with 100 USDC" for a protected trade's
+ * escrow call, read from the contract call itself.
+ */
 export function describeTransaction(xdr: string): string {
   try {
     const tx = TransactionBuilder.fromXDR(xdr, Networks.TESTNET) as Transaction;
+    if (tx.operations.length === 1 && tx.operations[0].type === "invokeHostFunction") {
+      const txHash = Array.from(tx.hash(), (b) => b.toString(16).padStart(2, "0")).join("");
+      return describeEscrowCall(decodeEscrowCall({ unsignedXdr: xdr, txHash }));
+    }
     const ops = tx.operations.map(describeOperation);
     return ops.length === 1 ? ops[0] : `${ops.length} operations: ${ops.join("; ")}`;
   } catch {

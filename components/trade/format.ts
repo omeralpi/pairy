@@ -1,6 +1,9 @@
 import type { BuyerClaim } from "@/components/trade/guards";
 import type { RouterOutputs } from "@/lib/api";
-import type { TradeRole, TradeState } from "@/lib/trade/state-machine";
+import { netAfterFee } from "@/lib/escrow/fee";
+import { answerDeadline, promiseDeadline } from "@/lib/escrow/rule";
+import { fromStroops, toStroops } from "@/lib/trade/amount";
+import type { TradeMode, TradeRole, TradeState } from "@/lib/trade/state-machine";
 
 export type TradeView = RouterOutputs["trade"]["byId"];
 
@@ -21,6 +24,28 @@ export const STATE_LABEL: Record<TradeState, string> = {
 
 export const roleName = (r: TradeRole) => (r === "seller" ? "Seller" : "Buyer");
 
+const other = (r: TradeRole): TradeRole => (r === "seller" ? "buyer" : "seller");
+
+/** What the buyer receives from an escrow holding `amount`: 0.3% goes to Trustless Work. */
+const netOf = (amount: string) => fromStroops(netAfterFee(toStroops(amount)));
+
+/**
+ * The columns a sentence about a trade's state is written from; `mine` and
+ * `byId` both carry them. Without `mode` the trade is read as claimable.
+ */
+type TradeStatus = {
+  state: TradeState;
+  role: TradeRole;
+  openedBy: TradeRole;
+  asset: string;
+  amount?: string;
+  mode?: TradeMode;
+  disputed?: boolean;
+  lockTx?: string | null;
+  createTx?: string | null;
+  fundTx?: string | null;
+};
+
 /**
  * Where a trade stands, as one plain sentence from the viewer's side.
  * `claim`, for a locked trade: whether the buyer can claim right now. Only
@@ -28,10 +53,8 @@ export const roleName = (r: TradeRole) => (r === "seller" ? "Seller" : "Buyer");
  * being read, "unchecked" where it is not read at all (the trades list),
  * "blocked" with what stands in the way.
  */
-export function statusSentence(
-  t: { state: TradeState; role: TradeRole; openedBy: TradeRole; asset: string; lockTx?: string | null },
-  claim: BuyerClaim | { state: "unchecked" } = { state: "open" },
-): string {
+export function statusSentence(t: TradeStatus, claim: BuyerClaim | { state: "unchecked" } = { state: "open" }): string {
+  if (t.mode === "protected") return protectedSentence(t);
   switch (t.state) {
     case "listed":
       // The side that did not open the trade is the one that agrees to it.
@@ -67,7 +90,7 @@ export function statusSentence(
       return t.lockTx
         ? "Closed: Stellar testnet was reset, so this lock no longer exists."
         : "Cancelled. Nothing was locked.";
-    // Protected trades: the label until WP-31 writes their sentences.
+    // A claimable trade never reaches an escrow state.
     case "escrow_created":
     case "funded":
     case "released":
@@ -75,6 +98,75 @@ export function statusSentence(
     case "resolved_seller":
       return `${STATE_LABEL[t.state]}.`;
   }
+}
+
+/**
+ * The protected trade's headline. There is no lock and no claim: the USDC
+ * sits in the escrow until the seller releases it or the arbiter decides.
+ */
+function protectedSentence(t: TradeStatus): string {
+  switch (t.state) {
+    case "listed":
+      return t.role === t.openedBy
+        ? `Protected trade. Waiting for the ${other(t.role)} to accept the terms.`
+        : "Protected trade. Waiting for you to accept the terms.";
+    case "agreed":
+      return t.role === "seller"
+        ? "Agreed. Create the escrow when you're ready."
+        : "Agreed. Waiting for the seller to create the escrow.";
+    case "escrow_created":
+      return t.role === "seller"
+        ? "The escrow exists. Check its terms, then fund it."
+        : "The escrow exists. Waiting for the seller to fund it.";
+    case "funded":
+      if (t.disputed) return "Dispute open. Only the arbiter can settle this escrow now.";
+      return t.role === "seller"
+        ? "Funded. Release only when you hold the cash."
+        : "Funded. Hand over the cash only when the release shows here.";
+    case "released":
+      return t.role === "buyer"
+        ? `Settled. You received ${netOf(t.amount ?? "0")} USDC.`
+        : `Settled. The buyer received ${netOf(t.amount ?? "0")} USDC.`;
+    case "resolved_buyer":
+    case "resolved_seller": {
+      const outcome: TradeRole = t.state === "resolved_buyer" ? "buyer" : "seller";
+      return `Settled by the arbiter: all to ${outcome === t.role ? "you" : `the ${outcome}`}, less 0.3%.`;
+    }
+    case "cancelled":
+      // Only a testnet reset cancels a funded protected trade.
+      if (t.fundTx) return "Closed: Stellar testnet was reset, so this escrow no longer exists.";
+      return t.createTx ? "Cancelled. The escrow was never funded." : "Cancelled. No escrow was created.";
+    // A protected trade never holds a lock.
+    case "locked":
+    case "claimed":
+    case "reclaimed":
+      return `${STATE_LABEL[t.state]}.`;
+  }
+}
+
+/**
+ * The trades list's line under a disputed protected trade: the viewer's own
+ * 24 h answer deadline (from when Pairy recorded the dispute, DECISIONS 1)
+ * until they answer or it passes, then the arbiter's 72 h promise. Null
+ * when there is no open dispute on a funded escrow.
+ */
+export function disputeBadge(
+  t: {
+    state: TradeState;
+    role: TradeRole;
+    mode: TradeMode;
+    disputed: boolean;
+    disputeRecordedAt: Date | null;
+    disputedAt: Date | null;
+    answers?: Partial<Record<TradeRole, unknown>> | null;
+  },
+  now: number = Date.now(),
+): string | null {
+  if (t.mode !== "protected" || t.state !== "funded" || !t.disputed || !t.disputeRecordedAt) return null;
+  const deadline = answerDeadline({ disputeRecordedAt: t.disputeRecordedAt });
+  if (t.answers?.[t.role] == null && now < deadline.getTime()) return `Dispute open: answer by ${shortWhen(deadline)}`;
+  const promise = promiseDeadline({ disputedAt: t.disputedAt ?? t.disputeRecordedAt });
+  return `Dispute open: the arbiter applies the rule by ${shortWhen(promise)}`;
 }
 
 /**

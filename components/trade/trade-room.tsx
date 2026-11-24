@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmAction } from "@/components/confirm-action";
+import { EscrowProof } from "@/components/escrow/escrow-proof";
 import { ProtectedActions } from "@/components/escrow/protected-actions";
 import { friendlyError, isUnauthorized } from "@/components/friendly-error";
 import { shortAddress, trimAmount } from "@/components/listing/format";
@@ -329,9 +330,17 @@ function Room({ trade, publicKey }: { trade: TradeView; publicKey: string }) {
             <p className="text-slate">
               · cash {fiat} {trade.fiatCode}
             </p>
-            <p className="text-slate">· window {windowShort(trade.windowSeconds)}</p>
+            {trade.mode === "protected" ? (
+              <p className="text-slate">· protected trade · Trustless Work escrow</p>
+            ) : (
+              <p className="text-slate">· window {windowShort(trade.windowSeconds)}</p>
+            )}
             <p className="text-slate">· city {trade.cityName}</p>
             {trade.state === "claimed" && <p className="text-success">✓ settled in person</p>}
+            {trade.state === "released" && <p className="text-success">✓ settled through the escrow</p>}
+            {(trade.state === "resolved_buyer" || trade.state === "resolved_seller") && (
+              <p className="text-success">✓ settled by the arbiter</p>
+            )}
           </div>
 
           {trade.mode === "protected" ? <ProtectedActions trade={trade} /> : <Actions trade={trade} />}
@@ -341,7 +350,7 @@ function Room({ trade, publicKey }: { trade: TradeView; publicKey: string }) {
             <Timeline trade={trade} />
           </section>
 
-          <Proof trade={trade} />
+          {trade.mode === "protected" ? <EscrowProof trade={trade} /> : <Proof trade={trade} />}
         </div>
 
         <ChatPanel tradeId={trade.id} me={publicKey} closed={terminal} />

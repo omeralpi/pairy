@@ -6,13 +6,26 @@ import { useEffect } from "react";
 
 import { friendlyError, isUnauthorized } from "@/components/friendly-error";
 import { shortAddress, trimAmount } from "@/components/listing/format";
-import { STATE_LABEL, lockWindowClosed, statusSentence } from "@/components/trade/format";
+import { STATE_LABEL, disputeBadge, lockWindowClosed, statusSentence } from "@/components/trade/format";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth/use-session";
 import type { TradeState } from "@/lib/trade/state-machine";
 
-// Live trades first, in the order they need attention.
-const ORDER: TradeState[] = ["locked", "agreed", "listed", "claimed", "reclaimed", "cancelled"];
+// Live trades first, in the order they need attention. States that share a
+// label (claimed and released; the two arbiter outcomes) form one group.
+const ORDER: TradeState[] = [
+  "funded",
+  "escrow_created",
+  "locked",
+  "agreed",
+  "listed",
+  "claimed",
+  "released",
+  "resolved_buyer",
+  "resolved_seller",
+  "reclaimed",
+  "cancelled",
+];
 
 const linkClass = "font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink";
 
@@ -53,11 +66,13 @@ export default function TradesPage() {
           </p>
         ) : (
           ORDER.map((state) => {
-            const rows = data?.filter((t) => t.state === state) ?? [];
+            const label = STATE_LABEL[state];
+            if (ORDER.find((s) => STATE_LABEL[s] === label) !== state) return null;
+            const rows = data?.filter((t) => STATE_LABEL[t.state] === label) ?? [];
             if (rows.length === 0) return null;
             return (
-              <section key={state} className="space-y-3">
-                <h2 className="eyebrow">{STATE_LABEL[state]}</h2>
+              <section key={label} className="space-y-3">
+                <h2 className="eyebrow">{label}</h2>
                 <ul className="divide-y divide-line border-y border-line">
                   {rows.map((t) => (
                     <li key={t.id}>
@@ -77,7 +92,11 @@ export default function TradesPage() {
                             {t.role === "seller" ? "Selling" : "Buying"} · with{" "}
                             <span className="font-mono">{shortAddress(t.counterparty)}</span> · {t.cityName}
                           </p>
-                          {t.disputed && <p className="text-xs font-medium text-warning">A problem was flagged.</p>}
+                          {t.mode === "protected" ? (
+                            disputeBadge(t) && <p className="text-xs font-medium text-warning">{disputeBadge(t)}</p>
+                          ) : (
+                            t.disputed && <p className="text-xs font-medium text-warning">A problem was flagged.</p>
+                          )}
                         </div>
                         <ChevronRight
                           className="size-4 shrink-0 text-slate transition-colors group-hover:text-ink"
