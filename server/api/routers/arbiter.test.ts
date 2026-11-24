@@ -1025,8 +1025,15 @@ describe("arbiter.recordResolution", () => {
       code: "BAD_REQUEST",
       message: `The resolve on chain paid 5 USDC to ${BUYER_EXIT.escrow.buyer}, not the prepared 5 USDC to ${BUYER_EXIT.escrow.seller}.`,
     });
+    // The right payee, but the prepared row says a stroop less than the resolve paid (WP-29 judge N1).
+    await f.db.update(arbiterResolutions).set({ recipient: BUYER_EXIT.escrow.buyer, amount: "4.9999999" }).where(eq(arbiterResolutions.id, resolutionId));
+    await expect(record(BUYER_EXIT.landed.hash)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: `The resolve on chain paid 5 USDC to ${BUYER_EXIT.escrow.buyer}, not the prepared 4.9999999 USDC to ${BUYER_EXIT.escrow.buyer}.`,
+    });
+    expect(await row(t.id)).toMatchObject({ state: "funded", resolveTx: null });
     // Not landed yet, and Horizon down.
-    await f.db.update(arbiterResolutions).set({ recipient: BUYER_EXIT.escrow.buyer }).where(eq(arbiterResolutions.id, resolutionId));
+    await f.db.update(arbiterResolutions).set({ recipient: BUYER_EXIT.escrow.buyer, amount: "5.0000000" }).where(eq(arbiterResolutions.id, resolutionId));
     delete txs[BUYER_EXIT.landed.hash];
     await expect(record(BUYER_EXIT.landed.hash)).rejects.toMatchObject({ code: "BAD_REQUEST", message: `Transaction ${BUYER_EXIT.landed.hash} was not found on Stellar testnet.` });
     expect(await row(t.id)).toMatchObject({ state: "funded", resolveTx: null });
