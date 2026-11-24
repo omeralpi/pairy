@@ -79,15 +79,15 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 A wallet opened with an email or Google login (Privy) can leave Pairy. **Export key** on the wallet page opens Privy's own screen; its **Copy key** button copies the private key to the clipboard without showing it, and Pairy never sees it. The key has one destination: the import field of Varial (formerly Freighter), the Stellar wallet extension. Install it only from [varialwallet.com](https://varialwallet.com) (freighter.app leads there too). Never paste it anywhere else: not into Pairy, a chat, a note, a search box, or a website that offers to convert or check a key. The one exception is the offline converter below.
 
 1. In Varial, switch to **Test Net**. Click the wallet name at the top, choose **Add wallet**, then **Import a Stellar secret key**.
-2. Paste the key, enter your Varial password, tick the box and choose **Import**. Varial must now show the same G… address as Pairy's wallet page.
+2. Paste the key, enter your Varial password, tick the box and choose **Import**. Then click the wallet name at the top again: the short address under it must match Pairy's wallet page (the same first and last four characters).
 
-Varial takes a Stellar secret key: 56 characters starting with `S`. If it refuses the key although the password is right, Privy copied it as hex (`0x…`). Convert it on your own computer, in a new terminal window (macOS or Linux; on Windows use WSL), with Node.js 20 or newer: run `npm i @stellar/stellar-base` in an empty folder, then
+Varial takes a Stellar secret key: 56 characters starting with `S`. If it refuses the key although the password is right, Privy copied it as hex (`0x…`). Convert it on your own computer, in a new terminal window (macOS or Linux; on Windows use WSL), with Node.js 20 or newer. In an empty folder run `npm i @stellar/stellar-base@15.0.0` (npm warns that this package moved into `@stellar/stellar-sdk`; that is expected), then
 
 ```sh
 node -e 'const {Keypair}=require("@stellar/stellar-base");let h="";process.stdin.on("data",d=>h+=d).on("end",()=>{const k=Keypair.fromRawEd25519Seed(Buffer.from(h.trim().replace(/^0x/i,"").slice(0,64),"hex"));console.log(k.publicKey());console.log(k.secret())})'
 ```
 
-Paste the key, press Enter, then Ctrl-D. The command reads the key from the terminal, not from the command line, so it never lands in your shell history. It prints the G… address, which must match Pairy's wallet page, and then the `S…` key for step 2. If it prints an error instead, stop: the key is in a form this note does not cover. Close the terminal window afterwards, and copy some other text so the key leaves your clipboard.
+The command now waits for the key. Copying the commands above replaced the key in your clipboard, so press **Copy key** in Privy again, paste the key into the terminal, press Enter, then Ctrl-D. The command reads the key from the terminal, not from the command line, so it never lands in your shell history. It prints the G… address, which must match Pairy's wallet page, and then the `S…` key: copy that line and import it with steps 1 and 2. If it prints an error instead, stop: the key is in a form this note does not cover. Close the terminal window afterwards, and copy some other text so the key leaves your clipboard.
 
 If Varial shows a different G… address, a different key went in. Varial cannot delete an account: rename that one (for example "wrong") and start again. Never use **Reset wallet** for this; it wipes every account in Varial.
 

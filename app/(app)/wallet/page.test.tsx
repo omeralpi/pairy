@@ -76,6 +76,10 @@ describe("WalletPage for a Privy wallet", () => {
     expect(converter, "the note has no node -e converter in a ```sh block").toBeDefined();
     expect(converter).toContain("process.stdin");
     expect(converter).not.toContain("process.argv");
+    // The package that receives the key is pinned to the verified version, and copying the
+    // commands replaced the key in the clipboard, so the note asks for a fresh copy.
+    expect(note).toContain("npm i @stellar/stellar-base@15.0.0");
+    expect(note).toContain("press **Copy key** in Privy again");
   });
 
   it("says that logging out also signs out of Privy", () => {
