@@ -136,6 +136,7 @@ describe("decodeEscrowCall", () => {
       contractId: A.contractId,
       fn: "fund_escrow",
       fee: 149191n,
+      memo: "none",
       args: [SELLER, expect.objectContaining({ amount: 100000000n, engagement_id: "pairy-wp03-a-1795460867633" }), 100000000n],
       authRoots: [
         {
@@ -238,6 +239,17 @@ describe("validateEscrowCall", () => {
 
     it("a transaction that never expires", () => {
       refused(check("dispute", mutated("dispute", (tx) => (tx.cond = { type: 0 }))), /never expires/);
+    });
+
+    // Trustless Work never sets a memo; one would be public on chain and missing from the signing screen.
+    describe.each([
+      ["a text", { type: 1, text: "pay me" }],
+      ["an id", { type: 2, id: 7n }],
+      ["a hash", { type: 3, hash: new Uint8Array(32).fill(1) }],
+    ])("%s memo", (_type, memo) => {
+      it.each(["deploy", "fund", "approve-and-release-milestones", "dispute", "resolve-dispute"])("on %s", (name) => {
+        refused(check(name, mutated(name, (tx) => (tx.memo = memo))), /carries a memo/);
+      });
     });
 
     it("a fee above ESCROW_XLM_NEED, 2 XLM (O-18)", () => {

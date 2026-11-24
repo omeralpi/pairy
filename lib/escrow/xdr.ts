@@ -49,6 +49,8 @@ export type DecodedCall = {
   source: string;
   /** The most the source can be charged, in stroops: inclusion and Soroban resource fees together. */
   fee: bigint;
+  /** The memo's type: "none", or "text", "id", "hash" or "return". */
+  memo: string;
   opCount: number;
   /** The first operation's type, and its own source account when it has one. */
   opType: string;
@@ -116,6 +118,7 @@ export function decodeEscrowCall(prepared: { unsignedXdr: string; txHash: string
     hash: txHash,
     source: tx.source,
     fee: BigInt(tx.fee),
+    memo: tx.memo.type,
     opCount: tx.operations.length,
     opType: op?.type ?? "none",
     opSource: op?.source ?? null,
@@ -235,6 +238,8 @@ export function validateEscrowCall(d: DecodedCall, e: CallExpectation, now = new
   if (d.opCount !== 1) problems.push(`It has ${d.opCount} operations instead of one.`);
   if (d.source !== signer) problems.push(`It would be sent from ${d.source}, not from ${signer}.`);
   if (d.opSource !== null) problems.push("Its operation names its own source account.");
+  // A memo is public on chain and the signing screen does not show it.
+  if (d.memo !== "none") problems.push("It carries a memo; Trustless Work's transactions carry none.");
 
   // O-18: a tampered fee must not drain the signer's XLM. Trustless Work's fees are 0.02-0.21 XLM.
   if (d.fee > ESCROW_XLM_NEED) {
