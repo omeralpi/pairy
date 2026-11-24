@@ -10,7 +10,7 @@ export default defineConfig({
     include: ["tests/pg/**/*.pg.test.ts"],
     testTimeout: 60_000,
     hookTimeout: 60_000,
-    setupFiles: ["./vitest.setup.ts"],
+    setupFiles: ["./vitest.setup.ts", "./tests/pg/require-every-test.ts"],
   },
   resolve: {
     alias: {
