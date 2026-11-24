@@ -20,7 +20,7 @@ vi.mock("@/lib/escrow/read", async (orig) => ({
 }));
 
 const { readEscrow, readWasmHash } = await import("@/lib/escrow/read");
-const { checkPrepared, fundBlocked, readEscrowOnChain, releaseBlocked, termRows } = await import("./escrow-steps");
+const { checkPrepared, disputeBlocked, fundBlocked, readEscrowOnChain, releaseBlocked, termRows } = await import("./escrow-steps");
 
 type Fixture = { at: string; response: { body: { unsignedXdr: string; txHash: string } } };
 const fixture = (name: string): Fixture => JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/tw", `${name}.json`), "utf8"));
@@ -215,5 +215,26 @@ describe("releaseBlocked", () => {
     expect(releaseBlocked({ unreported: "ab".repeat(32), pending: null, wallet: null })).toMatch(/not recorded yet.*don't release it again/);
     expect(releaseBlocked({ unreported: null, pending: { kind: "release" }, wallet: null })).toMatch(/already sent the release/);
     expect(releaseBlocked({ unreported: null, pending: { kind: "fund" }, wallet: "Connect your wallet to sign." })).toBe("Connect your wallet to sign.");
+  });
+});
+
+describe("checkPrepared on a dispute, and disputeBlocked (WP-37)", () => {
+  // WP-15's test-arbiter buyer exit: the buyer disputed escrow CD2SQ73L….
+  const DISPUTE = fixture("exits-test-dispute-buyer");
+  const dispute = { kind: "dispute" as const, contractId: "CD2SQ73L66QEHOZTFZ3EVTEHQCOP64KSC4KZHFMB2NMRKACSTIF5EAXX", signer: "GB4SRNTZC2IPDRHBQMAMHVRNUOEUEIGLJKPP7SXBLRYKD4EC6RMJ34TT" };
+
+  it("passes Trustless Work's dispute for this trader with Pairy's fixed reason, and refuses it for the other trader", () => {
+    const c = checkPrepared(DISPUTE.response.body, dispute, during(DISPUTE));
+    expect(c.problems).toEqual([]);
+    expect(c.summary).toBe("Open a dispute on this trade's escrow");
+    const seller = "GBHJ2SXQHGE44MWYUELDSLP3CCMYPA4RFNFIOAKHI6TC5SZJ4I6J6G3E";
+    expect(checkPrepared(DISPUTE.response.body, { ...dispute, signer: seller }, during(DISPUTE)).problems.join(" ")).toContain(seller);
+  });
+
+  it("never lets a second dispute start while one from this browser is on its way or unrecorded", () => {
+    expect(disputeBlocked({ unreported: null, pending: null, wallet: null })).toBeNull();
+    expect(disputeBlocked({ unreported: "ab".repeat(32), pending: null, wallet: null })).toMatch(/not recorded yet.*don't send it again/);
+    expect(disputeBlocked({ unreported: null, pending: { kind: "dispute" }, wallet: null })).toMatch(/already sent a dispute/);
+    expect(disputeBlocked({ unreported: null, pending: { kind: "release" }, wallet: "Connect your wallet to sign." })).toBe("Connect your wallet to sign.");
   });
 });

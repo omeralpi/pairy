@@ -109,3 +109,18 @@ describe("TradeRoom for a protected trade", () => {
     expect(room({ state: "agreed" })).not.toContain("LOCK PANEL");
   });
 });
+
+describe("TradeRoom's Flag a problem on a claimable trade (unchanged by WP-37)", () => {
+  const room = (t: Record<string, unknown>) => {
+    byId.result = { data: { ...trade, ...t }, error: null, isLoading: false };
+    return renderToStaticMarkup(<TradeRoom id={id} />).replaceAll("&#x27;", "'");
+  };
+
+  it("offers the flag before and after the lock, and says a flag moves no money once flagged", () => {
+    expect(room({ state: "agreed" })).toContain("Flag a problem");
+    expect(room({ state: "locked", balanceId: "00".repeat(36) })).toContain("Flag a problem");
+    const html = room({ state: "locked", disputed: true });
+    expect(html).toContain("A problem was flagged on this trade. That doesn't freeze or move the XLM.");
+    expect(html).not.toContain("Flag a problem");
+  });
+});

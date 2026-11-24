@@ -27,6 +27,8 @@ vi.mock("@/lib/wallet/use-wallet", () => ({ useWallet: () => ({ wallet: null, re
 vi.mock("@/components/trade/use-trade-sync", () => ({ useTradeSync: () => {} }));
 vi.mock("@/components/chat/chat-panel", () => ({ ChatPanel: () => null }));
 vi.mock("@/components/trade/lock-panel", () => ({ LockPanel: () => <p>LOCK PANEL</p> }));
+// It reads the escrow with React Query's own useQuery, which needs a provider.
+vi.mock("@/components/escrow/fund-panel", () => ({ FundPanel: () => <p>FUND PANEL</p> }));
 
 const { TradeRoom } = await import("./trade-room");
 
@@ -79,6 +81,9 @@ const trade = {
   resolvedAt: null,
   viewerUrl: null,
   stallNudge: false,
+  answers: { seller: null, buyer: null },
+  answerDeadline: null,
+  promiseDeadline: null,
   events: [event("open", "buyer"), event("agree", "seller")],
 };
 const created = {
@@ -160,5 +165,53 @@ describe("TradeRoom read-only surfaces for a protected trade", () => {
     expect(html).toContain("· window 72 h");
     expect(html).toContain("claimable balance");
     expect(html).not.toContain("Trustless Work");
+  });
+});
+
+describe("TradeRoom's Flag a problem on a protected trade (WP-37)", () => {
+  const recorded = new Date(Date.now() - 3600_000);
+  const disputed = {
+    ...funded,
+    disputed: true,
+    disputeTx: "d".repeat(64),
+    disputedAt: recorded,
+    disputeRecordedAt: recorded,
+    disputeOpenedBy: "buyer",
+    answerDeadline: new Date(recorded.getTime() + 24 * 3600_000),
+    promiseDeadline: new Date(recorded.getTime() + 72 * 3600_000),
+    events: [...funded.events, event("escrowDispute", "buyer", "d".repeat(64))],
+  };
+  const text = (html: string) => html.replaceAll("&#x27;", "'");
+
+  it("hides it before the escrow is funded: there is nothing on chain to dispute yet, and Cancel is the way out (MC-34)", () => {
+    for (const t of [{ ...trade, state: "listed" }, trade, created]) {
+      for (const role of ["seller", "buyer"]) expect(room({ ...t, role })).not.toContain("Flag a problem");
+    }
+  });
+
+  it("offers it to both traders once funded, as the escrow's dispute and never the claimable note", () => {
+    for (const role of ["seller", "buyer"]) {
+      const html = text(room({ ...funded, role }));
+      expect(html).toContain("Flag a problem");
+      expect(html).not.toMatch(/doesn't freeze|only adds a note/);
+    }
+  });
+
+  it("never says a flag doesn't freeze or move the USDC on a disputed or resolved escrow, and offers no second dispute", () => {
+    const resolved = (state: string) => ({ ...disputed, state, resolveTx: "e".repeat(64), events: [...disputed.events, event("resolve", "arbiter", "e".repeat(64))] });
+    for (const t of [disputed, resolved("resolved_buyer"), resolved("resolved_seller")]) {
+      for (const role of ["seller", "buyer"]) {
+        const html = text(room({ ...t, role }));
+        expect(html).not.toMatch(/freeze|A problem was flagged/);
+        expect(html).not.toContain("Flag a problem");
+      }
+    }
+  });
+
+  it("shows the answer deadline in the disputed room (WP-31 carry-over)", () => {
+    const html = text(room(disputed));
+    expect(status(html)).toBe("Dispute open. Only the arbiter can settle this escrow now.");
+    expect(html).toContain("Was the cash handed over in full?");
+    expect(html).toContain("Answer by ");
   });
 });

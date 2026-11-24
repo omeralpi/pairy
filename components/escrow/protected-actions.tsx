@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { ConfirmAction } from "@/components/confirm-action";
 import { AcceptanceScreen } from "@/components/escrow/acceptance-screen";
+import { AnswerPanel } from "@/components/escrow/answer-panel";
 import { BuyerWaiting } from "@/components/escrow/buyer-waiting";
 import { CreatePanel } from "@/components/escrow/create-panel";
 import { FundPanel } from "@/components/escrow/fund-panel";
@@ -21,8 +22,9 @@ import { ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
  * peer who did not open it accepts the protected-trade terms by agreeing, the
  * buyer adds the USDC trustline the escrow needs, the seller creates the
  * escrow, funds it and releases it, and the buyer waits for the release.
- * Either side may cancel until the escrow is funded (FIXES F-16). The
- * dispute panels come in a later work package.
+ * Either side may cancel until the escrow is funded (FIXES F-16). Once the
+ * escrow is disputed, each side answers the rule's question, and the answers
+ * stay in view after the arbiter settles.
  */
 export function ProtectedActions({ trade }: { trade: TradeView }) {
   const utils = api.useUtils();
@@ -135,9 +137,12 @@ export function ProtectedActions({ trade }: { trade: TradeView }) {
         </section>
       );
     case "funded":
-      // A disputed escrow is the arbiter's; its answer panels come with the dispute (WP-37).
-      if (trade.disputed) return null;
+      // A disputed escrow is the arbiter's: no release, no Cancel, only the answers.
+      if (trade.disputed) return <AnswerPanel trade={trade} />;
       return trade.role === "seller" ? <ReleasePanel trade={trade} /> : <BuyerWaiting trade={trade} />;
+    case "resolved_buyer":
+    case "resolved_seller":
+      return <AnswerPanel trade={trade} />;
     default:
       return null;
   }

@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ConfirmAction } from "@/components/confirm-action";
+import { EscrowDisputeButton } from "@/components/escrow/escrow-dispute-button";
 import { EscrowProof } from "@/components/escrow/escrow-proof";
 import { ProtectedActions } from "@/components/escrow/protected-actions";
 import { friendlyError, isUnauthorized } from "@/components/friendly-error";
@@ -132,6 +133,9 @@ function Actions({ trade }: { trade: TradeView }) {
 
 function DisputeFlag({ trade }: { trade: TradeView }) {
   const flag = api.trade.flagDispute.useMutation(useMutationOpts());
+  // Protected: the flag signs a dispute on the escrow, only while it is funded and not disputed. Before
+  // funding there is nothing on chain to dispute (MC-34); once disputed, the answer panel takes over.
+  if (trade.mode === "protected") return trade.state === "funded" && !trade.disputed ? <EscrowDisputeButton trade={trade} /> : null;
   if (trade.disputed) {
     return (
       <p className="inline-flex items-center gap-2 text-sm text-ink">

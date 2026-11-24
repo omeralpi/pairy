@@ -57,6 +57,7 @@ vi.mock("@/components/ui/button", () => ({
 vi.mock("@/components/escrow/create-panel", () => ({ CreatePanel: () => <p>CREATE PANEL</p> }));
 vi.mock("@/components/escrow/fund-panel", () => ({ FundPanel: () => <p>FUND PANEL</p> }));
 vi.mock("@/components/escrow/release-panel", () => ({ ReleasePanel: () => <p>RELEASE PANEL</p> }));
+vi.mock("@/components/escrow/answer-panel", () => ({ AnswerPanel: () => <p>ANSWER PANEL</p> }));
 vi.mock("@/components/trade/trustline-button", () => ({
   TrustlineButton: (p: { asset: string; escrow?: boolean }) => <p>TRUSTLINE {p.asset} {p.escrow ? "before the escrow" : ""}</p>,
 }));
@@ -214,7 +215,14 @@ describe("ProtectedActions once the escrow exists (WP-35)", () => {
     expect(html).not.toContain("Let go of the cash only when the release shows on this screen.");
   });
 
-  it("leaves a disputed escrow to the dispute panels", () => {
-    for (const role of ["seller", "buyer"]) expect(render({ ...disputed, role })).toBe("");
+  it("gives both traders the answer panel once the escrow is disputed: no release, no waiting view, no Cancel (WP-37)", () => {
+    for (const role of ["seller", "buyer"]) expect(render({ ...disputed, role })).toBe("<p>ANSWER PANEL</p>");
+  });
+
+  it("keeps the answers and the rule in view after the arbiter settles (WP-37)", () => {
+    for (const state of ["resolved_buyer", "resolved_seller"]) {
+      for (const role of ["seller", "buyer"]) expect(render({ ...disputed, state, role })).toBe("<p>ANSWER PANEL</p>");
+    }
+    expect(render({ ...funded, state: "released", role: "buyer" })).toBe("");
   });
 });

@@ -1,8 +1,8 @@
-// The parts of the seller's fund and release (D2 §7.1, §7.3) that need no
-// screen: the escrow's terms row by row as this browser read them from
-// Soroban RPC (TermCheckList), the browser's own check of Trustless Work's
-// transaction before the wallet signs it (DECISIONS 7), and when the button
-// must stay off.
+// The parts of the seller's fund and release, and of either trader's dispute
+// (D2 §7.1, §7.3), that need no screen: the escrow's terms row by row as
+// this browser read them from Soroban RPC (TermCheckList), the browser's own
+// check of Trustless Work's transaction before the wallet signs it
+// (DECISIONS 7), and when the button must stay off.
 
 import { shortAddress } from "@/components/listing/format";
 import { TW_ESCROW_WASM_HASH } from "@/lib/escrow/config";
@@ -124,5 +124,12 @@ export function fundBlocked(o: {
 export function releaseBlocked(o: { unreported: string | null; pending: { kind: string } | null; wallet: string | null }): string | null {
   if (o.unreported) return "The release is on Stellar testnet but not recorded yet. Use Retry recording below; don't release it again.";
   if (o.pending?.kind === "release") return "You already sent the release from this browser. Don't release it again: this page is recording it.";
+  return o.wallet;
+}
+
+/** Why this trader must not dispute now, or null: a dispute from this browser must be recorded, not repeated. */
+export function disputeBlocked(o: { unreported: string | null; pending: { kind: string } | null; wallet: string | null }): string | null {
+  if (o.unreported) return "The dispute is on Stellar testnet but not recorded yet. Use Retry recording below; don't send it again.";
+  if (o.pending?.kind === "dispute") return "You already sent a dispute from this browser. Don't send it again: this page is recording it.";
   return o.wallet;
 }
