@@ -1,0 +1,107 @@
+{
+  "archivedAt": "2026-11-24T14:28:39.315Z",
+  "source": "https://horizon-testnet.stellar.org/transactions/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598",
+  "transaction": {
+    "_links": {
+      "self": {
+        "href": "https://horizon-testnet.stellar.org/transactions/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598"
+      },
+      "account": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB"
+      },
+      "ledger": {
+        "href": "https://horizon-testnet.stellar.org/ledgers/5204742"
+      },
+      "operations": {
+        "href": "https://horizon-testnet.stellar.org/transactions/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598/operations{?cursor,limit,order}",
+        "templated": true
+      },
+      "effects": {
+        "href": "https://horizon-testnet.stellar.org/transactions/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598/effects{?cursor,limit,order}",
+        "templated": true
+      },
+      "precedes": {
+        "href": "https://horizon-testnet.stellar.org/transactions?order=asc&cursor=22354196674121728"
+      },
+      "succeeds": {
+        "href": "https://horizon-testnet.stellar.org/transactions?order=desc&cursor=22354196674121728"
+      },
+      "transaction": {
+        "href": "https://horizon-testnet.stellar.org/transactions/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598"
+      }
+    },
+    "id": "02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598",
+    "paging_token": "22354196674121728",
+    "successful": true,
+    "hash": "02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598",
+    "ledger": 5204742,
+    "created_at": "2026-10-15T06:54:57Z",
+    "source_account": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+    "source_account_sequence": "22354192379150337",
+    "fee_account": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+    "fee_charged": "100",
+    "max_fee": "100",
+    "operation_count": 1,
+    "envelope_xdr": "AAAAAgAAAAD+wckoMKaHZ5K8ZJhGCXCo5s9ZVzVX/f+6QyRuz5i72QAAAGQAT2sFAAAAAQAAAAEAAAAAAAAAAAAAAABq0HnqAAAAAAAAAAEAAAAAAAAADgAAAAAAAAAAAvrwgAAAAAIAAAAAAAAAAJqv0IUSkwMvS0DFHu3T9QJ4JiLCNUqSLnBanK35dDRkAAAABQAAAAAAA/SAAAAAAAAAAAD+wckoMKaHZ5K8ZJhGCXCo5s9ZVzVX/f+6QyRuz5i72QAAAAMAAAABAAAABQAAAAAAA/SAAAAAAAAAAAHPmLvZAAAAQMGfRiz6h31TjZMJ5Krf9QEw/+U/YYopf/bkTcXTdIuC57vov4jWUnvt9ANSzJQ/r2kfs76RArs0MqRnA2IPVAI=",
+    "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAOAAAAAAAAAABdZWFskoLRPJ+RDAw8TTl49hC18Ys7qTgYtM2S/G/mtgAAAAA=",
+    "fee_meta_xdr": "AAAAAgAAAAMAT2sFAAAAAAAAAAD+wckoMKaHZ5K8ZJhGCXCo5s9ZVzVX/f+6QyRuz5i72QAAABdIdugAAE9rBQAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEAT2sGAAAAAAAAAAD+wckoMKaHZ5K8ZJhGCXCo5s9ZVzVX/f+6QyRuz5i72QAAABdIduecAE9rBQAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+    "memo_type": "none",
+    "signatures": [
+      "wZ9GLPqHfVONkwnkqt/1ATD/5T9hiil/9uRNxdN0i4Lnu+i/iNZSe+30A1LMlD+vaR+zvpECuzQypGcDYg9UAg=="
+    ],
+    "preconditions": {
+      "timebounds": {
+        "min_time": "0",
+        "max_time": "1792047594"
+      }
+    }
+  },
+  "operations": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://horizon-testnet.stellar.org/operations/22354196674121729"
+        },
+        "transaction": {
+          "href": "https://horizon-testnet.stellar.org/transactions/02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598"
+        },
+        "effects": {
+          "href": "https://horizon-testnet.stellar.org/operations/22354196674121729/effects"
+        },
+        "succeeds": {
+          "href": "https://horizon-testnet.stellar.org/effects?order=desc&cursor=22354196674121729"
+        },
+        "precedes": {
+          "href": "https://horizon-testnet.stellar.org/effects?order=asc&cursor=22354196674121729"
+        }
+      },
+      "id": "22354196674121729",
+      "paging_token": "22354196674121729",
+      "transaction_successful": true,
+      "source_account": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+      "type": "create_claimable_balance",
+      "type_i": 14,
+      "created_at": "2026-10-15T06:54:57Z",
+      "transaction_hash": "02b073e7e976360eda6467f56e8508d25ee97afbafbdbd9ad7f28e8dcbbd0598",
+      "sponsor": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+      "asset": "native",
+      "amount": "5.0000000",
+      "claimants": [
+        {
+          "destination": "GCNK7UEFCKJQGL2LIDCR53OT6UBHQJRCYI2UVEROOBNJZLPZOQ2GIQWF",
+          "predicate": {
+            "rel_before": "259200"
+          }
+        },
+        {
+          "destination": "GD7MDSJIGCTIOZ4SXRSJQRQJOCUONT2ZK42VP7P7XJBSI3WPTC55TJZB",
+          "predicate": {
+            "not": {
+              "rel_before": "259200"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

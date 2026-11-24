@@ -1,0 +1,101 @@
+{
+  "archivedAt": "2026-11-24T14:29:30.524Z",
+  "source": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA",
+  "account": {
+    "_links": {
+      "self": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA"
+      },
+      "transactions": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/transactions{?cursor,limit,order}",
+        "templated": true
+      },
+      "operations": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/operations{?cursor,limit,order}",
+        "templated": true
+      },
+      "payments": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/payments{?cursor,limit,order}",
+        "templated": true
+      },
+      "effects": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/effects{?cursor,limit,order}",
+        "templated": true
+      },
+      "offers": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/offers{?cursor,limit,order}",
+        "templated": true
+      },
+      "trades": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/trades{?cursor,limit,order}",
+        "templated": true
+      },
+      "data": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA/data/{key}",
+        "templated": true
+      }
+    },
+    "id": "GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA",
+    "account_id": "GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA",
+    "sequence": "25328972627705861",
+    "sequence_ledger": 5901383,
+    "sequence_time": "1795530557",
+    "subentry_count": 2,
+    "last_modified_ledger": 5901383,
+    "last_modified_time": "2026-11-24T14:29:17Z",
+    "thresholds": {
+      "low_threshold": 0,
+      "med_threshold": 0,
+      "high_threshold": 0
+    },
+    "flags": {
+      "auth_required": false,
+      "auth_revocable": false,
+      "auth_immutable": false,
+      "auth_clawback_enabled": false
+    },
+    "balances": [
+      {
+        "balance": "0.0000000",
+        "limit": "922337203685.4775807",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "last_modified_ledger": 5901383,
+        "is_authorized": true,
+        "is_authorized_to_maintain_liabilities": true,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "EURC",
+        "asset_issuer": "GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO"
+      },
+      {
+        "balance": "0.0000000",
+        "limit": "922337203685.4775807",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "last_modified_ledger": 5898245,
+        "is_authorized": true,
+        "is_authorized_to_maintain_liabilities": true,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USDC",
+        "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+      },
+      {
+        "balance": "9998.9854187",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "asset_type": "native"
+      }
+    ],
+    "signers": [
+      {
+        "weight": 1,
+        "key": "GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA",
+        "type": "ed25519_public_key"
+      }
+    ],
+    "data": {},
+    "num_sponsoring": 0,
+    "num_sponsored": 0,
+    "paging_token": "GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA"
+  }
+}

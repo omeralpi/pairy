@@ -1,0 +1,42 @@
+{
+  "archivedAt": "2026-11-24T14:29:28.153Z",
+  "source": "https://soroban-testnet.stellar.org",
+  "contractId": "CBHHSX7ZAVL4IXJZBEYVZVDWLZNZYCN46Y54THMJDWIGUSMABFYCNHNR",
+  "terms": {
+    "admin": "GDSEUECIT7XDOH7A7VOAB3LP3RIC2BL24ZBFEZZCL24UBQZH6K2DHJ6K",
+    "platform": "GAHSTUWNAQ2HJ6FPKEY6OJP6RAX4PHEEAOTB7EAZR4A2KBDGVVK3ISFW",
+    "receiver": "GDFAL3KN5SQ34ZJISRE5I3VNQ2NVVQI27Y2ESBKO7KZKUQL4NWSQOHYT",
+    "approvers": [
+      "GDEPA3WO4NX75G7ZIJHRMRYTV4PLVSSI3SVC2NALBF6JCZMNLCUUVKIE"
+    ],
+    "releaseSigners": [
+      "GDEPA3WO4NX75G7ZIJHRMRYTV4PLVSSI3SVC2NALBF6JCZMNLCUUVKIE"
+    ],
+    "disputeResolvers": [
+      "GCAQSD3CRZVO34O7AJJWVIRKI6HGTOKLG5WSX4WJJTNG3QQ6ZWPAXCPH"
+    ],
+    "serviceProviders": [
+      "GDEPA3WO4NX75G7ZIJHRMRYTV4PLVSSI3SVC2NALBF6JCZMNLCUUVKIE"
+    ],
+    "otherRoles": [],
+    "amountStroops": "50000000",
+    "platformFeePercent": 0,
+    "tokenContract": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+    "milestones": [
+      {
+        "description": "Cash handed over"
+      }
+    ]
+  },
+  "status": {
+    "disputed": false,
+    "released": false,
+    "resolved": true,
+    "balanceStroops": "0"
+  },
+  "ttl": {
+    "latestLedger": 5901385,
+    "instanceLiveUntil": 6019445,
+    "escrowLiveUntil": 6019445
+  }
+}

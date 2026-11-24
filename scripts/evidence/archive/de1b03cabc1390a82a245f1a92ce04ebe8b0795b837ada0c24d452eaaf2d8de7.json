@@ -1,0 +1,94 @@
+{
+  "archivedAt": "2026-11-24T14:29:02.720Z",
+  "source": "https://horizon-testnet.stellar.org/transactions/de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7",
+  "transaction": {
+    "_links": {
+      "self": {
+        "href": "https://horizon-testnet.stellar.org/transactions/de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7"
+      },
+      "account": {
+        "href": "https://horizon-testnet.stellar.org/accounts/GDWQ25QPIBNVL56IQC364LE66HQQZLWNBDZRGTKYVRSKCA74OGDZ7UAK"
+      },
+      "ledger": {
+        "href": "https://horizon-testnet.stellar.org/ledgers/5897067"
+      },
+      "operations": {
+        "href": "https://horizon-testnet.stellar.org/transactions/de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7/operations{?cursor,limit,order}",
+        "templated": true
+      },
+      "effects": {
+        "href": "https://horizon-testnet.stellar.org/transactions/de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7/effects{?cursor,limit,order}",
+        "templated": true
+      },
+      "precedes": {
+        "href": "https://horizon-testnet.stellar.org/transactions?order=asc&cursor=25327709907329024"
+      },
+      "succeeds": {
+        "href": "https://horizon-testnet.stellar.org/transactions?order=desc&cursor=25327709907329024"
+      },
+      "transaction": {
+        "href": "https://horizon-testnet.stellar.org/transactions/de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7"
+      }
+    },
+    "id": "de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7",
+    "paging_token": "25327709907329024",
+    "successful": true,
+    "hash": "de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7",
+    "ledger": 5897067,
+    "created_at": "2026-11-24T08:29:37Z",
+    "source_account": "GDWQ25QPIBNVL56IQC364LE66HQQZLWNBDZRGTKYVRSKCA74OGDZ7UAK",
+    "source_account_sequence": "25327701317386241",
+    "fee_account": "GDWQ25QPIBNVL56IQC364LE66HQQZLWNBDZRGTKYVRSKCA74OGDZ7UAK",
+    "fee_charged": "100",
+    "max_fee": "100",
+    "operation_count": 1,
+    "envelope_xdr": "AAAAAgAAAADtDXYPQFtV98iAt+4snvHhDK7NCPMTTVisZKED/HGHnwAAAGQAWftpAAAAAQAAAAEAAAAAAAAAAAAAAABrBUwaAAAAAAAAAAEAAAAAAAAABgAAAAFVU0RDAAAAAEI+fQXy7K+/7BkrIVo/G+lq7bjY5wJUq+NBPgIH3layf/////////8AAAAAAAAAAfxxh58AAABAcDIcp1eR0E72ahQEsNZUO5zOtVVjhhXasvUoO1/LfgooldOsF6riq4tQJyGzCShIlGaV562H9xiw9FSrV/t1Ag==",
+    "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAGAAAAAAAAAAA=",
+    "fee_meta_xdr": "AAAAAgAAAAMAWftpAAAAAAAAAADtDXYPQFtV98iAt+4snvHhDK7NCPMTTVisZKED/HGHnwAAABdIdugAAFn7aQAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEAWftrAAAAAAAAAADtDXYPQFtV98iAt+4snvHhDK7NCPMTTVisZKED/HGHnwAAABdIduecAFn7aQAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+    "memo_type": "none",
+    "signatures": [
+      "cDIcp1eR0E72ahQEsNZUO5zOtVVjhhXasvUoO1/LfgooldOsF6riq4tQJyGzCShIlGaV562H9xiw9FSrV/t1Ag=="
+    ],
+    "preconditions": {
+      "timebounds": {
+        "min_time": "0",
+        "max_time": "1795509274"
+      }
+    }
+  },
+  "operations": [
+    {
+      "_links": {
+        "self": {
+          "href": "https://horizon-testnet.stellar.org/operations/25327709907329025"
+        },
+        "transaction": {
+          "href": "https://horizon-testnet.stellar.org/transactions/de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7"
+        },
+        "effects": {
+          "href": "https://horizon-testnet.stellar.org/operations/25327709907329025/effects"
+        },
+        "succeeds": {
+          "href": "https://horizon-testnet.stellar.org/effects?order=desc&cursor=25327709907329025"
+        },
+        "precedes": {
+          "href": "https://horizon-testnet.stellar.org/effects?order=asc&cursor=25327709907329025"
+        }
+      },
+      "id": "25327709907329025",
+      "paging_token": "25327709907329025",
+      "transaction_successful": true,
+      "source_account": "GDWQ25QPIBNVL56IQC364LE66HQQZLWNBDZRGTKYVRSKCA74OGDZ7UAK",
+      "type": "change_trust",
+      "type_i": 6,
+      "created_at": "2026-11-24T08:29:37Z",
+      "transaction_hash": "de1b03cabc1390a82a245f1a92ce04ebe8b0795b837ada0c24d452eaaf2d8de7",
+      "asset_type": "credit_alphanum4",
+      "asset_code": "USDC",
+      "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "limit": "922337203685.4775807",
+      "trustee": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "trustor": "GDWQ25QPIBNVL56IQC364LE66HQQZLWNBDZRGTKYVRSKCA74OGDZ7UAK"
+    }
+  ]
+}
