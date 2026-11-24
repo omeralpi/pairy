@@ -1,0 +1,50 @@
+{
+  "recordedAt": "2026-11-24T09:04:12.251Z",
+  "rpc": "https://soroban-testnet.stellar.org",
+  "contractId": "CADQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQP5KR",
+  "note": "A contract address nothing was ever deployed to: Soroban RPC returns no entries.",
+  "calls": [
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "getLedgerEntries",
+        "params": {
+          "keys": [
+            "AAAABgAAAAEHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwAAABQAAAAB",
+            "AAAABgAAAAEHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+            "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABAAAAABAAAAAgAAAA8AAAAHQmFsYW5jZQAAAAASAAAAAQcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHAAAAAQ=="
+          ]
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "entries": [],
+          "latestLedger": 5897481
+        }
+      }
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "getLedgerEntries",
+        "params": {
+          "keys": [
+            "AAAABgAAAAEHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwAAABQAAAAB"
+          ]
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "entries": [],
+          "latestLedger": 5897482
+        }
+      }
+    }
+  ]
+}

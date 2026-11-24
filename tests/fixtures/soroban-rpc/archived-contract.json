@@ -1,0 +1,36 @@
+{
+  "recordedAt": "2026-11-24T09:04:12.635Z",
+  "rpc": "https://soroban-testnet.stellar.org",
+  "contractId": "CALTSX2DPWW6NDTUU2FRZ4KTEZCQE36JPCICM3AUPUI44NB7BLBAOTWF",
+  "note": "Not an escrow: a contract deployed on 17 Dec 2025 (ledger 706) and untouched since, so its instance is archived. Soroban RPC still returns the entry, with liveUntilLedgerSeq 0.",
+  "calls": [
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "getLedgerEntries",
+        "params": {
+          "keys": [
+            "AAAABgAAAAEXOV9Dfa3mjnSmixzxUyZFAm/JeJAmbBR9Ec40PwrCBwAAABQAAAAB"
+          ]
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "entries": [
+            {
+              "key": "AAAABgAAAAEXOV9Dfa3mjnSmixzxUyZFAm/JeJAmbBR9Ec40PwrCBwAAABQAAAAB",
+              "xdr": "AAAABgAAAAAAAAABFzlfQ32t5o50posc8VMmRQJvyXiQJmwUfRHOND8KwgcAAAAUAAAAAQAAABMAAAAAiuFVDbbzMxHkc8HoU9GS3XJiPMAsmTYIqGOCRpRz+pEAAAABAAAABQAAABAAAAABAAAAAQAAAA8AAAAFQWRtaW4AAAAAAAASAAAAAAAAAABd7yImLkn6P+wDOn6gLMrmz3Lk9hrl8VJeglqf6beARQAAABAAAAABAAAAAQAAAA8AAAAIQ2FyYm9uSUQAAAASAAAAAarJAoHsZCb+pQaMST6miFozrgbuBg+OU/bddIe4DkyiAAAAEAAAAAEAAAABAAAADwAAAAxDYXJib25TaW5rSUQAAAASAAAAAakB31rEy/1DRei4fMrVYEs3zWjF3C2GTZhlmqbKYxtHAAAAEAAAAAEAAAABAAAADwAAAAhJc0FjdGl2ZQAAAAAAAAABAAAAEAAAAAEAAAABAAAADwAAAAtTaW5rTWluaW11bQAAAAAGAAAAAAAPQkA=",
+              "lastModifiedLedgerSeq": 706,
+              "liveUntilLedgerSeq": 0,
+              "extXdr": "AAAAAA=="
+            }
+          ],
+          "latestLedger": 5897482
+        }
+      }
+    }
+  ]
+}

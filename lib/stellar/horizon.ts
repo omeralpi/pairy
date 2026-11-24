@@ -1,7 +1,7 @@
 // Read and submit against Stellar testnet. Pairy never signs here: callers
 // pass in transactions already signed by the user's own wallet.
 
-import { Horizon, NotFoundError, type Transaction } from "@stellar/stellar-sdk";
+import { Horizon, NotFoundError, rpc, type Transaction } from "@stellar/stellar-sdk";
 
 import { TESTNET_USDC_ISSUER, type AssetCode } from "./assets";
 
@@ -9,8 +9,11 @@ export const HORIZON_URL = "https://horizon-testnet.stellar.org";
 export const FRIENDBOT_URL = "https://friendbot.stellar.org";
 /** Stellar Lab's testnet funding page: another way in when Friendbot is down for Pairy. */
 export const LAB_FUND_URL = "https://lab.stellar.org/account/fund";
+/** SDF's public Soroban RPC: contract storage, read straight from the browser too (it allows any origin). */
+export const SOROBAN_RPC_URL = "https://soroban-testnet.stellar.org";
 
 export const horizon = new Horizon.Server(HORIZON_URL);
+export const soroban = new rpc.Server(SOROBAN_RPC_URL);
 
 /** null when the account does not exist on the network yet. */
 export async function loadAccount(publicKey: string) {
