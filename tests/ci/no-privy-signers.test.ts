@@ -140,7 +140,9 @@ function packageProblems(pkg: PackageJson): string[] {
  * in: as a dependency, under an npm alias, or through another package that wraps it (WP-18 judge, note 1).
  */
 function lockfileProblems(lock: string): string[] {
-  return SERVER_PACKAGES.filter((p) => lock.includes(p)).map((p) => `pnpm-lock.yaml: has ${p}`);
+  // A deprecation notice is prose ("use @privy-io/node instead"), not a package.
+  const entries = lock.split("\n").filter((line) => !/^\s*deprecated:/.test(line)).join("\n");
+  return SERVER_PACKAGES.filter((p) => entries.includes(p)).map((p) => `pnpm-lock.yaml: has ${p}`);
 }
 
 /** #2: one integration point. Any `@privy-io/` in code outside it (import, require, a string) is a second one. */
@@ -390,6 +392,10 @@ describe("no-privy-signers", () => {
       // react-auth 3.51.1's own closure (WP-18 judge): none is a server package.
       const browser = ["react-auth@3.51.1", "js-sdk-core@0.79.2", "api-base@2.0.0", "api-types@0.24.0", "routes@0.5.0", "urls@0.0.5"];
       expect(lockfileProblems(browser.map((p) => `  '@privy-io/${p}': {}`).join("\n"))).toEqual([]);
+      // A deprecation notice is prose, not a package (server-auth 1.32.5's own notice names @privy-io/node).
+      const notice = "    deprecated: This package is deprecated. If you are looking for the latest features and support, use @privy-io/node instead.";
+      expect(lockfileProblems(`  '@privy-io/react-auth@3.51.1':\n${notice}`)).toEqual([]);
+      expect(lockfileProblems(`${direct}\n${notice}`)).toEqual(["pnpm-lock.yaml: has @privy-io/server-auth"]);
     });
 
     it("an allowlisted hook imported from a file other than privy-layer.tsx", () => {
