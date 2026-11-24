@@ -18,28 +18,41 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - id: install
+        run: pnpm install --frozen-lockfile
 
+      # Every step below runs once the install has succeeded, even after an
+      # earlier check failed, so a red run shows each check it breaks by name
+      # (O-37). A failed checkout, setup or install still stops the job.
       - name: lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm lint
       - name: typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm typecheck
       # tests/ci/* run below as their own named steps, so a failure there is
       # visible by name in the run.
       - name: unit tests
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm vitest run --exclude "tests/ci/**"
       - name: no-secret-fields
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm vitest run tests/ci/no-secret-fields.test.ts
       - name: coordination-purge-on-terminal
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm vitest run tests/ci/coordination-purge-on-terminal.test.ts
       - name: tw-endpoint-allowlist
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm vitest run tests/ci/tw-endpoint-allowlist.test.ts
       - name: listing-reservation-concurrency
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm vitest run tests/ci/listing-reservation-concurrency.test.ts
       - name: no-privy-signers
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm vitest run tests/ci/no-privy-signers.test.ts
 
       - name: build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm build
         env:
           # Build-time placeholders only; nothing connects to them.
@@ -80,8 +93,10 @@ jobs:
       # Applies the migrations to a real Postgres 16; the test then migrates
       # its own fresh database.
       - name: migrate
+        id: migrate
         run: pnpm db:migrate
       - name: listing-reservation-concurrency (postgres)
+        if: ${{ !cancelled() && steps.migrate.outcome == 'success' }}
         run: pnpm test:pg
         env:
           # The test skips itself without PG_TEST_URL and vitest then exits 0;
