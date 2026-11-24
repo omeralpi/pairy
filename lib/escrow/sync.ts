@@ -154,17 +154,20 @@ export async function syncProtectedTrade(db: Database, trade: TradeRow): Promise
 export const PREPARED_DEPLOY_VALID_MS = (300 + 60 + 15) * 1000;
 
 const bad = (message: string) => new TRPCError({ code: "BAD_REQUEST", message });
+const FUNDED = "This escrow is already funded. A dispute is the way to a refund.";
 
 /**
  * Before a protected trade is cancelled or expired, its escrow is checked on
  * chain and what the chain shows is recorded first (D2 §1.1, §4). Returns the
  * trade as synced when it may end; throws when it may not:
- * - funded on chain, recorded or not: the release or a dispute are the ways out;
+ * - funded, recorded or found on chain: the release or a dispute are the ways
+ *   out, and both say so in D2's sentence (O-27);
  * - a prepared creation not recorded (O-23): only once the prepared deploy can
  *   no longer land and Soroban RPC shows no contract;
  * - the chain can't be read: refused, never guessed.
  */
 export async function mayCancelProtected(db: Database, trade: TradeRow): Promise<TradeRow> {
+  if (trade.state === "funded") throw bad(FUNDED);
   if (trade.state !== "escrow_created" && !(trade.state === "agreed" && trade.escrowContractId !== null)) return trade;
   let synced: Awaited<ReturnType<typeof syncWithChain>>;
   try {
@@ -174,7 +177,6 @@ export async function mayCancelProtected(db: Database, trade: TradeRow): Promise
     throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Couldn't check this trade's escrow on Stellar testnet. Try again in a minute.", cause: e });
   }
   const { row, escrow } = synced;
-  const funded = "This escrow is already funded. A dispute is the way to a refund.";
   if (row.state === "agreed") {
     if (escrow) throw bad("This trade's escrow exists on Stellar testnet, so this page records it first. Try again in a minute.");
     if (Date.now() < (row.escrowPreparedAt?.getTime() ?? 0) + PREPARED_DEPLOY_VALID_MS) {
@@ -184,10 +186,10 @@ export async function mayCancelProtected(db: Database, trade: TradeRow): Promise
   }
   if (row.state === "escrow_created") {
     // No contract at all (a testnet reset) holds nothing either.
-    if (escrow && fundedOnChain(escrow.status, row)) throw bad(funded);
+    if (escrow && fundedOnChain(escrow.status, row)) throw bad(FUNDED);
     return row;
   }
   // The sync found the fund (or more): no cancel past funding.
-  if (row.state !== "cancelled") throw bad(funded);
+  if (row.state !== "cancelled") throw bad(FUNDED);
   return row;
 }

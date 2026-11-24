@@ -1083,6 +1083,32 @@ describe("trade.byId and trade.mine on a disputed protected trade", () => {
   });
 });
 
+describe("trade.mine: each trade's own answers and deadlines (WP-31 judge)", () => {
+  it("lets the list tell whether the viewer answered, trade by trade, in byId's shape", async () => {
+    const run = DISPUTES.buyer;
+    // Two disputed trades between the same traders, and one funded trade with no dispute.
+    const answered = await fundedBetween(run, disputed(2));
+    const open = await fundedBetween(run, { ...disputed(1), escrowContractId: DISPUTES.seller.contractId });
+    const quiet = await fundedBetween(run, { escrowContractId: OTHER_ESCROW });
+    await f.as(run.seller).escrow.answer({ tradeId: answered.id, cashHandedOver: true, note: "Paid in full." });
+
+    for (const who of [run.seller, run.buyer]) {
+      const listed = new Map((await f.as(who).trade.mine()).map((m) => [m.id, m]));
+      for (const t of [answered, open, quiet]) {
+        const room = await f.as(who).trade.byId({ id: t.id });
+        expect(listed.get(t.id)).toMatchObject({ answers: room.answers, answerDeadline: room.answerDeadline, promiseDeadline: room.promiseDeadline });
+      }
+      // The seller's answer shows on that trade only; the other dispute still waits for both.
+      expect(listed.get(answered.id)!.answers).toEqual({
+        seller: { cashHandedOver: true, note: "Paid in full.", answeredAt: expect.any(Date) },
+        buyer: null,
+      });
+      expect(listed.get(open.id)).toMatchObject({ answers: { seller: null, buyer: null }, answerDeadline: expect.any(Date), promiseDeadline: expect.any(Date) });
+      expect(listed.get(quiet.id)).toMatchObject({ answers: { seller: null, buyer: null }, answerDeadline: null, promiseDeadline: null });
+    }
+  });
+});
+
 describe("trade.cancel on a protected trade checks the chain first", () => {
   const FUNDED_SENTENCE = "This escrow is already funded. A dispute is the way to a refund.";
 
@@ -1111,6 +1137,18 @@ describe("trade.cancel on a protected trade checks the chain first", () => {
     });
     await expect(f.as(SELLER).trade.cancel({ tradeId: t.id })).rejects.toThrow(FUNDED_SENTENCE);
     expect(await row(t.id)).toMatchObject({ state: "funded", fundTx: HASH.fund });
+  });
+
+  it("refuses a recorded funded trade with the same funded sentence, disputed or not, without reading the chain (O-27)", async () => {
+    const t = await fundedTrade();
+    vi.mocked(readEscrow).mockClear();
+    for (const who of [BUYER, SELLER]) {
+      await expect(f.as(who).trade.cancel({ tradeId: t.id })).rejects.toMatchObject({ code: "BAD_REQUEST", message: FUNDED_SENTENCE });
+    }
+    await set(t.id, { disputed: true, disputeTx: "e".repeat(64), disputedAt: new Date(), disputeRecordedAt: new Date(), disputeOpenedBy: "buyer" });
+    await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).rejects.toMatchObject({ code: "BAD_REQUEST", message: FUNDED_SENTENCE });
+    expect(readEscrow).not.toHaveBeenCalled();
+    expect(await row(t.id)).toMatchObject({ state: "funded" });
   });
 
   it("refuses, not guesses, when the escrow cannot be read", async () => {
