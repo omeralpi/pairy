@@ -101,35 +101,6 @@ export async function addTrustline(kp: Keypair, code: IssuedCode) {
 
 export const addUsdcTrustline = (kp: Keypair) => addTrustline(kp, "USDC");
 
-/** What `xlm` XLM buys in testnet USDC on the DEX right now, or null if nothing. */
-export async function quoteUsdc(xlm: string): Promise<string | null> {
-  const { records } = await horizon
-    .strictSendPaths(Asset.native(), xlm, [USDC])
-    .call();
-  return records[0]?.destination_amount ?? null;
-}
-
-/** Swaps XLM for testnet USDC into `kp`'s own (already trusted) account. */
-export async function buyUsdc(kp: Keypair, xlm: string) {
-  const quote = await quoteUsdc(xlm);
-  if (!quote) throw new Error("No XLM→USDC path on the testnet DEX.");
-  const tx = setupTx(await loadAccount(kp))
-    .addOperation(
-      Operation.pathPaymentStrictSend({
-        sendAsset: Asset.native(),
-        sendAmount: xlm,
-        destination: kp.publicKey(),
-        destAsset: USDC,
-        // Allow 10% slippage between quote and execution.
-        destMin: (Number(quote) * 0.9).toFixed(7),
-        path: [],
-      }),
-    )
-    .setTimeout(300)
-    .build();
-  return signAndSubmit(tx, kp);
-}
-
 /** scripts/evidence/.state/treasury-<code>.json: a team test key a human filled from a faucet (HX-7). */
 function treasuryFile(code: IssuedCode) {
   return path.join(__dirname, "../../scripts/evidence/.state", `treasury-${code.toLowerCase()}.json`);

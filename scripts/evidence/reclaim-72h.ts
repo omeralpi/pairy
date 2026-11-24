@@ -1,12 +1,14 @@
-// Reclaims the balances abandon-72h.ts opened, once their 72-hour window has
-// closed. Refuses early with the time remaining; the chain would reject an
-// early reclaim anyway (op_cannot_claim).
+// Reclaims the balance abandon-72h.ts opened for one asset, once its 72-hour
+// window has closed. Refuses early with the time remaining; the chain would
+// reject an early reclaim anyway (op_cannot_claim).
 //
-//   pnpm tsx scripts/evidence/reclaim-72h.ts
+//   pnpm tsx scripts/evidence/reclaim-72h.ts EURC
+//
+// Reads .state/abandon-72h-<asset>.json and writes out/reclaim-72h-<asset>.json.
 
 import { Keypair } from "@stellar/stellar-sdk";
 
-import { toAsset } from "../../lib/stellar/assets";
+import { ASSET_CODES, toAsset, type AssetCode } from "../../lib/stellar/assets";
 import { buildClaimTransaction } from "../../lib/stellar/settlement";
 import { verifyClaimTx } from "../../lib/stellar/verify";
 import {
@@ -23,8 +25,13 @@ function remaining(ms: number) {
 }
 
 async function main() {
-  const state = readState<AbandonState>("abandon-72h");
-  if (!state) throw new Error("No .state/abandon-72h.json; run abandon-72h.ts first.");
+  const code = process.argv[2] as AssetCode;
+  if (!ASSET_CODES.includes(code)) {
+    throw new Error(`Usage: reclaim-72h.ts <${ASSET_CODES.join("|")}>`);
+  }
+  const name = `abandon-72h-${code.toLowerCase()}`;
+  const state = readState<AbandonState>(name);
+  if (!state) throw new Error(`No .state/${name}.json; run abandon-72h.ts ${code} first.`);
 
   const closedAt = Date.parse((await latestLedger()).closed_at);
   const pending = state.filter((s) => !s.reclaimHash);
@@ -53,11 +60,11 @@ async function main() {
       ...(await txEvidence("seller reclaims after 72 hours", sub)),
       snapshots: [before, await snapshot("seller after reclaim", seller, asset)],
     };
-    writeState("abandon-72h", state);
+    writeState(name, state);
   }
 
   const results = state.map(({ sellerSecret: _, ...pub }) => pub);
-  writeOut("reclaim-72h", results);
+  writeOut(`reclaim-72h-${code.toLowerCase()}`, results);
 }
 
 main().catch((e) => {
