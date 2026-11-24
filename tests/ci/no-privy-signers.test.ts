@@ -1,16 +1,17 @@
 // SOW D1 and DECISIONS 0.3, 4, O-5, O-6: Privy is a login and a wallet the
 // user signs with, nothing more. Pairy runs no Privy server SDK, holds no
-// Privy secret, and never gives Privy a signer, a delegated action, a key
-// quorum or a custom JWT login. This test is that boundary (D1 §8): an
-// allowlist of what the one Privy file may import, plus a denylist as a second
-// guard. It is green before the first Privy import lands (WP-18) and stays the
-// gate once it does (WP-19).
+// Privy secret, calls no Privy API itself, and never gives Privy a signer, a
+// delegated action, a key quorum or a custom JWT login. This test is that
+// boundary (D1 §8): an allowlist of what the one Privy file may import, plus a
+// denylist as a second guard. It is green before the first Privy import lands
+// (WP-18) and stays the gate once it does (WP-19).
 //
 // Fails closed: every scan below is a plain function, and each one is run on
 // planted violations first, so a scan that stopped finding anything fails here
 // instead of passing quietly.
 
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import type { AnyRouter } from "@trpc/server";
@@ -66,6 +67,8 @@ const DENIED = [
   "useImportWallet",
   "useImportSeedPhrase",
   "useGuestAccounts",
+  // Takes precedence over loginMethods and admits SMS, external wallets and cross-app logins.
+  "loginMethodsAndOrder",
 ];
 
 /** DECISIONS 0.3: email and Google, no passkey. */
@@ -74,29 +77,42 @@ const LOGIN_METHODS = ["email", "google"];
 const APP_SECRET = /privy[-_]?app[-_]?secret/i;
 /** A tRPC input the server must never receive: Privy identity (D1 §8 #7). */
 const IDENTITY_KEY = /email|privy|^did$|accesstoken|idtoken/i;
+/** Privy's REST and auth hosts, its request headers and its cookies: code that names one calls or trusts Privy itself (D1 §0, PLAN I4). */
+const PRIVY_API: [RegExp, string][] = [
+  [/\b(api|auth)\.privy\.io\b/i, "names a Privy API host"],
+  [/\bprivy-app-id\b/i, "sends the privy-app-id header"],
+  [/\bprivy-authorization-signature\b/i, "sends the privy-authorization-signature header"],
+  [/\bprivy-(id-)?token\b/i, "reads a Privy cookie"],
+];
 
 const root = process.cwd();
+/** Never source: dependencies and build output. Dot-directories other than .github are skipped too (.git, .next, .vercel, the evidence .state). */
+const SKIPPED_DIRS = new Set(["node_modules", "coverage", "out"]);
 
-function filesUnder(dir: string): string[] {
-  if (!existsSync(path.join(root, dir))) return [];
-  return (readdirSync(path.join(root, dir), { recursive: true }) as string[])
-    .map((f) => path.join(dir, f).split(path.sep).join("/"))
-    .filter((f) => !f.includes("/node_modules/") && statSync(path.join(root, f)).isFile());
+/** Every file under `base`, as a path relative to it. */
+function walk(base: string, dir = ""): string[] {
+  return readdirSync(path.join(base, dir), { withFileTypes: true }).flatMap((entry) => {
+    const rel = dir ? `${dir}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      const skipped = SKIPPED_DIRS.has(entry.name) || (entry.name.startsWith(".") && entry.name !== ".github");
+      return skipped ? [] : walk(base, rel);
+    }
+    return entry.isFile() ? [rel] : [];
+  });
 }
 
-const read = (files: string[]): Source[] => files.map((file) => ({ file, text: readFileSync(path.join(root, file), "utf8") }));
+const read = (base: string, files: string[]): Source[] =>
+  files.map((file) => ({ file, text: readFileSync(path.join(base, file), "utf8") }));
 
-/** FIXES F-14: source under these directories plus the root-level config files, tests excluded. */
-function sources(): Source[] {
-  const isSource = (f: string) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f) && !/\.test\.tsx?$/.test(f);
-  const rootFiles = readdirSync(root).filter((f) => isSource(f) && statSync(path.join(root, f)).isFile());
-  return read([...rootFiles, ...["app", "components", "lib", "server", "scripts"].flatMap(filesUnder).filter(isSource)]);
-}
+const isSource = (f: string) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f) && !/\.test\.[jt]sx?$/.test(f) && !f.startsWith("tests/");
+/** FIXES F-14: every source file in the repository, tests excluded. A new top-level directory (hooks/, public/, ...) is in by default. */
+const sourceFiles = (base: string) => walk(base).filter(isSource);
+const sources = (): Source[] => read(root, sourceFiles(root));
 
-/** Everything a secret could be written into: the sources, .env.example, the workflows, docs and the root config files. */
+/** Everything a secret could be written into: the sources plus every JSON, YAML, Markdown and .env.example file. */
 function textFiles(): Source[] {
-  const rootFiles = readdirSync(root).filter((f) => /\.(json|ya?ml|md)$/.test(f) && statSync(path.join(root, f)).isFile());
-  return [...sources(), ...read([".env.example", ...rootFiles, ...filesUnder(".github"), ...filesUnder("docs")])];
+  const isText = (f: string) => (/\.(json|ya?ml|md)$/.test(f) && !f.startsWith("tests/")) || path.basename(f) === ".env.example";
+  return read(root, walk(root).filter((f) => isSource(f) || isText(f)));
 }
 
 /** Block comments and `//` comments (URLs keep their `//`). */
@@ -104,13 +120,13 @@ const withoutComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, "").
 const flag = (files: Source[], test: (s: Source) => boolean, why: string) =>
   files.filter(test).map((s) => `${s.file}: ${why}`);
 
-/** #1: the only Privy package is the browser SDK, pinned exactly; no server package, no range. */
+/** #1: the only Privy package is the browser SDK, pinned exactly; no server package, no range, no npm alias of one. */
 function packageProblems(pkg: PackageJson): string[] {
   return DEPENDENCY_SECTIONS.flatMap((section) =>
     Object.entries(pkg[section] ?? {})
-      .filter(([name]) => name.startsWith("@privy-io/"))
+      .filter(([name, version]) => name.startsWith("@privy-io/") || version.includes("@privy-io/"))
       .flatMap(([name, version]) => {
-        if (name !== PRIVY_PACKAGE) return [`package.json ${section}: ${name} is not ${PRIVY_PACKAGE}`];
+        if (name !== PRIVY_PACKAGE) return [`package.json ${section}: ${name} ("${version}") is not ${PRIVY_PACKAGE}`];
         if (version !== PRIVY_VERSION) return [`package.json ${section}: ${name} is "${version}", not pinned "${PRIVY_VERSION}"`];
         return [];
       }),
@@ -167,25 +183,31 @@ function deniedProblems(files: Source[]): string[] {
   });
 }
 
-/** #5: the PrivyProvider config: email and Google only, no auto-created wallet, no custom auth. */
+/**
+ * #5: the PrivyProvider config: email and Google only, no auto-created wallet, no custom auth. Checked in every
+ * file, since a config can be spread in from anywhere; and the Privy file must set the login list itself.
+ */
 function providerConfigProblems(files: Source[]): string[] {
-  const layer = files.find((s) => s.file === PRIVY_FILE);
-  if (!layer) return [];
-  const code = withoutComments(layer.text);
   const problems: string[] = [];
-  const loginMethods = [...code.matchAll(/\bloginMethods\s*:\s*\[([^\]]*)\]/g)];
-  if (loginMethods.length === 0) problems.push(`${PRIVY_FILE}: loginMethods is not a literal list in the PrivyProvider config`);
-  for (const [, list] of loginMethods) {
-    const entries = list.split(",").map((s) => s.trim()).filter(Boolean);
-    const literals = entries.flatMap((e) => e.match(/^["']([^"']*)["']$/)?.[1] ?? []);
-    if (literals.length !== entries.length) problems.push(`${PRIVY_FILE}: loginMethods has an entry that is not a string literal`);
-    for (const m of literals) if (!LOGIN_METHODS.includes(m)) problems.push(`${PRIVY_FILE}: loginMethods allows "${m}"`);
-    if (!literals.includes("email")) problems.push(`${PRIVY_FILE}: loginMethods lacks "email"`);
+  const layer = files.find((s) => s.file === PRIVY_FILE);
+  if (layer && !/\bloginMethods\s*:\s*\[/.test(withoutComments(layer.text))) {
+    problems.push(`${PRIVY_FILE}: loginMethods is not a literal list in the PrivyProvider config`);
   }
-  for (const [, value] of code.matchAll(/\bcreateOnLogin\s*:\s*([^,}\n]+)/g)) {
-    if (!/^["']off["']$/.test(value.trim())) problems.push(`${PRIVY_FILE}: createOnLogin is ${value.trim()}, not "off"`);
+  for (const s of files) {
+    const code = withoutComments(s.text);
+    if (/\bloginMethods\s*:(?!\s*\[)/.test(code)) problems.push(`${s.file}: loginMethods is not a literal list`);
+    for (const [, list] of code.matchAll(/\bloginMethods\s*:\s*\[([^\]]*)\]/g)) {
+      const entries = list.split(",").map((e) => e.trim()).filter(Boolean);
+      const literals = entries.flatMap((e) => e.match(/^["']([^"']*)["']$/)?.[1] ?? []);
+      if (literals.length !== entries.length) problems.push(`${s.file}: loginMethods has an entry that is not a string literal`);
+      for (const m of literals) if (!LOGIN_METHODS.includes(m)) problems.push(`${s.file}: loginMethods allows "${m}"`);
+      if (!literals.includes("email")) problems.push(`${s.file}: loginMethods lacks "email"`);
+    }
+    for (const [, value] of code.matchAll(/\bcreateOnLogin\s*:\s*([^,}\n]+)/g)) {
+      if (!/^["']off["']$/.test(value.trim())) problems.push(`${s.file}: createOnLogin is ${value.trim()}, not "off"`);
+    }
+    if (/\bcustomAuth\s*:/.test(code)) problems.push(`${s.file}: the PrivyProvider config has a customAuth key`);
   }
-  if (/\bcustomAuth\s*:/.test(code)) problems.push(`${PRIVY_FILE}: the PrivyProvider config has a customAuth key`);
   return problems;
 }
 
@@ -220,6 +242,14 @@ function identityInputProblems(procedures: { path: string; inputs: unknown[] }[]
   );
 }
 
+/** #8: no code calls or trusts Privy directly: not its REST or auth hosts, not its headers, not its cookies. The SDK knows its own hosts. */
+function privyApiProblems(files: Source[]): string[] {
+  return files.flatMap((s) => {
+    const code = withoutComments(s.text);
+    return PRIVY_API.filter(([re]) => re.test(code)).map(([, why]) => `${s.file}: ${why}`);
+  });
+}
+
 const SOURCES = sources();
 const PACKAGE_JSON = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as PackageJson;
 
@@ -229,7 +259,7 @@ describe("no-privy-signers", () => {
     expect(files).toContain("components/providers/wallet-provider.tsx");
     expect(files).toContain("server/api/root.ts");
     expect(files).toContain("next.config.mjs");
-    expect(files.filter((f) => f.includes(".test."))).toEqual([]);
+    expect(files.filter((f) => f.includes(".test.") || f.startsWith("tests/") || f.includes("node_modules"))).toEqual([]);
   });
 
   it("1: the only Privy package is @privy-io/react-auth, pinned exactly", () => {
@@ -254,7 +284,7 @@ describe("no-privy-signers", () => {
 
   it("6: no file names a Privy app secret", () => {
     const files = textFiles();
-    expect(files.map((s) => s.file)).toEqual(expect.arrayContaining([".env.example", ".github/workflows/ci.yml"]));
+    expect(files.map((s) => s.file)).toEqual(expect.arrayContaining([".env.example", ".github/workflows/ci.yml", "package.json"]));
     expect(appSecretProblems(files)).toEqual([]);
   });
 
@@ -265,7 +295,11 @@ describe("no-privy-signers", () => {
     expect(identityInputProblems(procedures)).toEqual([]);
   });
 
-  describe("8: each scan finds planted violations", () => {
+  it("8: no source names a Privy API host, header or cookie", () => {
+    expect(privyApiProblems(SOURCES)).toEqual([]);
+  });
+
+  describe("9: each scan finds planted violations", () => {
     const layer = (imports: string, config = 'loginMethods: ["email", "google"], embeddedWallets: { ethereum: { createOnLogin: "off" }, solana: { createOnLogin: "off" } }') => ({
       file: PRIVY_FILE,
       text: `'use client';\n${imports}\nexport function PrivyLayer({ children }) {\n  return <PrivyProvider appId={appId} config={{ ${config} }}>{children}</PrivyProvider>;\n}\n`,
@@ -274,11 +308,39 @@ describe("no-privy-signers", () => {
       'import { PrivyProvider } from "@privy-io/react-auth";\nimport { useCreateWallet, useSignRawHash, useExportWallet } from "@privy-io/react-auth/extended-chains";\nimport { usePrivy, useLogin, useLogout } from "@privy-io/react-auth";',
     );
 
-    it("a server package, a second package, a range or a different version", () => {
+    it("a source in a new top-level directory or in public/, but not a test, a dependency or build output", () => {
+      const tmp = mkdtempSync(path.join(os.tmpdir(), "no-privy-signers-"));
+      try {
+        for (const f of [
+          "hooks/use-server-signer.ts",
+          "public/privy.js",
+          "types/x.d.ts",
+          "middleware.ts",
+          "lib/ok.ts",
+          "lib/ok.test.ts",
+          "components/ok.test.tsx",
+          "tests/ci/x.test.ts",
+          "tests/helper.ts",
+          "node_modules/@privy-io/server-auth/index.js",
+          ".next/server/app.js",
+          "scripts/evidence/.state/key.json",
+          ".env.example",
+          "docs/a.md",
+        ]) {
+          mkdirSync(path.join(tmp, path.dirname(f)), { recursive: true });
+          writeFileSync(path.join(tmp, f), "");
+        }
+        expect(sourceFiles(tmp).sort()).toEqual(["hooks/use-server-signer.ts", "lib/ok.ts", "middleware.ts", "public/privy.js", "types/x.d.ts"]);
+      } finally {
+        rmSync(tmp, { recursive: true, force: true });
+      }
+    });
+
+    it("a server package, a second package, a range, a different version or an npm alias", () => {
       expect(packageProblems({ dependencies: { "@privy-io/react-auth": PRIVY_VERSION } })).toEqual([]);
       expect(packageProblems({ dependencies: { next: "14.2.35" } })).toEqual([]);
       expect(packageProblems({ dependencies: { "@privy-io/react-auth": PRIVY_VERSION, "@privy-io/server-auth": "1.28.0" } })).toEqual([
-        "package.json dependencies: @privy-io/server-auth is not @privy-io/react-auth",
+        'package.json dependencies: @privy-io/server-auth ("1.28.0") is not @privy-io/react-auth',
       ]);
       expect(packageProblems({ devDependencies: { "@privy-io/node": "0.4.0" } })).toHaveLength(1);
       expect(packageProblems({ optionalDependencies: { "@privy-io/wagmi": "1.0.0" } })).toHaveLength(1);
@@ -287,6 +349,11 @@ describe("no-privy-signers", () => {
         'package.json dependencies: @privy-io/react-auth is "^3.51.1", not pinned "3.51.1"',
       ]);
       expect(packageProblems({ dependencies: { "@privy-io/react-auth": "3.52.0" } })).toHaveLength(1);
+      // An npm alias hides the package behind another name (R2).
+      expect(packageProblems({ dependencies: { "auth-kit": "npm:@privy-io/server-auth@1.28.0" } })).toEqual([
+        'package.json dependencies: auth-kit ("npm:@privy-io/server-auth@1.28.0") is not @privy-io/react-auth',
+      ]);
+      expect(packageProblems({ devDependencies: { privy: "npm:@privy-io/react-auth@3.51.1" } })).toHaveLength(1);
     });
 
     it("an allowlisted hook imported from a file other than privy-layer.tsx", () => {
@@ -296,6 +363,7 @@ describe("no-privy-signers", () => {
         { file: "server/api/routers/auth.ts", text: 'const { PrivyClient } = require("@privy-io/server-auth");' },
         { file: "app/api/privy/route.ts", text: 'const m = await import("@privy-io/node");' },
         { file: "components/wallet/privy-mock.tsx", text: 'vi.mock("@privy-io/react-auth", () => ({}));' },
+        { file: "hooks/use-server-signer.ts", text: 'import { useSessionSigners } from "@privy-io/react-auth";' },
         // Prose is not an integration point: the alias comment in next.config.mjs (S-01) and a doc comment.
         { file: "next.config.mjs", text: "// @privy-io/react-auth probes for a Farcaster mini-app host\n'@farcaster/mini-app-solana': false," },
         { file: "components/wallet/sign-confirm-dialog.tsx", text: "/* the shape @privy-io/react-auth returns */" },
@@ -306,6 +374,7 @@ describe("no-privy-signers", () => {
         "server/api/routers/auth.ts: names @privy-io/ (only privy-layer.tsx may)",
         "app/api/privy/route.ts: names @privy-io/ (only privy-layer.tsx may)",
         "components/wallet/privy-mock.tsx: names @privy-io/ (only privy-layer.tsx may)",
+        "hooks/use-server-signer.ts: names @privy-io/ (only privy-layer.tsx may)",
       ]);
     });
 
@@ -366,9 +435,13 @@ describe("no-privy-signers", () => {
       // Every name on the list is matched as a whole word, so each one is caught on its own.
       for (const w of DENIED) expect(deniedProblems([{ file: "x.ts", text: `${w}();` }]), w).toEqual([`x.ts: uses ${w}`]);
       expect(deniedProblems([{ file: "x.ts", text: "const delegatedTo = 1; const customAuthz = 2;" }])).toEqual([]);
+      // Privy's precedence key would override loginMethods (R1).
+      expect(deniedProblems([layer("", 'loginMethods: ["email", "google"], loginMethodsAndOrder: { primary: ["email", "google", "metamask", "wallet_connect"] }')])).toEqual([
+        `${PRIVY_FILE}: uses loginMethodsAndOrder`,
+      ]);
     });
 
-    it("a passkey, a missing email, a non-literal login list, a wallet created on login, a custom auth key", () => {
+    it("a passkey, a missing email, a non-literal login list, a wallet created on login, a custom auth key, in any file", () => {
       expect(providerConfigProblems([spikeLayer])).toEqual([]);
       expect(providerConfigProblems([])).toEqual([]);
       const cases: [string, string][] = [
@@ -389,6 +462,20 @@ describe("no-privy-signers", () => {
       // The config written as a variable in the same file is still read.
       expect(providerConfigProblems([{ file: PRIVY_FILE, text: 'const cfg = {\n  loginMethods: ["email", "google", "twitter"],\n};' }])).toEqual([
         `${PRIVY_FILE}: loginMethods allows "twitter"`,
+      ]);
+      // A config spread in from another file is read too (R1), and the Privy file must still set its own list.
+      const extra: Source = {
+        file: "lib/privy-config.ts",
+        text: 'export const extra = {\n  loginMethods: ["email", "passkey", "wallet"],\n  embeddedWallets: { ethereum: { createOnLogin: "all-users" } },\n};',
+      };
+      expect(providerConfigProblems([spikeLayer, extra])).toEqual([
+        'lib/privy-config.ts: loginMethods allows "passkey"',
+        'lib/privy-config.ts: loginMethods allows "wallet"',
+        'lib/privy-config.ts: createOnLogin is "all-users", not "off"',
+      ]);
+      expect(providerConfigProblems([{ file: "lib/x.ts", text: "const c = { loginMethods: methods };" }])).toEqual(["lib/x.ts: loginMethods is not a literal list"]);
+      expect(providerConfigProblems([layer("", "...extra"), { file: "lib/x.ts", text: 'const extra = { loginMethods: ["email", "google"] };' }])).toEqual([
+        `${PRIVY_FILE}: loginMethods is not a literal list in the PrivyProvider config`,
       ]);
     });
 
@@ -425,6 +512,37 @@ describe("no-privy-signers", () => {
         "auth.deep: input key privyUserId",
         "auth.arrays: input key EmailAddress",
       ]);
+    });
+
+    it("a server call to Privy's REST or auth API, its headers or its cookies, but not a docs link", () => {
+      const planted: Source[] = [
+        {
+          file: "server/privy/rest.ts",
+          text: [
+            'const BASE = "https://api.privy.io/v1";',
+            "await fetch(`${BASE}/wallets/${walletId}/signers`, { method: \"POST\", headers: { \"privy-app-id\": appId, Authorization: basic } });",
+            "await fetch(`${BASE}/key_quorums`, { method: \"POST\" });",
+            'await fetch("https://api.privy.io/v1/policies", { method: "POST" });',
+            'await fetch("https://api.privy.io/v1/wallets", { method: "POST" });',
+          ].join("\n"),
+        },
+        { file: "server/privy/sig.ts", text: 'headers.set("Privy-Authorization-Signature", sig);' },
+        {
+          file: "app/api/me/route.ts",
+          text: 'const token = cookies().get("privy-token")?.value ?? req.headers.get("privy-id-token");\nawait fetch("https://auth.privy.io/api/v1/apps/x/jwks.json");',
+        },
+        { file: "lib/ok.ts", text: "// See https://docs.privy.io/ and https://api.privy.io/v1 for the shapes.\nexport const ok = 1;" },
+        { file: "components/ok.tsx", text: 'const href = "https://docs.privy.io/guide/react/wallets/export";' },
+      ];
+      expect(privyApiProblems(planted).sort()).toEqual(
+        [
+          "server/privy/rest.ts: names a Privy API host",
+          "server/privy/rest.ts: sends the privy-app-id header",
+          "server/privy/sig.ts: sends the privy-authorization-signature header",
+          "app/api/me/route.ts: names a Privy API host",
+          "app/api/me/route.ts: reads a Privy cookie",
+        ].sort(),
+      );
     });
   });
 });
