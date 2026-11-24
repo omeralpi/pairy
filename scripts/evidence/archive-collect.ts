@@ -1,4 +1,4 @@
-// What scripts/evidence/archive.ts keeps before the testnet reset, found in the
+// What scripts/evidence/archive.ts keeps in case of a testnet reset, found in the
 // evidence records and in the Markdown that links them. Kept apart so it can
 // be tested on the record shapes (archive.ts runs main() when it is imported).
 

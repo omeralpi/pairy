@@ -1,7 +1,7 @@
-// Keeps every pre-reset testnet record checkable after Stellar testnet's reset
-// on 16 Dec 2026 at 17:00 UTC (FIXES F-01, X-05, X-06): the reset clears
-// Horizon, Soroban RPC and stellar.expert, so every link to a transaction made
-// before it stops resolving.
+// Keeps every testnet record checkable if Stellar resets testnet (FIXES F-01,
+// X-05, X-06): a reset clears Horizon, Soroban RPC and stellar.expert, so every
+// link to a transaction made before it stops resolving. SDF cancelled the
+// reset planned for 16 Dec 2026 (O-46); this copy is the insurance.
 //
 //   pnpm tsx scripts/evidence/archive.ts [<tx hash> | <escrow C…> | <account G…>]…
 //
