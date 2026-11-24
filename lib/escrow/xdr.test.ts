@@ -9,14 +9,6 @@ import path from "node:path";
 import { Address, Networks, StrKey, TransactionBuilder, nativeToScVal, xdr, type Transaction } from "@stellar/stellar-sdk";
 import { describe, expect, it, vi } from "vitest";
 
-// WP-11 pins these in config.ts (null until then). The values are the ones WP-03 recorded on testnet.
-vi.mock("./config", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./config")>()),
-  TW_FACTORY_CONTRACT_ID: "CCYOZX2IZBMFWN5MIMGQ7GAND7KSAIRCEC3LQSUS5CTSJ6SKKTTYL7GL",
-  TW_ESCROW_WASM_HASH: "1231807d01111bee78a846ddacdd0a6cf88b762115e70f5bce16ffabd660e47f",
-  TW_FEE_ADDRESS: "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
-}));
-
 import { RESOLVE_WINDOW_SECONDS, USDC_SAC } from "./config";
 import {
   decodeEscrowCall,
@@ -528,7 +520,7 @@ describe("the resolve's time policy (O-17)", () => {
   });
 });
 
-describe("before WP-11 pins the factory, wasm hash and fee address (FIXES F-02, F-10)", () => {
+describe("while the factory, wasm hash and fee address are unpinned (FIXES F-02, F-10)", () => {
   it("checks the fee address and the wasm hash only once pinned, and logs the factory it derived from", async () => {
     vi.resetModules();
     vi.doMock("./config", async (importOriginal) => ({

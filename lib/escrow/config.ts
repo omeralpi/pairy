@@ -25,13 +25,29 @@ export const USDC_SAC = "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAM
 
 /**
  * Trustless Work's escrow factory, the escrow code it installs, and the
- * address its 0.3% fee goes to. WP-11 pins them from the first scripted
- * release. While one is null, lib/escrow/xdr.ts does not check it (FIXES F-02,
- * F-10); after a testnet reset they may have to be pinned again.
+ * address its 0.3% fee goes to, as the Gate D2 release found them on testnet
+ * (scripts/evidence/out/escrow-release-real.json; first seen in WP-03's
+ * escrows). lib/escrow/xdr.ts refuses any deploy, release or resolution that
+ * differs. After a testnet reset each may change and is re-pinned (WP-46);
+ * while one is null, xdr.ts does not check it (FIXES F-02, F-10).
  */
-export const TW_FACTORY_CONTRACT_ID: string | null = null;
-export const TW_ESCROW_WASM_HASH: string | null = null;
-export const TW_FEE_ADDRESS: string | null = null;
+export const TW_FACTORY_CONTRACT_ID: string | null = "CCYOZX2IZBMFWN5MIMGQ7GAND7KSAIRCEC3LQSUS5CTSJ6SKKTTYL7GL";
+export const TW_ESCROW_WASM_HASH: string | null = "1231807d01111bee78a846ddacdd0a6cf88b762115e70f5bce16ffabd660e47f";
+export const TW_FEE_ADDRESS: string | null = "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF";
+
+/**
+ * Who the escrow names as service provider (DECISIONS 3). The seller alone
+ * released with one signature and no milestone-status step on testnet (S-16),
+ * so the buyer fallback is not used.
+ */
+export const SERVICE_PROVIDER_ROLE: "seller" | "buyer" = "seller";
+
+/** Trustless Work's escrow viewer: anyone can check an escrow's roles there (S-13). */
+export const TW_VIEWER_BASE = "https://viewer.trustlesswork.com";
+
+export function twViewerUrl(contractId: string): string {
+  return `${TW_VIEWER_BASE}/testnet/v2/${contractId}`;
+}
 
 /** The escrow's one milestone. */
 export const MILESTONE_DESCRIPTION = "Cash handed over";
