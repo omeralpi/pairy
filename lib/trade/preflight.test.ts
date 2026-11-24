@@ -1,7 +1,7 @@
 import { Keypair, type Horizon } from "@stellar/stellar-sdk";
 import { describe, expect, it } from "vitest";
 
-import { TESTNET_USDC_ISSUER } from "@/lib/stellar/assets";
+import { ASSETS, TESTNET_USDC_ISSUER } from "@/lib/stellar/assets";
 
 import { fiatTotal } from "./amount";
 import { checkLock, minimumBalance } from "./preflight";
@@ -16,6 +16,8 @@ function account(opts: {
   usdcLimit?: string;
   usdcAuthorized?: boolean;
   usdcIssuer?: string;
+  eurc?: string;
+  eurcIssuer?: string;
 }): Horizon.AccountResponse {
   const balances: object[] = [
     { asset_type: "native", balance: opts.xlm, selling_liabilities: opts.xlmSelling ?? "0.0000000" },
@@ -32,9 +34,21 @@ function account(opts: {
       buying_liabilities: "0.0000000",
     });
   }
+  if (opts.eurc !== undefined) {
+    balances.push({
+      asset_type: "credit_alphanum4",
+      asset_code: "EURC",
+      asset_issuer: opts.eurcIssuer ?? ASSETS.EURC.issuer,
+      balance: opts.eurc,
+      limit: "922337203685.4775807",
+      is_authorized: true,
+      selling_liabilities: "0.0000000",
+      buying_liabilities: "0.0000000",
+    });
+  }
   return {
     balances,
-    subentry_count: opts.subentries ?? (opts.usdc !== undefined ? 1 : 0),
+    subentry_count: opts.subentries ?? [opts.usdc, opts.eurc].filter((b) => b !== undefined).length,
     num_sponsoring: opts.sponsoring ?? 0,
     num_sponsored: opts.sponsored ?? 0,
   } as unknown as Horizon.AccountResponse;
@@ -77,6 +91,22 @@ describe("checkLock before the buyer can actually receive (S-5, N-3, T-4)", () =
       buyer: account({ xlm: "5", usdc: "0" }),
     });
     expect(sellerLookalike.blockedReason).toBe("You need 25 USDC but hold 0 USDC.");
+  });
+
+  it("passes an EURC-only buyer for EURC and blocks them for USDC; a lookalike EURC issuer counts for nothing", () => {
+    const eurcSeller = account({ xlm: "10", eurc: "100" });
+    const eurcBuyer = account({ xlm: "5", eurc: "0" });
+    expect(checkLock({ asset: "EURC", amount: "25", seller: eurcSeller, buyer: eurcBuyer }).ok).toBe(true);
+
+    const forUsdc = checkLock({ asset: "USDC", amount: "25", seller: account({ xlm: "10", usdc: "100" }), buyer: eurcBuyer });
+    expect(forUsdc.ok).toBe(false);
+    expect(forUsdc.blockedReason).toMatch(/^The buyer needs to add a USDC trustline first/);
+
+    const other = Keypair.random().publicKey();
+    const lookalikeBuyer = checkLock({ asset: "EURC", amount: "25", seller: eurcSeller, buyer: account({ xlm: "5", eurc: "0", eurcIssuer: other }) });
+    expect(lookalikeBuyer.blockedReason).toMatch(/^The buyer needs to add a EURC trustline first/);
+    const lookalikeSeller = checkLock({ asset: "EURC", amount: "25", seller: account({ xlm: "10", eurc: "100", eurcIssuer: other }), buyer: eurcBuyer });
+    expect(lookalikeSeller.blockedReason).toBe("You need 25 EURC but hold 0 EURC.");
   });
 
   it("blocks a second lock when one for this trade is already on Stellar", () => {
