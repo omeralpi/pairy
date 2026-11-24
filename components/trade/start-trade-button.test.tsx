@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { ACCEPTANCE_ITEMS, ACCEPTANCE_TITLE } from "@/lib/escrow/acceptance";
+import { ACCEPTANCE_ITEMS, ACCEPTANCE_TITLE, ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 
 // The start-trade form for one listing.byId result; the viewer is signed in
 // and is not the owner.
@@ -12,6 +12,8 @@ const wallet = vi.hoisted(() => ({ result: { wallet: null, ready: true } as { wa
 // The form as it first renders: each state below is the only one that starts
 // at that value, so swapping it shows a later step without a browser.
 const initial = vi.hoisted(() => ({ amount: "", mode: "claimable", accepted: false }));
+// What trade.open was asked to open.
+const opened = vi.hoisted(() => [] as unknown[]);
 
 vi.mock("react", async (importOriginal) => {
   const react = await importOriginal<typeof import("react")>();
@@ -21,7 +23,7 @@ vi.mock("react", async (importOriginal) => {
 });
 vi.mock("@/lib/api", () => ({
   api: {
-    trade: { open: { useMutation: () => ({ mutate: () => {}, isPending: false, error: null }) } },
+    trade: { open: { useMutation: () => ({ mutate: (input: unknown) => void opened.push(input), isPending: false, error: null }) } },
     listing: { byId: { useQuery: () => ({ data: byId.result, error: null, isLoading: false }) } },
     escrow: { config: { useQuery: () => ({ data: config.result }) } },
   },
@@ -159,6 +161,27 @@ describe("StartTradeButton protected toggle", () => {
 
   it("still needs an amount in bounds once accepted", () => {
     expect(submit(setup({ mode: "protected", amount: "200", accepted: true }))?.[0]).toContain('disabled=""');
+  });
+
+  it("opens with the mode and the acceptance text's version only for an accepted protected trade (WP-30 N1)", () => {
+    // The form's own submit handler, read from the element StartTradeButton returns.
+    const submitWith = (o: Setup) => {
+      setup(o);
+      opened.length = 0;
+      let form: { props: { onSubmit: (e: { preventDefault: () => void }) => void } } | undefined;
+      function Probe() {
+        form = StartTradeButton({ listingId: "l" }) as never;
+        return null;
+      }
+      renderToStaticMarkup(<Probe />);
+      form!.props.onSubmit({ preventDefault: () => {} });
+      return [...opened];
+    };
+    expect(submitWith({ mode: "protected", amount: "20", accepted: true })).toEqual([
+      { listingId: "l", amount: "20", mode: "protected", acceptanceVersion: ACCEPTANCE_VERSION },
+    ]);
+    expect(submitWith({ mode: "protected", amount: "20" })).toEqual([]);
+    expect(submitWith({ amount: "20" })).toEqual([{ listingId: "l", amount: "20" }]);
   });
 
   it("drops the acceptance screen when the toggle is not allowed any more", () => {
