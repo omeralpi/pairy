@@ -71,7 +71,8 @@ function SpikeEscrow() {
       const h = JSON.parse(handoffRef.current?.value ?? "") as Handoff;
       if (h.seller !== wallet.publicKey) throw new Error(`The handoff names ${h.seller} as the seller, not this wallet.`);
       const decoded = decodeEscrowCall({ unsignedXdr: h.unsignedXdr, txHash: h.txHash });
-      // Rebuilt from the trade's public facts, as the trade room will do from its trade record, never taken from the handoff.
+      // Rebuilt by Pairy's own rule (expectedTerms, with the selected wallet as seller) from the handoff's public facts,
+      // which stand in for the trade record here; the handoff never supplies the check itself.
       const expectation: CallExpectation =
         h.call === "fund"
           ? {

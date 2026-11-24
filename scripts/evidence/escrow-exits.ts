@@ -99,6 +99,7 @@ import {
 } from "../../lib/escrow/xdr";
 import { explorerTxUrl, fundWithFriendbot, horizon, networkDeadline } from "../../lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
+import { fromStroops } from "../../lib/trade/amount";
 import { TW_ENDPOINTS, twAmount, twCall, type TwInput, type TwOutput } from "../../server/tw/client";
 import {
   USDC,
@@ -586,11 +587,26 @@ async function payUsdcTo(seller: string) {
  */
 async function handoffRun(arbiter: Arbiter, seller: string, escrow: string | null) {
   if (escrow) {
+    // Pairy's own state check first (WP-08 carry-over: Trustless Work prepares calls for escrows in the wrong state too).
+    const ledger = (await latestLedger()).sequence;
+    const wasmHash = await wasmHashOf(escrow, ledger);
+    check(wasmHash === TW_ESCROW_WASM_HASH, `Escrow ${escrow} runs ${wasmHash}, not ${TW_ESCROW_WASM_HASH}.`);
+    const onChain = await escrowOnChain(escrow, ledger);
+    const onlySeller = (role: unknown) => JSON.stringify(role) === JSON.stringify([seller]);
+    check(
+      onlySeller(onChain.roles.approvers) && onlySeller(onChain.roles.release_signers),
+      `Escrow ${escrow} does not name ${seller} as its only approver and release signer: ${JSON.stringify(onChain.roles)}.`,
+    );
+    check(!onChain.released, `Escrow ${escrow} is already released.`);
+    check(!onChain.disputed, `Escrow ${escrow} is in dispute; it cannot be released.`);
+    const amountStroops = BigInt(onChain.amountStroops);
+    const held = await escrowUsdc(escrow, ledger);
+    check(held === amountStroops, `Escrow ${escrow} holds ${held} stroops of USDC, not its amount ${amountStroops}.`);
     await prepareHandoff(
       "approveAndRelease",
       { contractId: escrow, signer: seller, milestoneIndexes: [0] },
       { kind: "release", contractId: escrow, seller },
-      { call: "release", contractId: escrow, viewerUrl: twViewerUrl(escrow), seller, amount: AMOUNT, escrow: null },
+      { call: "release", contractId: escrow, viewerUrl: twViewerUrl(escrow), seller, amount: fromStroops(amountStroops), escrow: null },
     );
     return;
   }
