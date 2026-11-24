@@ -23,6 +23,15 @@ describe("describeStellarError", () => {
     );
   });
 
+  it("names EURC when the EURC trustline is missing", () => {
+    expect(describeStellarError(refused("op_no_trust"), "EURC")).toBe(
+      "The receiving account has no EURC trustline, so the network refused it. Add the EURC trustline first, then try again. (op_no_trust)",
+    );
+    expect(describeStellarError(refused("op_not_authorized"), "EURC")).toBe(
+      "The EURC issuer has not authorized this account's trustline. (op_not_authorized)",
+    );
+  });
+
   it("says 'this asset' when the caller does not know which one", () => {
     expect(describeStellarError(refused("op_no_trust"))).toBe(
       "The receiving account has no trustline for this asset, so the network refused it. Add the trustline first, then try again. (op_no_trust)",

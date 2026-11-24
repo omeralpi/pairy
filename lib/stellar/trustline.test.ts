@@ -1,7 +1,7 @@
-import { Account, Keypair, type Operation } from "@stellar/stellar-sdk";
+import { Account, Keypair, type Asset, type Operation } from "@stellar/stellar-sdk";
 import { describe, expect, it } from "vitest";
 
-import { toAsset } from "./assets";
+import { ASSETS, toAsset } from "./assets";
 import { buildTrustlineTransaction } from "./trustline";
 
 describe("buildTrustlineTransaction", () => {
@@ -13,5 +13,15 @@ describe("buildTrustlineTransaction", () => {
     const op = tx.operations[0] as Operation.ChangeTrust;
     expect(op.type).toBe("changeTrust");
     expect(op.line).toEqual(toAsset("USDC"));
+  });
+
+  it("trusts EURC from Circle's EURC issuer, not the USDC one", () => {
+    const tx = buildTrustlineTransaction(new Account(Keypair.random().publicKey(), "5"), "EURC");
+    const op = tx.operations[0] as Operation.ChangeTrust;
+    expect(op.type).toBe("changeTrust");
+    const line = op.line as Asset;
+    expect(line.getCode()).toBe("EURC");
+    expect(line.getIssuer()).toBe(ASSETS.EURC.issuer);
+    expect(line.getIssuer()).not.toBe(ASSETS.USDC.issuer);
   });
 });

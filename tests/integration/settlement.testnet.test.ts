@@ -5,22 +5,22 @@
 import { Asset, type Keypair } from "@stellar/stellar-sdk";
 import { describe, expect, it } from "vitest";
 
-import type { AssetCode } from "../../lib/stellar/assets";
+import { ASSET_CODES, needsTrustline, toAsset, type AssetCode } from "../../lib/stellar/assets";
 import {
   buildClaimTransaction,
   buildLockTransaction,
 } from "../../lib/stellar/settlement";
 import { lockBalanceId, verifyClaimTx, verifyLockTx } from "../../lib/stellar/verify";
 import {
-  USDC,
-  addUsdcTrustline,
+  EVIDENCE_AMOUNTS,
+  acquire,
+  acquireSource,
+  addTrustline,
   balanceStroops,
-  buyUsdc,
   claimableBalance,
   feeCharged,
   freshAccount,
   loadAccount,
-  quoteUsdc,
   reclaimOpensAt,
   signAndSubmit,
   sourceAccount,
@@ -51,8 +51,9 @@ async function claim(claimant: Keypair, balanceId: string) {
   return trySubmit(tx, claimant);
 }
 
-function settlementSuite(code: AssetCode, asset: Asset, setup: () => Promise<[Keypair, Keypair]>) {
-  const amount = "5.0000000";
+function settlementSuite(code: AssetCode, setup: () => Promise<[Keypair, Keypair]>) {
+  const asset = toAsset(code);
+  const amount = EVIDENCE_AMOUNTS[code];
 
   it(`${code}: lock → buyer claims; balance gone, buyer paid, reserve back to seller`, async () => {
     const [seller, buyer] = await setup();
@@ -151,55 +152,60 @@ function settlementSuite(code: AssetCode, asset: Asset, setup: () => Promise<[Ke
 }
 
 describe("XLM settlement on testnet", () => {
-  settlementSuite("XLM", Asset.native(), () =>
-    Promise.all([freshAccount(), freshAccount()]),
-  );
+  settlementSuite("XLM", () => Promise.all([freshAccount(), freshAccount()]));
 });
 
-const usdcQuote = await quoteUsdc("50");
-// Set by testnet.yml on manual runs, so a skipped USDC suite cannot pass silently there.
-const requireUsdc = process.env.REQUIRE_USDC === "1";
-if (!usdcQuote) {
-  console.warn(
-    `WARNING: USDC testnet tests SKIPPED: the testnet DEX has no XLM→USDC path, so there is no way to fund a seller without Circle's manual faucet.${requireUsdc ? " REQUIRE_USDC=1, so this run fails." : ""}`,
-  );
-}
+// Set by testnet.yml on manual runs (REQUIRE_ASSETS=USDC), so a skipped suite
+// cannot pass silently there. EURC comes from a local treasury (HX-7) that CI
+// never holds: require it on local runs with REQUIRE_ASSETS=USDC,EURC.
+const required = new Set((process.env.REQUIRE_ASSETS ?? "").split(",").filter(Boolean));
 
-describe.runIf(!usdcQuote && requireUsdc)("USDC settlement on testnet (REQUIRE_USDC=1)", () => {
-  it("has a testnet DEX quote to fund a USDC seller", () => {
-    expect.fail("The testnet DEX has no XLM→USDC path, so the USDC suite could not run");
-  });
-});
-
-describe.skipIf(!usdcQuote)("USDC settlement on testnet", () => {
-  async function usdcPair(): Promise<[Keypair, Keypair]> {
-    const [seller, buyer] = await Promise.all([freshAccount(), freshAccount()]);
-    await Promise.all([addUsdcTrustline(seller), addUsdcTrustline(buyer)]);
-    await buyUsdc(seller, "50");
-    return [seller, buyer];
+for (const code of ASSET_CODES.filter(needsTrustline)) {
+  const asset = toAsset(code);
+  const amount = EVIDENCE_AMOUNTS[code];
+  const source = await acquireSource(code, amount);
+  if (!source) {
+    console.warn(
+      `WARNING: ${code} testnet tests SKIPPED: the testnet DEX has no path to ${amount} ${code} and there is no scripts/evidence/.state/treasury-${code.toLowerCase()}.json, so there is no way to fund a seller.${required.has(code) ? ` REQUIRE_ASSETS names ${code}, so this run fails.` : ""}`,
+    );
   }
 
-  settlementSuite("USDC", USDC, usdcPair);
-
-  it("USDC: a buyer with no trustline can be locked to, but cannot claim (op_no_trust) until they add one", async () => {
-    const [seller] = await usdcPair();
-    const buyer = await freshAccount();
-
-    // CAP-23 does not check claimants' trustlines at creation.
-    const locked = await lock(seller, buyer, USDC, "1");
-
-    const noTrust = await claim(buyer, locked.balanceId);
-    expect(noTrust).toMatchObject({ ok: false, codes: ["tx_failed", "op_no_trust"] });
-    expect(await claimableBalance(locked.balanceId)).not.toBeNull();
-
-    await addUsdcTrustline(buyer);
-    const claimed = await claim(buyer, locked.balanceId);
-    expect(claimed.ok).toBe(true);
-    expect(balanceStroops(await loadAccount(buyer), USDC)).toBe(toStroops("1"));
-    console.log("USDC trustline", {
-      lock: locked.hash,
-      claimWithoutTrustline: noTrust.hash,
-      claimAfterTrustline: claimed.hash,
+  describe.runIf(!source && required.has(code))(`${code} settlement on testnet (REQUIRE_ASSETS)`, () => {
+    it(`has a way to fund a ${code} seller`, () => {
+      expect.fail(`Neither the testnet DEX nor a treasury can supply ${amount} ${code}, so the ${code} suite could not run`);
     });
   });
-});
+
+  describe.skipIf(!source)(`${code} settlement on testnet (${source})`, () => {
+    async function pair(): Promise<[Keypair, Keypair]> {
+      const [seller, buyer] = await Promise.all([freshAccount(), freshAccount()]);
+      await Promise.all([addTrustline(seller, code), addTrustline(buyer, code)]);
+      await acquire(seller, code, amount);
+      return [seller, buyer];
+    }
+
+    settlementSuite(code, pair);
+
+    it(`${code}: a buyer with no trustline can be locked to, but cannot claim (op_no_trust) until they add one`, async () => {
+      const [seller] = await pair();
+      const buyer = await freshAccount();
+
+      // CAP-23 does not check claimants' trustlines at creation.
+      const locked = await lock(seller, buyer, asset, amount);
+
+      const noTrust = await claim(buyer, locked.balanceId);
+      expect(noTrust).toMatchObject({ ok: false, codes: ["tx_failed", "op_no_trust"] });
+      expect(await claimableBalance(locked.balanceId)).not.toBeNull();
+
+      await addTrustline(buyer, code);
+      const claimed = await claim(buyer, locked.balanceId);
+      expect(claimed.ok).toBe(true);
+      expect(balanceStroops(await loadAccount(buyer), asset)).toBe(toStroops(amount));
+      console.log(`${code} trustline`, {
+        lock: locked.hash,
+        claimWithoutTrustline: noTrust.hash,
+        claimAfterTrustline: claimed.hash,
+      });
+    });
+  });
+}

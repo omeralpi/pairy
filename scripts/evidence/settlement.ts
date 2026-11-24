@@ -3,12 +3,16 @@
 //
 //   pnpm tsx scripts/evidence/settlement.ts XLM
 //   pnpm tsx scripts/evidence/settlement.ts USDC
+//   pnpm tsx scripts/evidence/settlement.ts EURC
 //
-// Writes scripts/evidence/out/settlement-<asset>.json.
+// Writes scripts/evidence/out/settlement-<asset>.json. Each run makes two
+// locks (the buyer claims the first, so the seller is funded for both): 5 XLM
+// or USDC per lock, 1 EURC per lock, so 2 EURC per run from the team treasury
+// that Circle's faucet fills (FIXES X-04).
 
 import { Asset, type Keypair } from "@stellar/stellar-sdk";
 
-import { ASSET_CODES, toAsset, type AssetCode } from "../../lib/stellar/assets";
+import { ASSET_CODES, needsTrustline, toAsset, type AssetCode } from "../../lib/stellar/assets";
 import {
   CLAIM_WINDOW_SECONDS,
   buildClaimTransaction,
@@ -16,8 +20,9 @@ import {
 } from "../../lib/stellar/settlement";
 import { lockBalanceId, verifyClaimTx, verifyLockTx } from "../../lib/stellar/verify";
 import {
-  addUsdcTrustline,
-  buyUsdc,
+  EVIDENCE_AMOUNTS,
+  acquire,
+  addTrustline,
   freshAccount,
   reclaimOpensAt,
   signAndSubmit,
@@ -27,12 +32,10 @@ import {
 } from "../../tests/integration/testnet";
 import { snapshot, txEvidence, writeOut, writeState } from "./record";
 
-const AMOUNT = "5.0000000";
-
-async function lock(seller: Keypair, buyer: Keypair, asset: Asset, windowSeconds: number) {
+async function lock(seller: Keypair, buyer: Keypair, asset: Asset, amount: string, windowSeconds: number) {
   const tx = buildLockTransaction(await sourceAccount(seller), {
     asset,
-    amount: AMOUNT,
+    amount,
     buyer: buyer.publicKey(),
     windowSeconds,
   });
@@ -52,15 +55,26 @@ async function main() {
     throw new Error(`Usage: settlement.ts <${ASSET_CODES.join("|")}>`);
   }
   const asset = toAsset(code);
+  const AMOUNT = EVIDENCE_AMOUNTS[code];
   const name = `settlement-${code.toLowerCase()}`;
 
   const [seller, buyer] = await Promise.all([freshAccount(), freshAccount()]);
   writeState(name, { seller: seller.secret(), buyer: buyer.secret() });
   const setup = [];
-  if (!asset.isNative()) {
-    setup.push(await txEvidence("seller trustline", await addUsdcTrustline(seller)));
-    setup.push(await txEvidence("buyer trustline", await addUsdcTrustline(buyer)));
-    setup.push(await txEvidence("seller buys USDC on the DEX", await buyUsdc(seller, "50")));
+  if (needsTrustline(code)) {
+    setup.push(await txEvidence("seller trustline", await addTrustline(seller, code)));
+    setup.push(await txEvidence("buyer trustline", await addTrustline(buyer, code)));
+    // Two locks: the buyer claims the first, so the seller needs both amounts up front.
+    const funding = (Number(AMOUNT) * 2).toFixed(7);
+    const bought = await acquire(seller, code, funding);
+    setup.push(
+      await txEvidence(
+        bought.source === "dex"
+          ? `seller buys ${funding} ${code} on the DEX (two locks of ${AMOUNT})`
+          : `seller receives ${funding} ${code} from the team treasury (two locks of ${AMOUNT})`,
+        bought,
+      ),
+    );
   }
   const expected = {
     seller: seller.publicKey(),
@@ -72,7 +86,7 @@ async function main() {
   console.log(`${code}: lock → buyer claims`);
   const claimPath = { snapshots: [] as unknown[], steps: [] as unknown[] };
   claimPath.snapshots.push(await snapshot("seller before lock", seller, asset));
-  const l1 = await lock(seller, buyer, asset, CLAIM_WINDOW_SECONDS);
+  const l1 = await lock(seller, buyer, asset, AMOUNT, CLAIM_WINDOW_SECONDS);
   await verifyLockTx(l1.sub.hash, { ...expected, windowSeconds: CLAIM_WINDOW_SECONDS });
   claimPath.steps.push({
     ...(await txEvidence(`lock (${CLAIM_WINDOW_SECONDS}s window)`, l1.sub)),
@@ -90,7 +104,7 @@ async function main() {
   console.log(`${code}: 60s lock → early reclaim → reclaim`);
   const reclaimPath = { snapshots: [] as unknown[], steps: [] as unknown[] };
   reclaimPath.snapshots.push(await snapshot("seller before lock", seller, asset));
-  const l2 = await lock(seller, buyer, asset, 60);
+  const l2 = await lock(seller, buyer, asset, AMOUNT, 60);
   await verifyLockTx(l2.sub.hash, { ...expected, windowSeconds: 60 });
   const opensAt = await reclaimOpensAt(l2.balanceId, seller.publicKey());
   reclaimPath.steps.push({

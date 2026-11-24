@@ -13,7 +13,7 @@ import {
 } from "@stellar/stellar-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { TESTNET_USDC_ISSUER } from "./assets";
+import { TESTNET_USDC_ISSUER, toAsset } from "./assets";
 import { horizon } from "./horizon";
 import {
   NETWORK_PASSPHRASE,
@@ -250,6 +250,19 @@ describe("verifyLockTx", () => {
     });
     const hash = land(lookalike, sellerKey);
     await expect(verifyLockTx(hash, expected)).rejects.toThrow(/is not in USDC/);
+  });
+
+  it("rejects EURC from another issuer when the trade is in EURC", async () => {
+    const lookalike = buildLockTransaction(new Account(seller, "1"), {
+      asset: new Asset("EURC", Keypair.random().publicKey()),
+      amount: "25.5",
+      buyer,
+    });
+    const hash = land(lookalike, sellerKey);
+    await expect(verifyLockTx(hash, { ...expected, asset: "EURC" })).rejects.toThrow(/is not in EURC/);
+    // The real issuer's EURC is accepted for the same expectation.
+    const real = land(buildLockTransaction(new Account(seller, "1"), { asset: toAsset("EURC"), amount: "25.5", buyer }), sellerKey);
+    await expect(verifyLockTx(real, { ...expected, asset: "EURC" })).resolves.toMatchObject({ balanceId: expect.any(String) });
   });
 
   it("rejects the wrong amount", async () => {

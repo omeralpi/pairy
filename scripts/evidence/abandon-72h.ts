@@ -1,30 +1,33 @@
-// Opens a real 259200-second (72-hour) lock in XLM and in USDC whose buyer
-// never claims, so the seller's reclaim matures on its own. Run once; run
-// reclaim-72h.ts after maturity.
+// Opens a real 259200-second (72-hour) lock in one asset whose buyer never
+// claims, so the seller's reclaim matures on its own. Run once per asset; run
+// reclaim-72h.ts <asset> after maturity.
 //
-//   pnpm tsx scripts/evidence/abandon-72h.ts
+//   pnpm tsx scripts/evidence/abandon-72h.ts EURC
+//
+// State and output are per asset (abandon-72h-<asset>), so a new run never
+// touches the XLM/USDC record Phase 1 made as abandon-72h.json (G24). XLM and
+// USDC lock 5; EURC locks 1 (FIXES X-04).
 //
 // The buyer's secret is never saved: nobody can claim inside the window.
 
 import type { Asset } from "@stellar/stellar-sdk";
 
-import { toAsset, type AssetCode } from "../../lib/stellar/assets";
+import { ASSET_CODES, needsTrustline, toAsset, type AssetCode } from "../../lib/stellar/assets";
 import {
   CLAIM_WINDOW_SECONDS,
   buildLockTransaction,
 } from "../../lib/stellar/settlement";
 import { lockBalanceId, verifyLockTx } from "../../lib/stellar/verify";
 import {
-  addUsdcTrustline,
-  buyUsdc,
+  EVIDENCE_AMOUNTS,
+  acquire,
+  addTrustline,
   freshAccount,
   reclaimOpensAt,
   signAndSubmit,
   sourceAccount,
 } from "../../tests/integration/testnet";
 import { readState, snapshot, txEvidence, writeOut, writeState } from "./record";
-
-const AMOUNT = "5.0000000";
 
 export type AbandonState = {
   asset: AssetCode;
@@ -42,11 +45,12 @@ export type AbandonState = {
 
 async function abandon(code: AssetCode) {
   const asset: Asset = toAsset(code);
+  const AMOUNT = EVIDENCE_AMOUNTS[code];
   const [seller, buyer] = await Promise.all([freshAccount(), freshAccount()]);
-  if (!asset.isNative()) {
-    await addUsdcTrustline(seller);
-    await addUsdcTrustline(buyer);
-    await buyUsdc(seller, "50");
+  if (needsTrustline(code)) {
+    await addTrustline(seller, code);
+    await addTrustline(buyer, code);
+    await acquire(seller, code, AMOUNT);
   }
   const before = await snapshot("seller before lock", seller, asset);
   const tx = buildLockTransaction(await sourceAccount(seller), {
@@ -94,22 +98,21 @@ async function abandon(code: AssetCode) {
 }
 
 async function main() {
-  if (readState<AbandonState>("abandon-72h")) {
+  const code = process.argv[2] as AssetCode;
+  if (!ASSET_CODES.includes(code)) {
+    throw new Error(`Usage: abandon-72h.ts <${ASSET_CODES.join("|")}>`);
+  }
+  const name = `abandon-72h-${code.toLowerCase()}`;
+  if (readState<AbandonState>(name)) {
     throw new Error(
-      "scripts/evidence/.state/abandon-72h.json already exists; refusing to overwrite the seller keys of a pending 72-hour lock.",
+      `scripts/evidence/.state/${name}.json already exists; refusing to overwrite the seller key of a pending 72-hour lock.`,
     );
   }
-  const runs = [];
-  for (const code of ["XLM", "USDC"] as const) {
-    console.log(`${code}: opening abandoned 72-hour lock`);
-    runs.push(await abandon(code));
-    // Persist after each lock so a later failure never strands a seller key.
-    writeState("abandon-72h", runs.map((r) => r.state));
-  }
-  writeOut("abandon-72h", runs.map((r) => r.pub));
-  for (const { pub } of runs) {
-    console.log(`${pub.asset} balance ${pub.balanceId} matures ${pub.maturesAt}`);
-  }
+  console.log(`${code}: opening abandoned 72-hour lock`);
+  const { state, pub } = await abandon(code);
+  writeState(name, [state]);
+  writeOut(name, [pub]);
+  console.log(`${pub.asset} balance ${pub.balanceId} matures ${pub.maturesAt}`);
 }
 
 main().catch((e) => {

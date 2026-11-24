@@ -1,8 +1,10 @@
 import { Asset, type Horizon } from "@stellar/stellar-sdk";
 
 /** A literal tuple: pgEnum and z.enum need one. */
-export const ASSET_CODES = ["XLM", "USDC"] as const;
+export const ASSET_CODES = ["XLM", "USDC", "EURC"] as const;
 export type AssetCode = (typeof ASSET_CODES)[number];
+/** The codes with an issuer: everything but native XLM. */
+export type IssuedCode = Exclude<AssetCode, "XLM">;
 
 export type AssetInfo = {
   code: AssetCode;
@@ -16,7 +18,7 @@ export type AssetInfo = {
   protectedMode: boolean;
 };
 
-/** Everything Pairy knows about each asset it trades; the third asset is one more entry (WP-23). */
+/** Everything Pairy knows about each asset it trades. */
 export const ASSETS = {
   XLM: {
     code: "XLM",
@@ -32,18 +34,17 @@ export const ASSETS = {
     issuerNote: "Circle's testnet issuer, home domain centre.io",
     protectedMode: true,
   },
+  EURC: {
+    code: "EURC",
+    issuer: "GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO",
+    label: "EURC",
+    issuerNote: "Circle's testnet issuer, home domain circle.com, all auth flags off (checked 2026-11-23)",
+    protectedMode: false,
+  },
 } satisfies { readonly [K in AssetCode]: AssetInfo };
 
 /** Circle's testnet USDC issuer (home_domain centre.io); the same as ASSETS.USDC.issuer. */
 export const TESTNET_USDC_ISSUER: string = ASSETS.USDC.issuer;
-
-/**
- * Circle's testnet EURC issuer (home_domain circle.com; developers.circle.com,
- * "EURC on test networks"). Used by the treasury and evidence scripts until
- * WP-23 adds EURC to ASSETS; not an AssetCode yet.
- */
-export const TESTNET_EURC_ISSUER =
-  "GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO";
 
 export function issuerOf(code: AssetCode): string | null {
   return ASSETS[code].issuer;
@@ -55,7 +56,7 @@ export function toAsset(code: AssetCode): Asset {
 }
 
 /** Non-native assets need a trustline on the claimant before they can claim. */
-export function needsTrustline(code: AssetCode): boolean {
+export function needsTrustline(code: AssetCode): code is IssuedCode {
   return issuerOf(code) !== null;
 }
 

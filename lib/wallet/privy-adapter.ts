@@ -28,6 +28,8 @@ export type PrivyAdapter = {
 
 /** The user closed Privy's modal: not an error to show, just back to the choices. */
 export const PRIVY_LOGIN_CLOSED = "Login cancelled.";
+/** Privy's code did not load, or Privy did not answer in time (D1 §7.1). */
+export const PRIVY_DOWN = "Privy isn't answering. Try again, or make a key on this device.";
 
 /** Privy as the signing paths see it: the adapter once its chunk has loaded, or the fact that it will not. */
 export type PrivyState = {

@@ -30,5 +30,8 @@ jobs:
       - name: settlement on testnet
         run: pnpm test:testnet
         env:
-          # A manual run must cover USDC: fail instead of skipping without a DEX quote.
-          REQUIRE_USDC: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
+          # A manual run must cover USDC: fail instead of skipping without a DEX
+          # quote. EURC is not listed: it comes from a team treasury file that
+          # never leaves the agents' machine (HX-7), so its suite runs locally
+          # with REQUIRE_ASSETS=USDC,EURC.
+          REQUIRE_ASSETS: ${{ github.event_name == 'workflow_dispatch' && 'USDC' || '' }}

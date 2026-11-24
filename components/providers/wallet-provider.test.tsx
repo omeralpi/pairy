@@ -22,6 +22,7 @@ const {
   connectPrivyWallet,
   createPrompt,
   ensurePrivy,
+  logoutPrivy,
   privySignMessage,
   privySignTransaction,
   restoredSelection,
@@ -65,9 +66,15 @@ function fakeAdapter(
   return { adapter, calls, state: { adapter, failed: false } };
 }
 
+/** The "a Privy logout is owed" flag as the provider keeps it in storage, in memory here. */
+function fakeOwed(initial = false) {
+  let flag = initial;
+  return { owed: () => flag, owe: () => void (flag = true), clear: () => void (flag = false) };
+}
+
 /** Pairy's dialog as the signing paths see it: records what it is asked, runs `fn` only on sign(). */
 function fakePrompt() {
-  const asked: { title: string; description: string; summary?: string }[] = [];
+  const asked: { title: string; description: string; summary?: string; signal?: AbortSignal }[] = [];
   let pending: { fn: () => Promise<unknown>; resolve: (v: unknown) => void; reject: (e: unknown) => void } | null = null;
   let open!: () => void;
   // Resolves once the dialog has been asked (the signing paths load their
@@ -78,7 +85,7 @@ function fakePrompt() {
   ]);
   const prompt: ConfirmPrompt = (title, description, fn, opts) =>
     new Promise((resolve, reject) => {
-      asked.push({ title, description, summary: opts?.summary });
+      asked.push({ title, description, summary: opts?.summary, signal: opts?.signal });
       pending = { fn, resolve: resolve as (v: unknown) => void, reject };
       open();
     });
@@ -212,6 +219,27 @@ describe("connectPrivyWallet", () => {
     expect(calls).toEqual([]);
     await expect(connectPrivyWallet({ adapter: null, failed: true })).rejects.toThrow(PRIVY_DOWN);
   });
+
+  it("reports each slow step as it starts, and null once the wallet is connected, so the onboarding button says only what it is waiting for", async () => {
+    horizon.loadAccount.mockResolvedValue(null);
+    const steps: (string | null)[] = [];
+    const first = fakeAdapter({ authenticated: false, address: null, addressAfterLogin: null });
+    await connectPrivyWallet(first.state, (step) => steps.push(step));
+    expect(steps).toEqual(["login", "creating", "funding", null]);
+    // Friendbot failing ends the funding step too: the label must not say it is still being asked.
+    horizon.fundWithFriendbot.mockRejectedValue(new Error("HTTP 503"));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed: (string | null)[] = [];
+    await connectPrivyWallet(fakeAdapter({ address: null }).state, (step) => failed.push(step));
+    expect(failed).toEqual(["creating", "funding", null]);
+    logged.mockRestore();
+    // Second browser, funded account, session still there: nothing slow happens.
+    horizon.loadAccount.mockResolvedValue({});
+    horizon.fundWithFriendbot.mockResolvedValue(undefined);
+    const again: (string | null)[] = [];
+    await connectPrivyWallet(fakeAdapter({ address: "GEXISTING" }).state, (step) => again.push(step));
+    expect(again).toEqual([null]);
+  });
 });
 
 describe("privySignTransaction: Pairy's dialog before every Privy signature (DECISIONS 12)", () => {
@@ -246,6 +274,8 @@ describe("privySignTransaction: Pairy's dialog before every Privy signature (DEC
     );
     await dialog.opened;
     expect(dialog.asked[0].summary).toBe("Lock 25 USDC for GABC…WXYZ");
+    // The dialog gets the caller's signal, so a screen going away closes it.
+    expect(dialog.asked[0].signal).toBe(controller.signal);
   });
 
   it("never calls Privy when the dialog is cancelled", async () => {
@@ -376,5 +406,69 @@ describe("createPrompt: what Sign and Cancel do with a request", () => {
     expect(requests.at(-1)).toBeNull();
     expect(fn).not.toHaveBeenCalled();
     expect(open).toBeDefined();
+  });
+});
+
+describe("a Privy logout owed from a logout made while Privy was down (R2-1)", () => {
+  beforeEach(() => {
+    horizon.loadAccount.mockReset().mockResolvedValue({});
+    horizon.fundWithFriendbot.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("logoutPrivy logs out of Privy when it is ready, so the session does not outlive the wallet", async () => {
+    const { calls, state } = fakeAdapter({ address: "GPRIVY" });
+    const owed = fakeOwed();
+    await logoutPrivy(state.adapter, owed);
+    expect(calls).toEqual(["logout"]);
+    expect(owed.owed()).toBe(false);
+  });
+
+  it("logoutPrivy records the debt instead when Privy is missing or not ready, and when its logout fails", async () => {
+    const missing = fakeOwed();
+    await logoutPrivy(null, missing);
+    expect(missing.owed()).toBe(true);
+
+    const { calls, state } = fakeAdapter({ ready: false });
+    const notReady = fakeOwed();
+    await logoutPrivy(state.adapter, notReady);
+    expect(calls).toEqual([]);
+    expect(notReady.owed()).toBe(true);
+
+    const failing = fakeAdapter({ address: "GPRIVY", logout: async () => Promise.reject(new Error("Failed to fetch")) });
+    const rejected = fakeOwed();
+    await expect(logoutPrivy(failing.state.adapter, rejected)).rejects.toThrow("Failed to fetch");
+    expect(rejected.owed()).toBe(true);
+  });
+
+  it("connectPrivyWallet pays the debt before reusing the session: logout, then Privy's login, then the flag is cleared", async () => {
+    const { calls, state } = fakeAdapter({ address: "GOLD", addressAfterLogin: "GNEXT" });
+    const owed = fakeOwed(true);
+    const steps: (string | null)[] = [];
+    expect(await connectPrivyWallet(state, (step) => steps.push(step), owed)).toBe("GNEXT");
+    expect(calls).toEqual(["logout", "login"]);
+    expect(steps).toEqual(["login", null]);
+    expect(owed.owed()).toBe(false);
+    // Paid: the next connect with the session Privy now holds is the second-browser path again.
+    const again = fakeAdapter({ address: "GEXISTING" });
+    expect(await connectPrivyWallet(again.state, () => {}, owed)).toBe("GEXISTING");
+    expect(again.calls).toEqual([]);
+  });
+
+  it("clears a debt with nothing to pay when Privy already has no session", async () => {
+    const { calls, state } = fakeAdapter({ authenticated: false, address: null, addressAfterLogin: "GNEXT" });
+    const owed = fakeOwed(true);
+    expect(await connectPrivyWallet(state, () => {}, owed)).toBe("GNEXT");
+    expect(calls).toEqual(["login"]);
+    expect(owed.owed()).toBe(false);
+  });
+
+  it("ensurePrivy pays the debt too, then asks for the login and checks the address as before", async () => {
+    const { calls, state } = fakeAdapter({ address: "GPRIVY", addressAfterLogin: "GPRIVY" });
+    const owed = fakeOwed(true);
+    await ensurePrivy(state, "GPRIVY", owed);
+    expect(calls).toEqual(["logout", "login"]);
+    expect(owed.owed()).toBe(false);
+    const other = fakeAdapter({ address: "GPRIVY", addressAfterLogin: "GOTHER" });
+    await expect(ensurePrivy(other.state, "GPRIVY", fakeOwed(true))).rejects.toThrow(PRIVY_OTHER_ACCOUNT);
   });
 });

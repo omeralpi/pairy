@@ -13,14 +13,14 @@
 
 import { Asset, BASE_FEE, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
 
-import { TESTNET_EURC_ISSUER } from "../../lib/stellar/assets";
+import { ASSETS } from "../../lib/stellar/assets";
 import { explorerAccountUrl, explorerTxUrl, horizon } from "../../lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
 import { freshAccount, loadAccount, signAndSubmit } from "../../tests/integration/testnet";
 import { readState, writeState } from "../evidence/record";
 
 /** The TEUR treasury is the distributor that issue-test-euro.ts makes. */
-const ISSUERS = { EURC: TESTNET_EURC_ISSUER } as const;
+const ISSUERS = { EURC: ASSETS.EURC.issuer } as const;
 
 /** scripts/evidence/.state/treasury-<code>.json: the account `acquire` pays from. */
 export type TreasuryState = {

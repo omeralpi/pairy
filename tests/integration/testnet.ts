@@ -17,11 +17,23 @@ import {
   type Transaction,
 } from "@stellar/stellar-sdk";
 
-import { TESTNET_USDC_ISSUER, toAsset, type AssetCode } from "../../lib/stellar/assets";
+import { TESTNET_USDC_ISSUER, toAsset, type AssetCode, type IssuedCode } from "../../lib/stellar/assets";
 import { fundWithFriendbot, horizon } from "../../lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
+import type { TreasuryState } from "../../scripts/ops/create-treasury";
 
 export const USDC = new Asset("USDC", TESTNET_USDC_ISSUER);
+
+/**
+ * What one evidence run or testnet suite moves per asset. Test XLM and USDC
+ * are free (Friendbot, the testnet DEX); EURC comes from Circle's faucet a few
+ * at a time, so each run spends 1 (FIXES X-04, DECISIONS O-16).
+ */
+export const EVIDENCE_AMOUNTS = {
+  XLM: "5.0000000",
+  USDC: "5.0000000",
+  EURC: "1.0000000",
+} as const satisfies Record<AssetCode, string>;
 
 export type Submitted =
   | { ok: true; hash: string; ledger: number }
@@ -79,54 +91,41 @@ function setupTx(source: Awaited<ReturnType<typeof loadAccount>>) {
   });
 }
 
-export async function addUsdcTrustline(kp: Keypair) {
+export async function addTrustline(kp: Keypair, code: IssuedCode) {
   const tx = setupTx(await loadAccount(kp))
-    .addOperation(Operation.changeTrust({ asset: USDC }))
+    .addOperation(Operation.changeTrust({ asset: toAsset(code) }))
     .setTimeout(300)
     .build();
   return signAndSubmit(tx, kp);
 }
 
-/** What `xlm` XLM buys in testnet USDC on the DEX right now, or null if nothing. */
-export async function quoteUsdc(xlm: string): Promise<string | null> {
-  const { records } = await horizon
-    .strictSendPaths(Asset.native(), xlm, [USDC])
-    .call();
-  return records[0]?.destination_amount ?? null;
+export const addUsdcTrustline = (kp: Keypair) => addTrustline(kp, "USDC");
+
+/** scripts/evidence/.state/treasury-<code>.json: a team test key a human filled from a faucet (HX-7). */
+function treasuryFile(code: IssuedCode) {
+  return path.join(__dirname, "../../scripts/evidence/.state", `treasury-${code.toLowerCase()}.json`);
 }
 
-/** Swaps XLM for testnet USDC into `kp`'s own (already trusted) account. */
-export async function buyUsdc(kp: Keypair, xlm: string) {
-  const quote = await quoteUsdc(xlm);
-  if (!quote) throw new Error("No XLM→USDC path on the testnet DEX.");
-  const tx = setupTx(await loadAccount(kp))
-    .addOperation(
-      Operation.pathPaymentStrictSend({
-        sendAsset: Asset.native(),
-        sendAmount: xlm,
-        destination: kp.publicKey(),
-        destAsset: USDC,
-        // Allow 10% slippage between quote and execution.
-        destMin: (Number(quote) * 0.9).toFixed(7),
-        path: [],
-      }),
-    )
-    .setTimeout(300)
-    .build();
-  return signAndSubmit(tx, kp);
+/** The DEX quote that delivers the whole `amount` of `code` for XLM, or null (X-04: a partial fill is not a source). */
+async function dexQuote(code: IssuedCode, amount: string) {
+  const { records } = await horizon.strictReceivePaths([Asset.native()], toAsset(code), amount).call();
+  return records.find((r) => toStroops(r.destination_amount) >= toStroops(amount)) ?? null;
+}
+
+/** Where `acquire` would get `amount` of `code` right now, or null when nowhere; the suites gate on it. */
+export async function acquireSource(code: IssuedCode, amount: string): Promise<"dex" | "treasury" | null> {
+  if (await dexQuote(code, amount)) return "dex";
+  return fs.existsSync(treasuryFile(code)) ? "treasury" : null;
 }
 
 /**
- * Puts exactly `amount` of a test asset into `kp`'s own (already trusted)
- * account (G37, FIXES X-04). Bought with XLM on the testnet DEX when a path
- * delivers the whole amount; otherwise paid from the team treasury in
- * scripts/evidence/.state/treasury-<code>.json, which a human fills from
- * Circle's faucet (HX-7).
+ * Puts `amount` of `code` into `kp`'s own (already trusted) account: bought on
+ * the testnet DEX when a path delivers the whole amount, otherwise paid from
+ * the team treasury. `kp` needs the trustline first (op_no_trust otherwise).
  */
-export async function acquire(kp: Keypair, code: Exclude<AssetCode, "XLM">, amount: string) {
+export async function acquire(kp: Keypair, code: IssuedCode, amount: string) {
   const asset = toAsset(code);
-  const { records } = await horizon.strictReceivePaths([Asset.native()], asset, amount).call();
-  const quote = records.find((r) => toStroops(r.destination_amount) >= toStroops(amount));
+  const quote = await dexQuote(code, amount);
   if (quote) {
     const tx = setupTx(await loadAccount(kp))
       .addOperation(
@@ -144,18 +143,18 @@ export async function acquire(kp: Keypair, code: Exclude<AssetCode, "XLM">, amou
       )
       .setTimeout(300)
       .build();
-    return signAndSubmit(tx, kp);
+    return { ...(await signAndSubmit(tx, kp)), source: "dex" as const };
   }
-  const file = path.join(__dirname, "../../scripts/evidence/.state", `treasury-${code.toLowerCase()}.json`);
+  const file = treasuryFile(code);
   if (!fs.existsSync(file)) {
     throw new Error(`The testnet DEX has no path to ${amount} ${code}, and there is no treasury at ${file} (HX-7).`);
   }
-  const treasury = Keypair.fromSecret((JSON.parse(fs.readFileSync(file, "utf8")) as { secret: string }).secret);
+  const treasury = Keypair.fromSecret((JSON.parse(fs.readFileSync(file, "utf8")) as TreasuryState).secret);
   const tx = setupTx(await loadAccount(treasury))
     .addOperation(Operation.payment({ destination: kp.publicKey(), asset, amount }))
     .setTimeout(300)
     .build();
-  return signAndSubmit(tx, treasury);
+  return { ...(await signAndSubmit(tx, treasury)), source: "treasury" as const };
 }
 
 /** Horizon amounts always carry 7 decimal places. */

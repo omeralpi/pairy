@@ -4,8 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { PincodeDialog } from "@/components/wallet/pincode-dialog";
 import { PRIVY_LOGIN_TEXT, SignConfirmDialog } from "@/components/wallet/sign-confirm-dialog";
-import { PrivyAdapterContext, type PrivyAdapter, type PrivyState } from "@/lib/wallet/privy-adapter";
-import { WalletContext, type SignOptions, type Wallet, type WalletContextValue, type WalletKind } from "@/lib/wallet/use-wallet";
+import { PRIVY_DOWN, PrivyAdapterContext, type PrivyAdapter, type PrivyState } from "@/lib/wallet/privy-adapter";
+import {
+  WalletContext,
+  type PrivyStep,
+  type SignOptions,
+  type Wallet,
+  type WalletContextValue,
+  type WalletKind,
+} from "@/lib/wallet/use-wallet";
 
 // Both wallet modules are browser-only and the KM bundle is large, so they are
 // loaded on first use rather than with the page. The Privy helpers and Horizon
@@ -26,8 +33,8 @@ const PRIVY_ENABLED = !!process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 /** How long a returning Privy user waits for Privy before the app carries on without it (F-18). */
 export const PRIVY_READY_TIMEOUT_MS = 10_000;
 
+export { PRIVY_DOWN };
 export const PRIVY_LOADING = "Privy is still loading. Try again in a moment.";
-export const PRIVY_DOWN = "Privy isn't answering. Try again, or make a key on this device.";
 export const PRIVY_OTHER_ACCOUNT = "You signed in to Privy with a different account than this wallet. Use the same email or Google account.";
 export const PRIVY_BAD_SIGNATURE = "Privy returned a signature that does not match this transaction. Nothing was sent.";
 const PRIVY_TRANSACTION_TEXT =
@@ -92,10 +99,50 @@ function livePrivy({ adapter, failed }: PrivyState): PrivyAdapter {
   return adapter;
 }
 
+/**
+ * A Privy logout the user asked for while Privy could not be reached. Pairy
+ * forgot the wallet at once; Privy's own session is ended as soon as Privy is
+ * usable again, and before any session is reused (R2-1). Kept in storage like
+ * the selection, so it survives the reload that usually follows a logout.
+ */
+export type OwedLogout = { owed(): boolean; owe(): void; clear(): void };
+const OWED_LOGOUT_KEY = "pairy:privy-logout";
+const storedOwedLogout: OwedLogout = {
+  owed: () => {
+    try {
+      return localStorage.getItem(OWED_LOGOUT_KEY) !== null;
+    } catch {
+      return false;
+    }
+  },
+  owe: () => localStorage.setItem(OWED_LOGOUT_KEY, "1"),
+  clear: () => localStorage.removeItem(OWED_LOGOUT_KEY),
+};
+
+/** Logs out of Privy when it can be asked; otherwise records that the logout is owed. */
+export async function logoutPrivy(adapter: PrivyAdapter | null, owed: OwedLogout = storedOwedLogout): Promise<void> {
+  if (!adapter?.ready) return owed.owe();
+  try {
+    await adapter.logout();
+  } catch (e) {
+    owed.owe();
+    throw e;
+  }
+}
+
+/** Pays an owed logout before Privy's session is used. True when Privy was logged out just now: the session is gone whatever `adapter` still says. */
+async function settleOwedLogout(adapter: PrivyAdapter, owed: OwedLogout): Promise<boolean> {
+  if (!owed.owed()) return false;
+  const hadSession = adapter.authenticated;
+  if (hadSession) await adapter.logout();
+  owed.clear();
+  return hadSession;
+}
+
 /** The Privy session a signature needs: logged in, and on this wallet's Stellar address. */
-export async function ensurePrivy(state: PrivyState, publicKey: string): Promise<PrivyAdapter> {
+export async function ensurePrivy(state: PrivyState, publicKey: string, owed: OwedLogout = storedOwedLogout): Promise<PrivyAdapter> {
   const adapter = livePrivy(state);
-  if (!adapter.authenticated) await adapter.login();
+  if ((await settleOwedLogout(adapter, owed)) || !adapter.authenticated) await adapter.login();
   if (adapter.stellarAddress() !== publicKey) throw new Error(PRIVY_OTHER_ACCOUNT);
   return adapter;
 }
@@ -103,16 +150,32 @@ export async function ensurePrivy(state: PrivyState, publicKey: string): Promise
 /**
  * Login, then the Stellar wallet Privy already holds or a new one, then
  * Friendbot if the account is not on testnet yet (DECISIONS 9). Friendbot
- * failing is not fatal: the wallet page has the manual button. Returns the
- * G-address.
+ * failing is not fatal: the wallet page has the manual button. `onStep` is
+ * told when each of those starts, and null when the wallet is connected.
+ * Returns the G-address.
  */
-export async function connectPrivyWallet(state: PrivyState): Promise<string> {
+export async function connectPrivyWallet(
+  state: PrivyState,
+  onStep: (step: PrivyStep | null) => void = () => {},
+  owed: OwedLogout = storedOwedLogout,
+): Promise<string> {
   const adapter = livePrivy(state);
-  if (!adapter.authenticated) await adapter.login();
+  if ((await settleOwedLogout(adapter, owed)) || !adapter.authenticated) {
+    onStep("login");
+    await adapter.login();
+  }
   // Checked first, so a retry never makes a second wallet.
-  const publicKey = adapter.stellarAddress() ?? (await adapter.createStellarWallet());
+  let publicKey = adapter.stellarAddress();
+  if (!publicKey) {
+    onStep("creating");
+    publicKey = await adapter.createStellarWallet();
+  }
   const { fundWithFriendbot, loadAccount } = await horizon();
-  if (!(await loadAccount(publicKey))) await fundWithFriendbot(publicKey).catch((e: unknown) => console.error(e));
+  if (!(await loadAccount(publicKey))) {
+    onStep("funding");
+    await fundWithFriendbot(publicKey).catch((e: unknown) => console.error(e));
+  }
+  onStep(null);
   return publicKey;
 }
 
@@ -255,13 +318,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setReady(restored.ready);
   }, [ready, selection, adapter, privyFailed, deviceWalletPublicKey]);
 
-  // The wait above is bounded: a Privy that never answers must not hold the
-  // returning user on the loading screen.
+  // The wait is bounded: a Privy that never answers must not hold the returning
+  // user on the loading screen, nor leave the newcomer's choice on "Opening
+  // Privy…" (D1 §7.1). A Privy that turns up ready later is used after all.
   useEffect(() => {
-    if (ready || selection?.kind !== "privy") return;
+    if (!PRIVY_ENABLED || adapter?.ready) return;
     const timer = setTimeout(() => setPrivyBroken(true), PRIVY_READY_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [ready, selection]);
+  }, [adapter]);
+
+  // A logout owed from a logout made while Privy was down is paid as soon as
+  // Privy can be asked, before anyone clicks (R2-1).
+  useEffect(() => {
+    if (adapter?.ready) settleOwedLogout(adapter, storedOwedLogout).catch((e: unknown) => console.error(e));
+  }, [adapter]);
 
   const select = useCallback((next: Selection | null) => {
     if (next) localStorage.setItem(SELECTION_KEY, JSON.stringify(next));
@@ -308,7 +378,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       connectFreighter: async () => choose({ kind: "freighter", publicKey: await (await freighter()).connectFreighter() }),
 
-      connectPrivy: PRIVY_ENABLED ? async () => choose({ kind: "privy", publicKey: await connectPrivyWallet(privyRef.current) }) : null,
+      connectPrivy: PRIVY_ENABLED
+        ? async (onStep) => choose({ kind: "privy", publicKey: await connectPrivyWallet(privyRef.current, onStep) })
+        : null,
 
       createDeviceWallet: async (pincode) => {
         const publicKey = await (await deviceWallet()).createDeviceWallet(pincode);
@@ -382,8 +454,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       disconnect: async () => {
         if (selection?.kind === "freighter") await (await freighter()).disconnectFreighter();
-        if (selection?.kind === "privy") await privyRef.current.adapter?.logout();
+        const wasPrivy = selection?.kind === "privy";
+        // The wallet is forgotten first: a Privy that is down or still loading
+        // cannot answer a logout, and must not keep the wallet selected. Its
+        // session is then ended as soon as it can be asked.
         select(null);
+        if (wasPrivy) await logoutPrivy(privyRef.current.adapter);
       },
     };
   }, [selection, ready, deviceWalletPublicKey, adapter, privyFailed, select, toWallet, withPrompt, confirm]);

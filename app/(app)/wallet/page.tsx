@@ -2,7 +2,7 @@
 
 import { Account, TransactionBuilder, type Transaction } from "@stellar/stellar-sdk";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Copy, Download } from "lucide-react";
+import { ArrowUpRight, Copy, Download, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -37,10 +37,11 @@ const groupAddress = (publicKey: string) => publicKey.match(/.{1,4}/g)?.join(" "
 
 export default function WalletPage() {
   const router = useRouter();
-  const { wallet, ready, exportBackup, disconnect } = useWalletContext();
+  const { wallet, ready, exportBackup, exportPrivyKey, privy, disconnect } = useWalletContext();
   const { publicKey: sessionKey, loading: sessionLoading } = useSession();
   const { logout } = useLogin();
-  const [busy, setBusy] = useState<null | "fund" | "trust" | "logout">(null);
+  // One trustline button at a time, and only the one being signed says so.
+  const [busy, setBusy] = useState<null | "fund" | "logout" | `trust:${AssetCode}`>(null);
   const [justCreated, setJustCreated] = useState(false);
   const [fundError, setFundError] = useState<string | null>(null);
 
@@ -67,7 +68,9 @@ export default function WalletPage() {
       <Page>
         <section className="space-y-4 border-t border-line pt-8">
           <h2 className="text-xl font-semibold tracking-tight">No wallet connected.</h2>
-          <p className="text-sm text-slate">Make a key on this device, use Freighter, or restore a backup file.</p>
+          <p className="text-sm text-slate">
+            {privy.enabled ? "Sign in with email or Google, make" : "Make"} a key on this device, use Freighter, or restore a backup file.
+          </p>
           <Button asChild className="w-full">
             <Link href="/onboard">Get started</Link>
           </Button>
@@ -104,7 +107,7 @@ export default function WalletPage() {
 
   const addTrustline = (code: AssetCode) =>
     act(
-      "trust",
+      `trust:${code}`,
       async () => {
         const current = await loadAccount(wallet.publicKey);
         if (!current) throw new Error("Get test XLM first.");
@@ -132,10 +135,13 @@ export default function WalletPage() {
 
   const backup = () => exportBackup().catch((e) => toast.error(message(e)));
 
+  // Privy's own export screen; Pairy never sees the key (D1 §7.3).
+  const exportKey = () => exportPrivyKey?.().catch((e) => toast.error(message(e)));
+
   const acct = account.data;
 
   return (
-    <Page kind={wallet.kind === "freighter" ? "Freighter" : "Key on this device"}>
+    <Page kind={wallet.kind === "freighter" ? "Freighter" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"}>
       {justCreated && wallet.kind === "device" && <BackupPanel title="Export a backup now." onExport={backup} />}
 
       {sessionKey !== wallet.publicKey && (
@@ -208,7 +214,7 @@ export default function WalletPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 divide-x divide-line">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-6">
               {ASSET_CODES.map((code) => (
                 <Balance
                   key={code}
@@ -224,7 +230,7 @@ export default function WalletPage() {
                   XLM of your balance.
                 </p>
                 <Button className="w-full" disabled={busy !== null} onClick={() => addTrustline(code)}>
-                  {busy === "trust" ? "Waiting for your signature…" : `Add ${ASSETS[code].label} to this wallet`}
+                  {busy === `trust:${code}` ? "Waiting for your signature…" : `Add ${ASSETS[code].label} to this wallet`}
                 </Button>
               </div>
             ))}
@@ -233,6 +239,7 @@ export default function WalletPage() {
       </section>
 
       {wallet.kind === "device" && !justCreated && <BackupPanel title="Keep a backup." onExport={backup} />}
+      {wallet.kind === "privy" && <PrivyPanel loginLabel={privy.loginLabel} onExport={exportKey} />}
 
       <section className="space-y-2 border-t border-line pt-6">
         <button
@@ -248,6 +255,7 @@ export default function WalletPage() {
             Logging out keeps the locked key in this browser. You can sign back in with your pincode.
           </p>
         )}
+        {wallet.kind === "privy" && <p className="text-xs text-slate">Logging out also signs you out of Privy.</p>}
       </section>
     </Page>
   );
@@ -291,9 +299,47 @@ function BackupPanel({ title, onExport }: { title: string; onExport: () => void 
   );
 }
 
+/** How a Privy wallet is recovered and taken elsewhere; `loginLabel` is read from Privy in this browser only. */
+function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExport: () => void }) {
+  return (
+    <section className="space-y-4 rounded-xl bg-sand p-5">
+      <div className="space-y-2">
+        <p className="eyebrow">Recovery</p>
+        <h2 className="font-semibold">Recovery is your login.</h2>
+        <p className="text-sm text-ink">
+          Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy
+          holds it in two pieces. Whoever controls that email or Google account controls this wallet.
+        </p>
+        {loginLabel && (
+          <p className="text-sm text-slate">
+            Signed in with <span className="text-ink">{loginLabel}</span>. Pairy&apos;s server never receives this; only the
+            Stellar address is sent.
+          </p>
+        )}
+      </div>
+      <Button className="w-full" onClick={onExport}>
+        <KeyRound strokeWidth={1.5} />
+        Export key
+      </Button>
+      <p className="text-xs text-slate">
+        Export opens Privy&apos;s own screen. Pairy never sees the key.{" "}
+        <a
+          href="https://github.com/omeralpi/pairy/blob/main/README.md#keys-stay-with-you"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+        >
+          Using it in Freighter
+          <ArrowUpRight strokeWidth={1.5} className="size-3" />
+        </a>
+      </p>
+    </section>
+  );
+}
+
 function Balance({ code, amount }: { code: string; amount: string | null }) {
   return (
-    <div className="space-y-2 px-4 first:pl-0 last:pr-0">
+    <div className="space-y-2">
       <p className="eyebrow">{code}</p>
       {/* Comma grouping so "9,979.99" never reads as a Turkish 9.979,99; cut, not rounded, to cents; the full 7-decimal balance is in the title. */}
       <p

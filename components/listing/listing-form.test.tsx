@@ -41,12 +41,12 @@ describe("ListingForm amount labels (F-17)", () => {
 });
 
 describe("ListingForm asset choice", () => {
-  it("offers USDC first and chosen, then every other registry asset by its label", () => {
+  it("offers USDC first and chosen, then XLM, then EURC (O-20)", () => {
     initial.side = "sell_crypto";
     const html = renderToStaticMarkup(<ListingForm />);
     const group = html.match(/<div role="group" aria-labelledby="asset-label"[^>]*>(.*?)<\/div>/)![1];
     const buttons = [...group.matchAll(/aria-pressed="(true|false)"[^>]*>([^<]*)<\/button>/g)].map((m) => [m[2], m[1] === "true"]);
-    const rest = ASSET_CODES.filter((c) => c !== "USDC").map((c) => [ASSETS[c].label, false]);
-    expect(buttons).toEqual([["USDC", true], ...rest]);
+    expect(buttons).toEqual([["USDC", true], ["XLM", false], ["EURC", false]]);
+    expect(buttons.map(([label]) => label)).toEqual(["USDC", ...ASSET_CODES.filter((c) => c !== "USDC").map((c) => ASSETS[c].label)]);
   });
 });
