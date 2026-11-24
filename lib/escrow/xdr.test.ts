@@ -608,3 +608,56 @@ describe("while the factory, wasm hash and fee address are unpinned (FIXES F-02,
     }
   });
 });
+
+// --- WP-15: both dispute exits, resolved by the test 2-of-2 one at a time ----------------------
+// Recorded by scripts/evidence/escrow-exits.ts dispute-<side> --arbiter=test: the side that
+// opened the dispute is paid, as D2 §9 runs the two exits.
+
+describe.each(["buyer", "seller"] as const)("the dispute exit to the %s (WP-15, test 2-of-2)", (side) => {
+  const dispute = read(`exits-test-dispute-${side}`);
+  const r = read(`exits-test-resolve-${side}`);
+  const expectation: CallExpectation = {
+    kind: "resolve",
+    contractId: r.escrow.contractId,
+    resolver: r.arbiter.account,
+    recipient: r.escrow.recipient,
+    amountStroops: BigInt(r.sacBalanceStroops),
+  };
+
+  it("was opened by that side, with Pairy's reason", () => {
+    expect(dispute.request.body.signer).toBe(r.escrow[side]);
+    const d = decodeEscrowCall(dispute.response.body);
+    expect(validateEscrowCall(d, { kind: "dispute", contractId: r.escrow.contractId, signer: r.escrow[side] }, new Date(dispute.at))).toEqual([]);
+  });
+
+  it("pays the whole escrow to that side as Trustless Work prepared it, authorized by the arbiter's own signature (F-04)", () => {
+    expect(r.escrow.recipient).toBe(r.escrow[side]);
+    const d = decodeEscrowCall(r.response.body);
+    expect(validateEscrowCall(d, { ...expectation, timePolicy: "server-original" }, new Date(r.at))).toEqual([]);
+    expect(d.authRoots.map((a) => a.credentials)).toEqual(["source"]);
+  });
+
+  it("uses the arbiter's next sequence number and pays out the escrow's USDC SAC balance (F-03, X-07)", () => {
+    const tx = TransactionBuilder.fromXDR(r.response.body.unsignedXdr, Networks.TESTNET) as Transaction;
+    expect(BigInt(tx.sequence)).toBe(BigInt(r.arbiter.sequence) + 1n);
+    expect(r.sacBalanceStroops).toBe("50000000");
+    expect(r.request.body.distributions).toEqual([{ address: r.escrow.recipient, amount: 5 }]);
+  });
+
+  it("was re-timed to Horizon time + RESOLVE_WINDOW_SECONDS, maxTime only, and passes the browser's check (O-17)", () => {
+    const maxTime = r.rebuilt.horizonTime + RESOLVE_WINDOW_SECONDS;
+    expect(rebuildMaxTime(r.response.body.unsignedXdr, maxTime)).toEqual({ unsignedXdr: r.rebuilt.unsignedXdr, txHash: r.rebuilt.txHash });
+    expect(onlyMaxTimeChanged(r.response.body.unsignedXdr, r.rebuilt.unsignedXdr)).toBe(true);
+    const checkedAt = new Date(r.rebuilt.horizonTime * 1000);
+    expect(validateEscrowCall(decodeEscrowCall(r.rebuilt), { ...expectation, timePolicy: "browser-rebuilt" }, checkedAt)).toEqual([]);
+  });
+
+  it("landed as the re-timed transaction, not as Trustless Work's", () => {
+    expect(r.landed.hash).toBe(r.rebuilt.txHash);
+    expect(r.landed.hash).not.toBe(r.response.body.txHash);
+    expect(decodeEscrowCall({ unsignedXdr: r.landed.signedXdr, txHash: r.landed.hash }).timeBounds).toEqual({
+      minTime: 0,
+      maxTime: r.rebuilt.horizonTime + RESOLVE_WINDOW_SECONDS,
+    });
+  });
+});
