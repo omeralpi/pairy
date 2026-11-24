@@ -6,6 +6,9 @@ export type WalletKind = "device" | "freighter" | "privy";
 
 export type SignOptions = { signal?: AbortSignal; summary?: string };
 
+/** The slow parts of connecting a Privy wallet: Privy's login modal, createWallet, Friendbot. */
+export type PrivyStep = "login" | "creating" | "funding";
+
 export type Wallet = {
   publicKey: string;
   kind: WalletKind;
@@ -44,10 +47,11 @@ export type WalletContextValue = {
   disconnect: () => Promise<void>;
   /**
    * Logs in with Privy (email or Google), reuses or creates its Stellar wallet
-   * and funds it with Friendbot if needed. null when NEXT_PUBLIC_PRIVY_APP_ID
-   * is unset (local dev, CI build): the option is hidden.
+   * and funds it with Friendbot if needed. `onStep` hears each slow step as it
+   * starts, so the screen can say what it is waiting for. null when
+   * NEXT_PUBLIC_PRIVY_APP_ID is unset (local dev, CI build): the option is hidden.
    */
-  connectPrivy: (() => Promise<Wallet>) | null;
+  connectPrivy: ((onStep?: (step: PrivyStep) => void) => Promise<Wallet>) | null;
   /** Opens Privy's own export screen for the selected Privy wallet. Pairy never sees the key. null without an App ID. */
   exportPrivyKey: (() => Promise<void>) | null;
   /** `failed`: Privy's code did not load, or Privy did not answer in time; the Privy option should say so or hide. */

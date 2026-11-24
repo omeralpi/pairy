@@ -212,6 +212,19 @@ describe("connectPrivyWallet", () => {
     expect(calls).toEqual([]);
     await expect(connectPrivyWallet({ adapter: null, failed: true })).rejects.toThrow(PRIVY_DOWN);
   });
+
+  it("reports each slow step as it starts, so the onboarding button can say what it is waiting for", async () => {
+    horizon.loadAccount.mockResolvedValue(null);
+    const steps: string[] = [];
+    const first = fakeAdapter({ authenticated: false, address: null, addressAfterLogin: null });
+    await connectPrivyWallet(first.state, (step) => steps.push(step));
+    expect(steps).toEqual(["login", "creating", "funding"]);
+    // Second browser, funded account, session still there: nothing slow happens.
+    horizon.loadAccount.mockResolvedValue({});
+    const again: string[] = [];
+    await connectPrivyWallet(fakeAdapter({ address: "GEXISTING" }).state, (step) => again.push(step));
+    expect(again).toEqual([]);
+  });
 });
 
 describe("privySignTransaction: Pairy's dialog before every Privy signature (DECISIONS 12)", () => {

@@ -5,7 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PincodeDialog } from "@/components/wallet/pincode-dialog";
 import { PRIVY_LOGIN_TEXT, SignConfirmDialog } from "@/components/wallet/sign-confirm-dialog";
 import { PrivyAdapterContext, type PrivyAdapter, type PrivyState } from "@/lib/wallet/privy-adapter";
-import { WalletContext, type SignOptions, type Wallet, type WalletContextValue, type WalletKind } from "@/lib/wallet/use-wallet";
+import {
+  WalletContext,
+  type PrivyStep,
+  type SignOptions,
+  type Wallet,
+  type WalletContextValue,
+  type WalletKind,
+} from "@/lib/wallet/use-wallet";
 
 // Both wallet modules are browser-only and the KM bundle is large, so they are
 // loaded on first use rather than with the page. The Privy helpers and Horizon
@@ -103,16 +110,26 @@ export async function ensurePrivy(state: PrivyState, publicKey: string): Promise
 /**
  * Login, then the Stellar wallet Privy already holds or a new one, then
  * Friendbot if the account is not on testnet yet (DECISIONS 9). Friendbot
- * failing is not fatal: the wallet page has the manual button. Returns the
- * G-address.
+ * failing is not fatal: the wallet page has the manual button. `onStep` is
+ * told when each of those starts. Returns the G-address.
  */
-export async function connectPrivyWallet(state: PrivyState): Promise<string> {
+export async function connectPrivyWallet(state: PrivyState, onStep: (step: PrivyStep) => void = () => {}): Promise<string> {
   const adapter = livePrivy(state);
-  if (!adapter.authenticated) await adapter.login();
+  if (!adapter.authenticated) {
+    onStep("login");
+    await adapter.login();
+  }
   // Checked first, so a retry never makes a second wallet.
-  const publicKey = adapter.stellarAddress() ?? (await adapter.createStellarWallet());
+  let publicKey = adapter.stellarAddress();
+  if (!publicKey) {
+    onStep("creating");
+    publicKey = await adapter.createStellarWallet();
+  }
   const { fundWithFriendbot, loadAccount } = await horizon();
-  if (!(await loadAccount(publicKey))) await fundWithFriendbot(publicKey).catch((e: unknown) => console.error(e));
+  if (!(await loadAccount(publicKey))) {
+    onStep("funding");
+    await fundWithFriendbot(publicKey).catch((e: unknown) => console.error(e));
+  }
   return publicKey;
 }
 
@@ -308,7 +325,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       connectFreighter: async () => choose({ kind: "freighter", publicKey: await (await freighter()).connectFreighter() }),
 
-      connectPrivy: PRIVY_ENABLED ? async () => choose({ kind: "privy", publicKey: await connectPrivyWallet(privyRef.current) }) : null,
+      connectPrivy: PRIVY_ENABLED
+        ? async (onStep) => choose({ kind: "privy", publicKey: await connectPrivyWallet(privyRef.current, onStep) })
+        : null,
 
       createDeviceWallet: async (pincode) => {
         const publicKey = await (await deviceWallet()).createDeviceWallet(pincode);
