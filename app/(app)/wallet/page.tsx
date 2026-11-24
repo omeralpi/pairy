@@ -2,7 +2,7 @@
 
 import { Account, TransactionBuilder, type Transaction } from "@stellar/stellar-sdk";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Copy, Download } from "lucide-react";
+import { ArrowUpRight, Copy, Download, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -37,7 +37,7 @@ const groupAddress = (publicKey: string) => publicKey.match(/.{1,4}/g)?.join(" "
 
 export default function WalletPage() {
   const router = useRouter();
-  const { wallet, ready, exportBackup, disconnect } = useWalletContext();
+  const { wallet, ready, exportBackup, exportPrivyKey, privy, disconnect } = useWalletContext();
   const { publicKey: sessionKey, loading: sessionLoading } = useSession();
   const { logout } = useLogin();
   const [busy, setBusy] = useState<null | "fund" | "trust" | "logout">(null);
@@ -132,10 +132,13 @@ export default function WalletPage() {
 
   const backup = () => exportBackup().catch((e) => toast.error(message(e)));
 
+  // Privy's own export screen; Pairy never sees the key (D1 §7.3).
+  const exportKey = () => exportPrivyKey?.().catch((e) => toast.error(message(e)));
+
   const acct = account.data;
 
   return (
-    <Page kind={wallet.kind === "freighter" ? "Freighter" : "Key on this device"}>
+    <Page kind={wallet.kind === "freighter" ? "Freighter" : wallet.kind === "privy" ? "Email wallet (Privy)" : "Key on this device"}>
       {justCreated && wallet.kind === "device" && <BackupPanel title="Export a backup now." onExport={backup} />}
 
       {sessionKey !== wallet.publicKey && (
@@ -233,6 +236,7 @@ export default function WalletPage() {
       </section>
 
       {wallet.kind === "device" && !justCreated && <BackupPanel title="Keep a backup." onExport={backup} />}
+      {wallet.kind === "privy" && <PrivyPanel loginLabel={privy.loginLabel} onExport={exportKey} />}
 
       <section className="space-y-2 border-t border-line pt-6">
         <button
@@ -248,6 +252,7 @@ export default function WalletPage() {
             Logging out keeps the locked key in this browser. You can sign back in with your pincode.
           </p>
         )}
+        {wallet.kind === "privy" && <p className="text-xs text-slate">Logging out also signs you out of Privy.</p>}
       </section>
     </Page>
   );
@@ -287,6 +292,44 @@ function BackupPanel({ title, onExport }: { title: string; onExport: () => void 
         <Download strokeWidth={1.5} />
         Export backup
       </Button>
+    </section>
+  );
+}
+
+/** How a Privy wallet is recovered and taken elsewhere; `loginLabel` is read from Privy in this browser only. */
+function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExport: () => void }) {
+  return (
+    <section className="space-y-4 rounded-xl bg-sand p-5">
+      <div className="space-y-2">
+        <p className="eyebrow">Recovery</p>
+        <h2 className="font-semibold">Recovery is your login.</h2>
+        <p className="text-sm text-ink">
+          Sign in with the same email or Google account in any browser to open this wallet. Pairy keeps no copy; Privy
+          holds it in two pieces. Whoever controls that email or Google account controls this wallet.
+        </p>
+        {loginLabel && (
+          <p className="text-sm text-slate">
+            Signed in with <span className="text-ink">{loginLabel}</span>. Pairy&apos;s server never receives this; only the
+            Stellar address is sent.
+          </p>
+        )}
+      </div>
+      <Button className="w-full" onClick={onExport}>
+        <KeyRound strokeWidth={1.5} />
+        Export key
+      </Button>
+      <p className="text-xs text-slate">
+        Export opens Privy&apos;s own screen. Pairy never sees the key.{" "}
+        <a
+          href="https://github.com/omeralpi/pairy/blob/main/README.md#keys-stay-with-you"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
+        >
+          Using it in Freighter
+          <ArrowUpRight strokeWidth={1.5} className="size-3" />
+        </a>
+      </p>
     </section>
   );
 }
