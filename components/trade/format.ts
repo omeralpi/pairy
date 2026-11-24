@@ -12,6 +12,11 @@ export const STATE_LABEL: Record<TradeState, string> = {
   claimed: "Settled",
   reclaimed: "Taken back",
   cancelled: "Cancelled",
+  escrow_created: "In escrow",
+  funded: "Funded",
+  released: "Settled",
+  resolved_buyer: "Settled by the arbiter",
+  resolved_seller: "Settled by the arbiter",
 };
 
 export const roleName = (r: TradeRole) => (r === "seller" ? "Seller" : "Buyer");
@@ -62,6 +67,13 @@ export function statusSentence(
       return t.lockTx
         ? "Closed: Stellar testnet was reset, so this lock no longer exists."
         : "Cancelled. Nothing was locked.";
+    // Protected trades: the label until WP-31 writes their sentences.
+    case "escrow_created":
+    case "funded":
+    case "released":
+    case "resolved_buyer":
+    case "resolved_seller":
+      return `${STATE_LABEL[t.state]}.`;
   }
 }
 

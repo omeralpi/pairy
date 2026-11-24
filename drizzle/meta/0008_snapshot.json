@@ -1,0 +1,1163 @@
+{
+  "id": "e08eb288-86c9-4ab6-8185-9feadf35fe20",
+  "prevId": "f3be6431-4512-4672-ae7a-677fee9a676f",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.arbiter_resolutions": {
+      "name": "arbiter_resolutions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "trade_id": {
+          "name": "trade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "resolution_outcome",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rule": {
+          "name": "rule",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient": {
+          "name": "recipient",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(20, 7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unsigned_xdr": {
+          "name": "unsigned_xdr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_hash": {
+          "name": "tx_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signed_xdr": {
+          "name": "signed_xdr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signers": {
+          "name": "signers",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "status": {
+          "name": "status",
+          "type": "resolution_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'collecting'"
+        },
+        "prepared_by": {
+          "name": "prepared_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_tx": {
+          "name": "submitted_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "arbiter_resolutions_one_open": {
+          "name": "arbiter_resolutions_one_open",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"arbiter_resolutions\".\"status\" = 'collecting'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "arbiter_resolutions_trade_id_trades_id_fk": {
+          "name": "arbiter_resolutions_trade_id_trades_id_fk",
+          "tableFrom": "arbiter_resolutions",
+          "tableTo": "trades",
+          "columnsFrom": [
+            "trade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "arbiter_resolutions_rule_valid": {
+          "name": "arbiter_resolutions_rule_valid",
+          "value": "\"arbiter_resolutions\".\"rule\" IN (1, 2, 3)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.auth_challenges": {
+      "name": "auth_challenges",
+      "schema": "",
+      "columns": {
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.chat_messages": {
+      "name": "chat_messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "trade_id": {
+          "name": "trade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author": {
+          "name": "author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "chat_messages_trade_idx": {
+          "name": "chat_messages_trade_idx",
+          "columns": [
+            {
+              "expression": "trade_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "chat_messages_trade_id_trades_id_fk": {
+          "name": "chat_messages_trade_id_trades_id_fk",
+          "tableFrom": "chat_messages",
+          "tableTo": "trades",
+          "columnsFrom": [
+            "trade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dispute_answers": {
+      "name": "dispute_answers",
+      "schema": "",
+      "columns": {
+        "trade_id": {
+          "name": "trade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "trade_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cash_handed_over": {
+          "name": "cash_handed_over",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "answered_at": {
+          "name": "answered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dispute_answers_trade_id_trades_id_fk": {
+          "name": "dispute_answers_trade_id_trades_id_fk",
+          "tableFrom": "dispute_answers",
+          "tableTo": "trades",
+          "columnsFrom": [
+            "trade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "dispute_answers_trade_id_role_pk": {
+          "name": "dispute_answers_trade_id_role_pk",
+          "columns": [
+            "trade_id",
+            "role"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "dispute_answers_note_length": {
+          "name": "dispute_answers_note_length",
+          "value": "\"dispute_answers\".\"note\" IS NULL OR char_length(\"dispute_answers\".\"note\") <= 500"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.listings": {
+      "name": "listings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner": {
+          "name": "owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "side": {
+          "name": "side",
+          "type": "listing_side",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset": {
+          "name": "asset",
+          "type": "asset_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_amount": {
+          "name": "min_amount",
+          "type": "numeric(20, 7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_amount": {
+          "name": "max_amount",
+          "type": "numeric(20, 7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "remaining_amount": {
+          "name": "remaining_amount",
+          "type": "numeric(20, 7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fiat_code": {
+          "name": "fiat_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate": {
+          "name": "rate",
+          "type": "numeric(20, 4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city_id": {
+          "name": "city_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city_name": {
+          "name": "city_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "country_code": {
+          "name": "country_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "numeric(9, 5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "numeric(9, 5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "listing_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "listings_status_idx": {
+          "name": "listings_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "listings_owner_users_public_key_fk": {
+          "name": "listings_owner_users_public_key_fk",
+          "tableFrom": "listings",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner"
+          ],
+          "columnsTo": [
+            "public_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "listings_min_amount_positive": {
+          "name": "listings_min_amount_positive",
+          "value": "\"listings\".\"min_amount\" > 0"
+        },
+        "listings_max_amount_gte_min": {
+          "name": "listings_max_amount_gte_min",
+          "value": "\"listings\".\"max_amount\" >= \"listings\".\"min_amount\""
+        },
+        "listings_rate_positive": {
+          "name": "listings_rate_positive",
+          "value": "\"listings\".\"rate\" > 0"
+        },
+        "listings_remaining_in_range": {
+          "name": "listings_remaining_in_range",
+          "value": "\"listings\".\"remaining_amount\" >= 0 AND \"listings\".\"remaining_amount\" <= \"listings\".\"max_amount\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sessions_public_key_users_public_key_fk": {
+          "name": "sessions_public_key_users_public_key_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "public_key"
+          ],
+          "columnsTo": [
+            "public_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trade_events": {
+      "name": "trade_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "trade_id": {
+          "name": "trade_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "by": {
+          "name": "by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tx_hash": {
+          "name": "tx_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "trade_events_trade_idx": {
+          "name": "trade_events_trade_idx",
+          "columns": [
+            {
+              "expression": "trade_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "trade_events_trade_id_trades_id_fk": {
+          "name": "trade_events_trade_id_trades_id_fk",
+          "tableFrom": "trade_events",
+          "tableTo": "trades",
+          "columnsFrom": [
+            "trade_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trades": {
+      "name": "trades",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "listing_id": {
+          "name": "listing_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seller": {
+          "name": "seller",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "buyer": {
+          "name": "buyer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "opened_by": {
+          "name": "opened_by",
+          "type": "trade_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset": {
+          "name": "asset",
+          "type": "asset_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(20, 7)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fiat_code": {
+          "name": "fiat_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fiat_amount": {
+          "name": "fiat_amount",
+          "type": "numeric(20, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "trade_state",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'listed'"
+        },
+        "disputed": {
+          "name": "disputed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "window_seconds": {
+          "name": "window_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "balance_id": {
+          "name": "balance_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lock_tx": {
+          "name": "lock_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claim_tx": {
+          "name": "claim_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reclaim_tx": {
+          "name": "reclaim_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "locked_at": {
+          "name": "locked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_synced_at": {
+          "name": "last_synced_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "mode": {
+          "name": "mode",
+          "type": "trade_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'claimable'"
+        },
+        "acceptance_version": {
+          "name": "acceptance_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seller_accepted_at": {
+          "name": "seller_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buyer_accepted_at": {
+          "name": "buyer_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escrow_admin": {
+          "name": "escrow_admin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escrow_contract_id": {
+          "name": "escrow_contract_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "create_tx": {
+          "name": "create_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fund_tx": {
+          "name": "fund_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "release_tx": {
+          "name": "release_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dispute_tx": {
+          "name": "dispute_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolve_tx": {
+          "name": "resolve_tx",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "funded_at": {
+          "name": "funded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disputed_at": {
+          "name": "disputed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dispute_recorded_at": {
+          "name": "dispute_recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dispute_opened_by": {
+          "name": "dispute_opened_by",
+          "type": "trade_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "escrow_prepared_at": {
+          "name": "escrow_prepared_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "trades_seller_idx": {
+          "name": "trades_seller_idx",
+          "columns": [
+            {
+              "expression": "seller",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "trades_buyer_idx": {
+          "name": "trades_buyer_idx",
+          "columns": [
+            {
+              "expression": "buyer",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "trades_listing_idx": {
+          "name": "trades_listing_idx",
+          "columns": [
+            {
+              "expression": "listing_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "trades_escrow_contract_idx": {
+          "name": "trades_escrow_contract_idx",
+          "columns": [
+            {
+              "expression": "escrow_contract_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "trades_balance_id_idx": {
+          "name": "trades_balance_id_idx",
+          "columns": [
+            {
+              "expression": "balance_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "trades_listing_id_listings_id_fk": {
+          "name": "trades_listing_id_listings_id_fk",
+          "tableFrom": "trades",
+          "tableTo": "listings",
+          "columnsFrom": [
+            "listing_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trades_seller_users_public_key_fk": {
+          "name": "trades_seller_users_public_key_fk",
+          "tableFrom": "trades",
+          "tableTo": "users",
+          "columnsFrom": [
+            "seller"
+          ],
+          "columnsTo": [
+            "public_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "trades_buyer_users_public_key_fk": {
+          "name": "trades_buyer_users_public_key_fk",
+          "tableFrom": "trades",
+          "tableTo": "users",
+          "columnsFrom": [
+            "buyer"
+          ],
+          "columnsTo": [
+            "public_key"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "trades_seller_not_buyer": {
+          "name": "trades_seller_not_buyer",
+          "value": "\"trades\".\"seller\" <> \"trades\".\"buyer\""
+        },
+        "trades_amount_positive": {
+          "name": "trades_amount_positive",
+          "value": "\"trades\".\"amount\" > 0"
+        },
+        "trades_fiat_amount_nonnegative": {
+          "name": "trades_fiat_amount_nonnegative",
+          "value": "\"trades\".\"fiat_amount\" >= 0"
+        },
+        "trades_lock_recorded": {
+          "name": "trades_lock_recorded",
+          "value": "\"trades\".\"state\" NOT IN ('locked', 'claimed', 'reclaimed') OR (\"trades\".\"balance_id\" IS NOT NULL AND \"trades\".\"lock_tx\" IS NOT NULL)"
+        },
+        "trades_claim_recorded": {
+          "name": "trades_claim_recorded",
+          "value": "\"trades\".\"state\" <> 'claimed' OR \"trades\".\"claim_tx\" IS NOT NULL"
+        },
+        "trades_reclaim_recorded": {
+          "name": "trades_reclaim_recorded",
+          "value": "\"trades\".\"state\" <> 'reclaimed' OR \"trades\".\"reclaim_tx\" IS NOT NULL"
+        },
+        "trades_protected_usdc": {
+          "name": "trades_protected_usdc",
+          "value": "\"trades\".\"mode\"::text <> 'protected' OR \"trades\".\"asset\"::text = 'USDC'"
+        },
+        "trades_protected_terms": {
+          "name": "trades_protected_terms",
+          "value": "(\"trades\".\"mode\"::text = 'protected') = (\"trades\".\"acceptance_version\" IS NOT NULL)"
+        },
+        "trades_mode_states": {
+          "name": "trades_mode_states",
+          "value": "(\"trades\".\"mode\"::text = 'claimable' AND \"trades\".\"state\"::text IN ('listed', 'agreed', 'locked', 'claimed', 'reclaimed', 'cancelled')) OR (\"trades\".\"mode\"::text = 'protected' AND \"trades\".\"state\"::text IN ('listed', 'agreed', 'escrow_created', 'funded', 'released', 'resolved_buyer', 'resolved_seller', 'cancelled'))"
+        },
+        "trades_escrow_recorded": {
+          "name": "trades_escrow_recorded",
+          "value": "\"trades\".\"state\"::text NOT IN ('escrow_created', 'funded', 'released', 'resolved_buyer', 'resolved_seller') OR (\"trades\".\"escrow_contract_id\" IS NOT NULL AND \"trades\".\"create_tx\" IS NOT NULL AND \"trades\".\"escrow_admin\" IS NOT NULL)"
+        },
+        "trades_fund_recorded": {
+          "name": "trades_fund_recorded",
+          "value": "\"trades\".\"state\"::text NOT IN ('funded', 'released', 'resolved_buyer', 'resolved_seller') OR (\"trades\".\"fund_tx\" IS NOT NULL AND \"trades\".\"funded_at\" IS NOT NULL)"
+        },
+        "trades_release_recorded": {
+          "name": "trades_release_recorded",
+          "value": "\"trades\".\"state\"::text <> 'released' OR \"trades\".\"release_tx\" IS NOT NULL"
+        },
+        "trades_resolve_recorded": {
+          "name": "trades_resolve_recorded",
+          "value": "\"trades\".\"state\"::text NOT IN ('resolved_buyer', 'resolved_seller') OR (\"trades\".\"resolve_tx\" IS NOT NULL AND \"trades\".\"dispute_tx\" IS NOT NULL)"
+        },
+        "trades_dispute_recorded": {
+          "name": "trades_dispute_recorded",
+          "value": "\"trades\".\"mode\"::text <> 'protected' OR \"trades\".\"disputed\" = false OR (\"trades\".\"dispute_tx\" IS NOT NULL AND \"trades\".\"disputed_at\" IS NOT NULL AND \"trades\".\"dispute_recorded_at\" IS NOT NULL AND \"trades\".\"dispute_opened_by\" IS NOT NULL)"
+        },
+        "trades_protected_accepted": {
+          "name": "trades_protected_accepted",
+          "value": "\"trades\".\"mode\"::text <> 'protected' OR \"trades\".\"state\"::text IN ('listed', 'cancelled') OR (\"trades\".\"seller_accepted_at\" IS NOT NULL AND \"trades\".\"buyer_accepted_at\" IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "public_key": {
+          "name": "public_key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.asset_code": {
+      "name": "asset_code",
+      "schema": "public",
+      "values": [
+        "XLM",
+        "USDC",
+        "EURC"
+      ]
+    },
+    "public.listing_side": {
+      "name": "listing_side",
+      "schema": "public",
+      "values": [
+        "sell_crypto",
+        "buy_crypto"
+      ]
+    },
+    "public.listing_status": {
+      "name": "listing_status",
+      "schema": "public",
+      "values": [
+        "active",
+        "paused",
+        "closed"
+      ]
+    },
+    "public.resolution_outcome": {
+      "name": "resolution_outcome",
+      "schema": "public",
+      "values": [
+        "buyer",
+        "seller"
+      ]
+    },
+    "public.resolution_status": {
+      "name": "resolution_status",
+      "schema": "public",
+      "values": [
+        "collecting",
+        "submitted",
+        "expired",
+        "failed"
+      ]
+    },
+    "public.trade_mode": {
+      "name": "trade_mode",
+      "schema": "public",
+      "values": [
+        "claimable",
+        "protected"
+      ]
+    },
+    "public.trade_role": {
+      "name": "trade_role",
+      "schema": "public",
+      "values": [
+        "seller",
+        "buyer"
+      ]
+    },
+    "public.trade_state": {
+      "name": "trade_state",
+      "schema": "public",
+      "values": [
+        "listed",
+        "agreed",
+        "locked",
+        "claimed",
+        "reclaimed",
+        "cancelled",
+        "escrow_created",
+        "funded",
+        "released",
+        "resolved_buyer",
+        "resolved_seller"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,13 +1,13 @@
 // The only code that changes a trade's state. Every router path goes through
-// transitionTrade, so the chat purge on a terminal state (SOW D3) cannot be
-// skipped: the state update, the event row and the purge commit together or
-// not at all.
+// transitionTrade, so the purge on a terminal state (SOW D3: the chat, and a
+// protected trade's dispute notes) cannot be skipped: the state update, the
+// event row and the purge commit together or not at all.
 
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 
 import type { Db } from "@/lib/db";
-import { chatMessages, listings, tradeEvents, trades } from "@/lib/db/schema";
+import { chatMessages, disputeAnswers, listings, tradeEvents, trades } from "@/lib/db/schema";
 import type { TestDb } from "@/lib/db/test-setup";
 import { recomputeRemaining } from "@/lib/listing/remaining";
 
@@ -27,11 +27,38 @@ export function machineFor(row: TradeRow): TradeStateMachine {
     state: row.state,
     disputed: row.disputed,
     openedBy: row.openedBy,
+    mode: row.mode,
     balanceId: row.balanceId,
     lockTx: row.lockTx,
     claimTx: row.claimTx,
     reclaimTx: row.reclaimTx,
+    escrowContractId: row.escrowContractId,
+    createTx: row.createTx,
+    fundTx: row.fundTx,
+    releaseTx: row.releaseTx,
+    disputeTx: row.disputeTx,
+    resolveTx: row.resolveTx,
   });
+}
+
+/** Columns an event writes besides the snapshot: acceptances, ledger times and the dispute record. */
+function eventColumns(event: TradeEvent, now: Date): Partial<TradeRow> {
+  switch (event.type) {
+    case "agree":
+      if (!event.acceptedAt) return {};
+      return event.by === "seller" ? { sellerAcceptedAt: event.acceptedAt } : { buyerAcceptedAt: event.acceptedAt };
+    case "lock":
+      return { lockedAt: event.lockedAt ?? null };
+    case "fund":
+      return { fundedAt: event.fundedAt };
+    case "escrowDispute":
+      // The answer window starts when Pairy records the dispute, not at its ledger time (DECISIONS 1).
+      return { disputedAt: event.disputedAt, disputeRecordedAt: now, disputeOpenedBy: event.by };
+    case "resolve":
+      return { resolvedAt: event.resolvedAt };
+    default:
+      return {};
+  }
 }
 
 /**
@@ -71,9 +98,10 @@ export async function transitionTrade(
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Trade not found" });
 
       const next = machineFor(row).apply(event).snapshot;
+      const now = new Date();
       const [updated] = await tx
         .update(trades)
-        .set({ ...next, updatedAt: new Date(), ...(event.type === "lock" ? { lockedAt: event.lockedAt ?? null } : {}) })
+        .set({ ...next, updatedAt: now, ...eventColumns(event, now) })
         .where(eq(trades.id, tradeId))
         .returning();
       await tx.insert(tradeEvents).values({
@@ -84,6 +112,8 @@ export async function transitionTrade(
       });
       if (isTerminal(next.state)) {
         await tx.delete(chatMessages).where(eq(chatMessages.tradeId, tradeId));
+        // The yes/no answers stay in the timeline; the free text goes with the chat.
+        await tx.update(disputeAnswers).set({ note: null }).where(eq(disputeAnswers.tradeId, tradeId));
       }
       await recomputeRemaining(tx, ref.listingId);
       return updated;

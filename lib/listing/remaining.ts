@@ -13,8 +13,8 @@ import { listings, trades } from "@/lib/db/schema";
 import type { Database } from "@/lib/trade/persist";
 
 /** Trade states whose amount still counts against the listing: reserved or used up. */
-export const COUNTED_STATES = ["listed", "agreed", "locked", "claimed"] as const;
-// Not counted (given back): cancelled, reclaimed.
+export const COUNTED_STATES = ["listed", "agreed", "locked", "claimed", "escrow_created", "funded", "released", "resolved_buyer"] as const;
+// Not counted (given back): cancelled, reclaimed, resolved_seller (the arbiter refunded the seller in full).
 
 export type DbTx = Parameters<Parameters<Database["transaction"]>[0]>[0];
 

@@ -32,10 +32,10 @@ function migrationsBefore(tag: string): string {
 describe("0007_asset_eurc", () => {
   it("is the one migration after 0006, a single ALTER TYPE with no empty statement (R-4)", () => {
     const journal = JSON.parse(readFileSync(path.join(MIGRATIONS, "meta/_journal.json"), "utf8"));
-    const last = journal.entries.at(-1);
-    expect(last.tag).toBe("0007_asset_eurc");
-    expect(journal.entries.at(-2).tag).toBe("0006_listing_remaining");
-    const statements = readFileSync(path.join(MIGRATIONS, `${last.tag}.sql`), "utf8").split("--> statement-breakpoint");
+    const i = journal.entries.findIndex((e: { tag: string }) => e.tag === "0007_asset_eurc");
+    expect(i).toBeGreaterThan(0);
+    expect(journal.entries[i - 1].tag).toBe("0006_listing_remaining");
+    const statements = readFileSync(path.join(MIGRATIONS, "0007_asset_eurc.sql"), "utf8").split("--> statement-breakpoint");
     expect(statements.map((s) => s.trim())).toEqual([`ALTER TYPE "public"."asset_code" ADD VALUE 'EURC';`]);
   });
 

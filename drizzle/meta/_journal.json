@@ -57,6 +57,13 @@
       "when": 1795512422885,
       "tag": "0007_asset_eurc",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795517101732,
+      "tag": "0008_protected_trades",
+      "breakpoints": true
     }
   ]
 }
