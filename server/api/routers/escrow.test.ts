@@ -78,6 +78,29 @@ const HASH = { deploy: DEPLOY.response.body.txHash, fund: FUND.response.body.txH
 
 const terms = expectedTerms({ buyer: BUYER, seller: SELLER, amount: "5", escrowAdmin: ADMIN });
 
+type RpcCall = { request: { method: string; params: unknown }; response: unknown };
+const rpcRecording = (name: string): { contractId: string; calls: RpcCall[] } =>
+  JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/soroban-rpc", `${name}.json`), "utf8"));
+
+/**
+ * The real readEscrow, answered by Soroban RPC as recorded on testnet: fetch
+ * replays the recorded getLedgerEntries answer and nothing else.
+ */
+async function chainRecorded(name: string) {
+  const { calls } = rpcRecording(name);
+  const actual = await vi.importActual<typeof import("@/lib/escrow/read")>("@/lib/escrow/read");
+  vi.mocked(readEscrow).mockImplementation(actual.readEscrow);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      const hit = calls.find((c) => c.request.method === body.method && JSON.stringify(c.request.params) === JSON.stringify(body.params));
+      if (!hit) throw new Error(`unrecorded Soroban RPC request: ${body.method}`);
+      return new Response(JSON.stringify(hit.response), { status: 200, headers: { "content-type": "application/json" } });
+    }),
+  );
+}
+
 function account(o: { xlm: string; usdc?: string; signers?: { key: string; weight: number }[] }): Horizon.AccountResponse {
   const balances: object[] = [{ asset_type: "native", balance: o.xlm, selling_liabilities: "0.0000000" }];
   if (o.usdc !== undefined) {
@@ -144,6 +167,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -312,8 +336,12 @@ describe("escrow: the happy path to released", () => {
     // Release.
     vi.setSystemTime(during(RELEASE, 5));
     prepared(RELEASE);
+    vi.mocked(readEscrow).mockClear();
     const release = await f.as(SELLER).escrow.prepareRelease({ tradeId: t.id });
     expect(twCall).toHaveBeenLastCalledWith("approveAndRelease", { contractId: ESCROW, signer: SELLER, milestoneIndexes: [0] }, { tradeId: t.id });
+    // O-24: the chain is read before Trustless Work is asked.
+    expect(vi.mocked(readEscrow).mock.calls).toEqual([[ESCROW]]);
+    expect(vi.mocked(readEscrow).mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(twCall).mock.invocationCallOrder.at(-1)!);
     expect(release).toEqual({
       unsignedXdr: RELEASE.response.body.unsignedXdr,
       txHash: HASH.release,
@@ -426,7 +454,10 @@ describe("escrow: who may call what", () => {
     await expect(f.as(SELLER).escrow.prepareCreate({ tradeId: t.id, admin: ADMIN })).rejects.toThrow(/Only an agreed trade gets an escrow/);
     await expect(f.as(SELLER).escrow.prepareFund({ tradeId: t.id })).rejects.toThrow(/already funded/);
     await set(t.id, { disputed: true, disputeTx: "e".repeat(64), disputedAt: new Date(), disputeRecordedAt: new Date(), disputeOpenedBy: "buyer" });
+    vi.mocked(readEscrow).mockClear();
     await expect(f.as(SELLER).escrow.prepareRelease({ tradeId: t.id })).rejects.toThrow(/in dispute/);
+    // Pairy's own state check comes first: no chain read, no Trustless Work call.
+    expect(readEscrow).not.toHaveBeenCalled();
     expect(twCall).not.toHaveBeenCalled();
   });
 
@@ -616,6 +647,53 @@ describe("escrow: Trustless Work's answer is checked before it is returned (DECI
     chainHas({ terms: { ...terms, disputeResolvers: [OMER] } });
     await expect(f.as(SELLER).escrow.prepareFund({ tradeId: t.id })).rejects.toThrow(/dispute resolvers/);
     expect(vi.mocked(twCall).mock.calls.map(([ep]) => ep)).toEqual(["deploy"]);
+  });
+});
+
+describe("escrow.prepareRelease reads the escrow on chain first (O-24)", () => {
+  const DISPUTED_ESCROW = "CCYX2DAOGUDNCUCOZPPPKTHPYHHZXLA4I73POY66ULQHB7ANTZJSG6M2";
+
+  it("refuses a release while the escrow is disputed on chain, though Pairy has not recorded the dispute", async () => {
+    const t = await fundedTrade();
+    // This funded trade's escrow, as far as the chain read goes, is WP-15's real dispute-buyer escrow mid-dispute.
+    await set(t.id, { escrowContractId: DISPUTED_ESCROW });
+    await chainRecorded("wp15-dispute-buyer-real");
+    vi.mocked(twCall).mockClear();
+    vi.setSystemTime(during(RELEASE, 5));
+    await expect(f.as(SELLER).escrow.prepareRelease({ tradeId: t.id })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "This trade has a dispute on chain; refresh the trade. Only the arbiter can settle it now.",
+    });
+    expect(readEscrow).toHaveBeenLastCalledWith(DISPUTED_ESCROW);
+    expect(twCall).not.toHaveBeenCalled();
+    // Recording the dispute is sync's job (WP-26); the refusal changes nothing.
+    expect(await row(t.id)).toMatchObject({ state: "funded", disputed: false });
+  });
+
+  it("refuses a release the chain already shows settled, by a release or by the arbiter", async () => {
+    const t = await fundedTrade();
+    vi.mocked(twCall).mockClear();
+    vi.setSystemTime(during(RELEASE, 5));
+    await chainRecorded("gate-d2"); // Gate D2's escrow (this trade's), recorded after its release
+    await expect(f.as(SELLER).escrow.prepareRelease({ tradeId: t.id })).rejects.toThrow("This escrow is already settled on chain; refresh the trade.");
+    const resolved = rpcRecording("wp03-b"); // WP-03's escrow B, recorded after its dispute was resolved
+    await set(t.id, { escrowContractId: resolved.contractId });
+    await chainRecorded("wp03-b");
+    vi.setSystemTime(during(RELEASE, 11));
+    await expect(f.as(SELLER).escrow.prepareRelease({ tradeId: t.id })).rejects.toThrow("This escrow is already settled on chain; refresh the trade.");
+    expect(twCall).not.toHaveBeenCalled();
+  });
+
+  it("refuses, not guesses, when Soroban RPC cannot be read", async () => {
+    const t = await fundedTrade();
+    vi.mocked(readEscrow).mockRejectedValue(new Error("fetch failed"));
+    vi.mocked(twCall).mockClear();
+    vi.setSystemTime(during(RELEASE, 5));
+    await expect(f.as(SELLER).escrow.prepareRelease({ tradeId: t.id })).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      message: "Couldn't read the escrow from Stellar testnet; try again in a minute.",
+    });
+    expect(twCall).not.toHaveBeenCalled();
   });
 });
 

@@ -393,8 +393,8 @@ describe("protected trades: open and agree (D2 §5.1)", () => {
   async function usdc() {
     f = await tradeFixture("sell_crypto", "USDC");
   }
-  const openProtected = (acceptanceVersion = ACCEPTANCE_VERSION) =>
-    f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20", mode: "protected", acceptanceVersion });
+  const openProtected = (amount = "20", acceptanceVersion = ACCEPTANCE_VERSION) =>
+    f.as(f.taker).trade.open({ listingId: f.listing.id, amount, mode: "protected", acceptanceVersion });
 
   beforeEach(() => {
     vi.stubEnv("PROTECTED_MODE", "on");
@@ -454,7 +454,7 @@ describe("protected trades: open and agree (D2 §5.1)", () => {
     await expect(f.as(f.taker).trade.open({ listingId: f.listing.id, amount: "20", mode: "protected" })).rejects.toThrow(
       "The protected-trade text changed. Read it again.",
     );
-    await expect(openProtected("0".repeat(64))).rejects.toThrow("The protected-trade text changed. Read it again.");
+    await expect(openProtected("20", "0".repeat(64))).rejects.toThrow("The protected-trade text changed. Read it again.");
   });
 
   it("refuses a protected trade when either party is an arbiter signer (I13), and when Horizon can't say", async () => {
@@ -514,6 +514,30 @@ describe("protected trades: open and agree (D2 §5.1)", () => {
     const agreed = await f.as(f.owner).trade.agree({ tradeId: t.id });
     expect(agreed).toMatchObject({ state: "agreed", sellerAcceptedAt: null, buyerAcceptedAt: null });
     expect(isArbiterSigner).not.toHaveBeenCalled();
+  });
+
+  it("counts a protected trade in escrow_created or funded as open toward the five (O-24)", async () => {
+    await usdc();
+    const opened = [];
+    for (let i = 0; i < 5; i++) opened.push(await openProtected("10"));
+    // Four still listed; one moves on to an escrow, as the escrow router would record it.
+    const id = opened[0].id;
+    const escrow = {
+      state: "funded" as const,
+      sellerAcceptedAt: new Date(),
+      escrowAdmin: "GCITNS4VZSUWYUGFQJHWOMQR4HN3QNS4DCMC5RXBL6NJOTJ7UGAE5BH5",
+      escrowContractId: "CDQOPLC2P7JNMMT62WDCC5EW5ESLFCHSAVQ66X7EWFE7E3QPT674QO34",
+      createTx: "d".repeat(64),
+      fundTx: "e".repeat(64),
+      fundedAt: new Date(),
+    };
+    await f.db.update(trades).set(escrow).where(eq(trades.id, id));
+    await expect(openProtected("10")).rejects.toThrow(/You already have 5 open trades/);
+    await f.db.update(trades).set({ state: "escrow_created" }).where(eq(trades.id, id));
+    await expect(openProtected("10")).rejects.toThrow(/You already have 5 open trades/);
+    // Once it is settled it no longer counts.
+    await f.db.update(trades).set({ state: "released", releaseTx: "f".repeat(64) }).where(eq(trades.id, id));
+    expect((await openProtected("10")).state).toBe("listed");
   });
 
   it("sends a protected trade's problem flag and lock preflight to the escrow instead", async () => {

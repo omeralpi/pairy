@@ -22,7 +22,11 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 
 import { protectedModeOn } from "./escrow";
 
-/** Trades one account may have opened and not yet seen locked or ended. */
+/**
+ * Trades one account may have opened and not yet seen locked or ended. A
+ * protected trade counts until its escrow is settled (O-24): created and
+ * funded escrows are live commitments.
+ */
 const MAX_OPEN_TRADES = 5;
 
 const tradeIdInput = z.object({ tradeId: z.string().uuid() });
@@ -86,13 +90,13 @@ export const tradeRouter = createTRPCRouter({
               and(eq(trades.seller, me), eq(trades.openedBy, "seller")),
               and(eq(trades.buyer, me), eq(trades.openedBy, "buyer")),
             ),
-            inArray(trades.state, ["listed", "agreed"]),
+            inArray(trades.state, ["listed", "agreed", "escrow_created", "funded"]),
           ),
         );
       if (open >= MAX_OPEN_TRADES) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `You already have ${MAX_OPEN_TRADES} open trades that are not locked yet. Finish or cancel one first.`,
+          message: `You already have ${MAX_OPEN_TRADES} open trades that are not locked or settled yet. Finish or cancel one first.`,
         });
       }
 

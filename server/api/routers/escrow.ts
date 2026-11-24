@@ -473,6 +473,16 @@ export const escrowRouter = createTRPCRouter({
     const escrow = recordedEscrow(trade);
     if (trade.state !== "funded" || !escrow) throw bad("Only a funded escrow can be released.");
     if (trade.disputed) throw bad("This escrow is in dispute; only the arbiter can settle it now.");
+    // O-24: then the chain. A dispute or a settlement Pairy has not recorded yet makes the release
+    // fail on chain, and the seller would pay its fee for nothing; sync records what the chain shows.
+    let onChain;
+    try {
+      onChain = (await readEscrow(escrow.contractId)).status;
+    } catch (e) {
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Couldn't read the escrow from Stellar testnet; try again in a minute.", cause: e });
+    }
+    if (onChain.disputed) throw bad("This trade has a dispute on chain; refresh the trade. Only the arbiter can settle it now.");
+    if (onChain.released || onChain.resolved) throw bad("This escrow is already settled on chain; refresh the trade.");
 
     await claimPrepare(ctx.db, trade.id);
     // The escrow's one milestone (index 0); no milestone-status step (FIXES F-20).
