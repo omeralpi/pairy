@@ -1,3 +1,4 @@
+import { arbiterRouter } from "./routers/arbiter";
 import { authRouter } from "./routers/auth";
 import { chatRouter } from "./routers/chat";
 import { escrowRouter } from "./routers/escrow";
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   trade: tradeRouter,
   chat: chatRouter,
   escrow: escrowRouter,
+  arbiter: arbiterRouter,
 });
 
 export type AppRouter = typeof appRouter;

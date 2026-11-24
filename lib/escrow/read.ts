@@ -100,6 +100,19 @@ export async function readEscrow(contractId: string): Promise<{ terms: EscrowTer
   };
 }
 
+/**
+ * How long Trustless Work's escrow code stays live: every escrow call reads it,
+ * so a resolution is not prepared while it would be archived inside the
+ * signing window (WP-14 C-2). Throws when the code is not there.
+ */
+export async function readCodeTtl(wasmHash: string): Promise<{ latestLedger: number; liveUntil: number }> {
+  const key = xdr.LedgerKey.contractCode(new xdr.LedgerKeyContractCode({ hash: Buffer.from(wasmHash, "hex") }));
+  const { entries, latestLedger } = await soroban.getLedgerEntries(key);
+  const code = find(entries, key);
+  if (!code) throw new Error(`Trustless Work's escrow code ${wasmHash} is not on Stellar testnet.`);
+  return { latestLedger, liveUntil: code.liveUntilLedgerSeq ?? 0 };
+}
+
 /** The hash (hex) of the code the contract runs, from its instance entry. Throws EscrowNotFoundError when there is no contract. */
 export async function readWasmHash(contractId: string): Promise<string> {
   const key = instanceKey(contractId);
