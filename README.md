@@ -4,7 +4,7 @@
 
 <br />
 
-Pairy helps two people in the same city swap local cash for XLM or USDC, face to face. The seller locks the crypto on Stellar for the buyer, and the buyer claims it on their own phone once the cash is in the seller's hand. Pairy holds no key and has no role in the lock.
+Pairy helps two people in the same city swap local cash for XLM, USDC or EURC, face to face. The seller locks the crypto on Stellar for the buyer, and the buyer claims it on their own phone once the cash is in the seller's hand. Pairy holds no key and has no role in the lock.
 
 [![Stellar testnet](https://img.shields.io/badge/Stellar-testnet-0E1116)](https://stellar.org)
 [![CAP-23](https://img.shields.io/badge/settlement-CAP--23%20claimable%20balances-0E1116)](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0023.md)

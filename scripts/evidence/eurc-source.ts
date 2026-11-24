@@ -11,13 +11,14 @@
 
 import { Asset } from "@stellar/stellar-sdk";
 
-import { TESTNET_EURC_ISSUER } from "../../lib/stellar/assets";
+import { ASSETS, toAsset } from "../../lib/stellar/assets";
 import { horizon } from "../../lib/stellar/horizon";
 import type { TreasuryState } from "../ops/create-treasury";
 import { DECISION_DAY, PASS_MARK, decide, passes, type TreasuryReport } from "./eurc-decision";
 import { readOut, readState, writeOut } from "./record";
 
-const EURC = new Asset("EURC", TESTNET_EURC_ISSUER);
+const EURC = toAsset("EURC");
+const EURC_ISSUER = ASSETS.EURC.issuer;
 
 const FAUCET = {
   url: "https://faucet.circle.com/",
@@ -90,13 +91,13 @@ async function eurcReceived(account: string): Promise<string> {
 
 async function attempt(): Promise<Attempt> {
   const [issuerAcc, assets, send, receive] = await Promise.all([
-    horizon.loadAccount(TESTNET_EURC_ISSUER),
-    horizon.assets().forCode(EURC.code).forIssuer(TESTNET_EURC_ISSUER).call(),
+    horizon.loadAccount(EURC_ISSUER),
+    horizon.assets().forCode(EURC.code).forIssuer(EURC_ISSUER).call(),
     horizon.strictSendPaths(Asset.native(), "100", [EURC]).call(),
     horizon.strictReceivePaths([Asset.native()], EURC, "10").call(),
   ]);
   const asset = assets.records[0];
-  if (!asset) throw new Error(`Horizon lists no asset EURC:${TESTNET_EURC_ISSUER}`);
+  if (!asset) throw new Error(`Horizon lists no asset EURC:${EURC_ISSUER}`);
 
   const state = readState<TreasuryState>("treasury-eurc");
   let treasury: Attempt["treasury"] = null;
@@ -117,7 +118,7 @@ async function attempt(): Promise<Attempt> {
   return {
     at,
     issuer: {
-      address: TESTNET_EURC_ISSUER,
+      address: EURC_ISSUER,
       homeDomain: issuerAcc.home_domain ?? null,
       flags: { ...issuerAcc.flags },
       holders: asset.accounts.authorized,

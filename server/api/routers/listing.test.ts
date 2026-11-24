@@ -124,6 +124,13 @@ describe("listing.create", () => {
     expect(created.maxAmount).toBe("1.0000001");
   });
 
+  it("accepts EURC, the third asset, and lists it under its own filter", async () => {
+    const created = await as(ALICE).create({ ...valid, asset: "EURC" });
+    expect(created.asset).toBe("EURC");
+    expect((await as(null).list({ asset: "EURC" })).map((l) => l.id)).toEqual([created.id]);
+    expect(await as(null).list({ asset: "USDC" })).toHaveLength(0);
+  });
+
   it.each(["THB", "IDR"] as const)("quotes cash in %s and filters the map by it", async (fiatCode) => {
     const created = await as(ALICE).create({ ...valid, fiatCode });
     expect(created.fiatCode).toBe(fiatCode);

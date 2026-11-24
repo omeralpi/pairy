@@ -40,7 +40,8 @@ export default function WalletPage() {
   const { wallet, ready, exportBackup, exportPrivyKey, privy, disconnect } = useWalletContext();
   const { publicKey: sessionKey, loading: sessionLoading } = useSession();
   const { logout } = useLogin();
-  const [busy, setBusy] = useState<null | "fund" | "trust" | "logout">(null);
+  // One trustline button at a time, and only the one being signed says so.
+  const [busy, setBusy] = useState<null | "fund" | "logout" | `trust:${AssetCode}`>(null);
   const [justCreated, setJustCreated] = useState(false);
   const [fundError, setFundError] = useState<string | null>(null);
 
@@ -106,7 +107,7 @@ export default function WalletPage() {
 
   const addTrustline = (code: AssetCode) =>
     act(
-      "trust",
+      `trust:${code}`,
       async () => {
         const current = await loadAccount(wallet.publicKey);
         if (!current) throw new Error("Get test XLM first.");
@@ -213,7 +214,7 @@ export default function WalletPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 divide-x divide-line">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-6">
               {ASSET_CODES.map((code) => (
                 <Balance
                   key={code}
@@ -229,7 +230,7 @@ export default function WalletPage() {
                   XLM of your balance.
                 </p>
                 <Button className="w-full" disabled={busy !== null} onClick={() => addTrustline(code)}>
-                  {busy === "trust" ? "Waiting for your signature…" : `Add ${ASSETS[code].label} to this wallet`}
+                  {busy === `trust:${code}` ? "Waiting for your signature…" : `Add ${ASSETS[code].label} to this wallet`}
                 </Button>
               </div>
             ))}
@@ -338,7 +339,7 @@ function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExp
 
 function Balance({ code, amount }: { code: string; amount: string | null }) {
   return (
-    <div className="space-y-2 px-4 first:pl-0 last:pr-0">
+    <div className="space-y-2">
       <p className="eyebrow">{code}</p>
       {/* Comma grouping so "9,979.99" never reads as a Turkish 9.979,99; cut, not rounded, to cents; the full 7-decimal balance is in the title. */}
       <p

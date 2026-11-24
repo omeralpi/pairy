@@ -2,7 +2,7 @@
   "name": "pairy",
   "version": "0.1.0",
   "private": true,
-  "description": "Swap local cash for XLM or USDC in person, settled by a Stellar claimable balance only the two of you can open. Stellar testnet.",
+  "description": "Swap local cash for XLM, USDC or EURC in person, settled by a Stellar claimable balance only the two of you can open. Stellar testnet.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/omeralpi/pairy.git"

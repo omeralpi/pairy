@@ -18,7 +18,7 @@ const STEPS = [
   },
   {
     title: "The seller locks it.",
-    body: "The seller locks the XLM or USDC for the buyer. From that moment the buyer can claim it, cash or not.",
+    body: "The seller locks the XLM, USDC or EURC for the buyer. From that moment the buyer can claim it, cash or not.",
   },
   {
     title: "Cash, then claim.",
