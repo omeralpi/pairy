@@ -6,6 +6,8 @@
 // server ran before anyone signed, as of its ledger's close time, and
 // Horizon's operation record must name the same contract and function. The
 // USDC it moved comes from that record's asset_balance_changes (FIXES X-09).
+// A dispute is the exception: it is recorded whoever built it, so it is
+// checked for what it did (disputeProblems below).
 // Public data only; nothing here signs.
 
 import { NotFoundError, scValToNative, xdr, type Horizon } from "@stellar/stellar-sdk";
@@ -15,18 +17,60 @@ import { horizon } from "@/lib/stellar/horizon";
 import { VerifyError, loadSuccessfulTx } from "@/lib/stellar/verify";
 import { toStroops } from "@/lib/trade/amount";
 
-import { decodeEscrowCall, deriveEscrowId, validateEscrowCall, type CallExpectation } from "./xdr";
+import { decodeEscrowCall, deriveEscrowId, validateEscrowCall, type CallExpectation, type DecodedCall } from "./xdr";
 
 /** The transaction is not this trade's escrow step. */
 export class EscrowMismatchError extends VerifyError {}
 
-/** The escrow steps the server records from the chain so far: create (a deploy), fund, release. */
-export type ExpectedEscrowTx = Extract<CallExpectation, { kind: "deploy" | "fund" | "release" }>;
+/** A trade's two traders. */
+type Parties = { seller: string; buyer: string };
+
+/** The escrow steps the server records from the chain. */
+export type ExpectedEscrowTx =
+  | Extract<CallExpectation, { kind: "deploy" | "fund" | "release" }>
+  /** Either trader may open the dispute; the transaction says which (D2 §2). */
+  | { kind: "dispute"; contractId: string; parties: Parties }
+  /** The arbiter pays the whole escrow to one of the two traders; which one is the outcome (D2 §4.1). */
+  | { kind: "resolve"; contractId: string; resolver: string; parties: Parties };
 
 /** A USDC transfer the call made, from Horizon's operation record. */
 export type EscrowTransfer = { from: string; to: string; amountStroops: bigint };
 
-const STEP: Record<ExpectedEscrowTx["kind"], string> = { deploy: "escrow creation", fund: "escrow funding", release: "escrow release" };
+const STEP: Record<ExpectedEscrowTx["kind"], string> = {
+  deploy: "escrow creation",
+  fund: "escrow funding",
+  release: "escrow release",
+  dispute: "escrow dispute",
+  resolve: "dispute resolution",
+};
+
+const traders = (p: Parties) => [p.seller, p.buyer];
+
+/**
+ * A landed dispute is recorded whoever built it: a dispute opened outside
+ * Pairy's app counts from when Pairy finds it (D2 §13, docs/arbitration.md),
+ * or it would hold the escrow with nobody told. So it is checked for what it
+ * did: one call of dispute_escrow on this escrow, by one of the two traders
+ * for themselves. Pairy's reason, the fee cap and the five-minute validity
+ * protect a signer before signing; they change nothing once it has landed.
+ */
+function disputeProblems(d: DecodedCall, e: { contractId: string; parties: Parties }): string[] {
+  const problems: string[] = [];
+  if (d.opCount !== 1 || d.opType !== "invokeHostFunction") problems.push("It is not one contract call.");
+  if (d.contractId !== e.contractId) problems.push(`It calls contract ${d.contractId || "none"}, not ${e.contractId}.`);
+  if (d.fn !== "dispute_escrow") problems.push(`It calls ${d.fn || "nothing"}, not dispute_escrow.`);
+  if (!traders(e.parties).includes(d.source)) problems.push(`It was sent from ${d.source}, who is not one of this trade's traders.`);
+  if (d.args[0] !== d.source) problems.push("It disputes for another account than the one that sent it.");
+  return problems;
+}
+
+/** Who a resolution pays: its distribution's one entry, when that is one of the two traders. */
+function payoutOf(d: DecodedCall, p: Parties): { to: string; amountStroops: bigint } | null {
+  const v = d.args[2];
+  const pays = v !== null && typeof v === "object" && !Array.isArray(v) ? Object.entries(v) : [];
+  const [to, amountStroops] = pays.length === 1 ? pays[0] : [];
+  return typeof to === "string" && typeof amountStroops === "bigint" && traders(p).includes(to) ? { to, amountStroops } : null;
+}
 
 type InvokeRecord = Horizon.ServerApi.InvokeHostFunctionOperationRecord;
 
@@ -49,17 +93,26 @@ function usdcTransfers(op: InvokeRecord): EscrowTransfer[] {
  * escrow step, as `e` describes it. Throws EscrowMismatchError when it is
  * another transaction, VerifyError when it is missing or failed, and lets a
  * Horizon outage through as itself. `contractId` is the escrow (for a deploy,
- * the one it created).
+ * the one it created); `signer` is who sent it (for a dispute, the trader who
+ * opened it); `payout`, for a resolution only, is whom it paid and how much.
  */
 export async function verifyEscrowTx(
   hash: string,
   e: ExpectedEscrowTx,
-): Promise<{ createdAt: Date; signer: string; contractId: string; transfers: EscrowTransfer[] }> {
+): Promise<{ createdAt: Date; signer: string; contractId: string; transfers: EscrowTransfer[]; payout?: { to: string; amountStroops: bigint } }> {
   const { tx, createdAt } = await loadSuccessfulTx(hash);
   const step = STEP[e.kind];
   const landed = decodeEscrowCall({ unsignedXdr: tx.toXDR(), txHash: hash });
+  const payout = e.kind === "resolve" ? payoutOf(landed, e.parties) : null;
   // As of its ledger's close time: that is when its time bounds were checked by the network.
-  const problems = validateEscrowCall(landed, e, createdAt);
+  const problems =
+    e.kind === "dispute"
+      ? disputeProblems(landed, e)
+      : e.kind !== "resolve"
+        ? validateEscrowCall(landed, e, createdAt)
+        : payout
+          ? validateEscrowCall(landed, { ...e, recipient: payout.to, amountStroops: payout.amountStroops, timePolicy: "landed" }, createdAt)
+          : ["It does not pay the whole escrow to one of the trade's two traders."];
   if (problems.length) throw new EscrowMismatchError(`Transaction ${hash} is not this trade's ${step}: ${problems.join(" ")}`);
 
   const { records } = await horizon.operations().forTransaction(hash).call();
@@ -83,6 +136,7 @@ export async function verifyEscrowTx(
     signer: landed.source,
     contractId: e.kind === "deploy" ? deriveEscrowId(landed) : landed.contractId,
     transfers,
+    ...(payout ? { payout } : {}),
   };
 }
 

@@ -56,8 +56,8 @@ export type CallExpectation =
   | { kind: "fund"; contractId: string; seller: string; amountStroops: bigint; terms: EscrowTerms }
   | { kind: "release"; contractId: string; seller: string }
   | { kind: "dispute"; contractId: string; signer: string }
-  /** timePolicy (O-17): "server-original" (the default) for Trustless Work's resolve as returned; "browser-rebuilt" for it re-timed by rebuildMaxTime. */
-  | { kind: "resolve"; contractId: string; resolver: string; recipient: string; amountStroops: bigint; timePolicy?: "server-original" | "browser-rebuilt" };
+  /** timePolicy (O-17): "server-original" (the default) for Trustless Work's resolve as returned; "browser-rebuilt" for it re-timed by rebuildMaxTime; "landed" for one already on chain, as of its ledger time (verify.ts). */
+  | { kind: "resolve"; contractId: string; resolver: string; recipient: string; amountStroops: bigint; timePolicy?: "server-original" | "browser-rebuilt" | "landed" };
 
 const FN: Record<EscrowCall, string> = {
   deploy: "tw_new_single_release_escrow",
@@ -206,14 +206,16 @@ export function validateEscrowCall(d: DecodedCall, e: CallExpectation, now = new
   const tb = d.timeBounds;
   const until = (t: number) => new Date(t * 1000).toISOString();
   const rebuilt = e.kind === "resolve" && e.timePolicy === "browser-rebuilt";
+  // A re-timed resolve may land in the last minutes of its window; the 10-minute floor is for signing, not landing.
+  const landed = e.kind === "resolve" && e.timePolicy === "landed";
   if (!tb || tb.maxTime === 0) problems.push("It never expires; Trustless Work's transactions expire after 5 minutes.");
   else if (tb.minTime !== 0) problems.push("It cannot be sent until a later time.");
   else if (tb.maxTime <= nowS) problems.push(`It expired at ${until(tb.maxTime)}. Prepare it again.`);
   else if (rebuilt && tb.maxTime < nowS + REBUILT_MIN_S) {
     problems.push(`It expires at ${until(tb.maxTime)}, in less than 10 minutes. Prepare it again.`);
-  } else if (rebuilt && tb.maxTime > nowS + REBUILT_MAX_S) {
+  } else if ((rebuilt || landed) && tb.maxTime > nowS + REBUILT_MAX_S) {
     problems.push(`It stays valid until ${until(tb.maxTime)}, more than 24 hours ahead.`);
-  } else if (!rebuilt && tb.maxTime > nowS + TW_VALIDITY_S + CLOCK_SLACK_S) {
+  } else if (!rebuilt && !landed && tb.maxTime > nowS + TW_VALIDITY_S + CLOCK_SLACK_S) {
     problems.push(`It stays valid until ${until(tb.maxTime)}, longer than the 5 minutes Trustless Work gives.`);
   }
 

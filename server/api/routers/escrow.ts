@@ -1,6 +1,6 @@
 // The escrow router (D2 §5.2): a protected trade's Trustless Work escrow,
-// created, funded and released. Disputes, answers and the arbiter come later
-// (WP-26, WP-29).
+// created, funded and released, or disputed and answered by both traders.
+// The arbiter's resolution comes later (WP-29).
 //
 // Pairy's server never signs and never submits (PLAN I1, I3). For each step it
 // asks Trustless Work for the unsigned transaction, built only from the trade
@@ -17,11 +17,13 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { z } from "zod";
 
-import { trades } from "@/lib/db/schema";
+import { disputeAnswers, tradeEvents, trades } from "@/lib/db/schema";
 import { ACCEPTANCE_ITEMS, ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 import {
   ARBITER_ACCOUNT,
+  DISPUTE_REASON,
   ESCROW_XLM_NEED,
+  NOTE_MAX,
   PLATFORM_ACCOUNT,
   PROTECTED_WALLET_KINDS,
   TW_ESCROW_WASM_HASH,
@@ -33,6 +35,7 @@ import {
 import { describeEscrowError } from "@/lib/escrow/errors";
 import { netAfterFee, twFee } from "@/lib/escrow/fee";
 import { EscrowNotFoundError, readEscrow, readWasmHash } from "@/lib/escrow/read";
+import { answerDeadline } from "@/lib/escrow/rule";
 import { checkEscrowTerms, expectedTerms, type EscrowTerms } from "@/lib/escrow/terms";
 import { findEscrowTx, verifyEscrowTx, type EscrowTransfer } from "@/lib/escrow/verify";
 import { decodeEscrowCall, describeEscrowCall, validateEscrowCall, type CallExpectation } from "@/lib/escrow/xdr";
@@ -500,4 +503,81 @@ export const escrowRouter = createTRPCRouter({
     // Terminal: transitionTrade deletes the chat with it (SOW D3).
     return transitionTrade(ctx.db, trade.id, { type: "release", by: "seller", txHash: input.txHash });
   }),
+
+  /** Either trader may dispute a funded escrow; from then on only the arbiter can move its USDC, by the published rule. */
+  prepareDispute: protectedProcedure.input(tradeIdInput).mutation(async ({ ctx, input }) => {
+    const { trade } = await protectedTrade(ctx.db, input.tradeId, ctx.session.publicKey);
+    const escrow = recordedEscrow(trade);
+    if (trade.state !== "funded" || !escrow) throw bad("Only a funded escrow can be disputed.");
+    if (trade.disputed) throw bad("This escrow is already in dispute; only the arbiter can settle it now.");
+    // Then the chain, as for the release (O-24): a dispute or a settlement Pairy has not recorded
+    // yet would make this one fail on chain, at the trader's cost; sync records what the chain shows.
+    let onChain;
+    try {
+      onChain = (await readEscrow(escrow.contractId)).status;
+    } catch (e) {
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Couldn't read the escrow from Stellar testnet; try again in a minute.", cause: e });
+    }
+    if (onChain.disputed) throw bad("This trade already has a dispute on chain; refresh the trade.");
+    if (onChain.released || onChain.resolved) throw bad("This escrow is already settled on chain; refresh the trade.");
+
+    await claimPrepare(ctx.db, trade.id);
+    // The caller disputes for themselves, with the fixed reason: public on chain, it names nobody.
+    const signer = ctx.session.publicKey;
+    const out = await askTw("dispute", { contractId: escrow.contractId, signer, reason: DISPUTE_REASON }, trade.id);
+    return checked(trade.id, out, { kind: "dispute", contractId: escrow.contractId, signer });
+  }),
+
+  /** Either trader may report it; the transaction says who opened the dispute. */
+  recordDispute: protectedProcedure.input(txInput).mutation(async ({ ctx, input }) => {
+    const { trade } = await protectedTrade(ctx.db, input.tradeId, ctx.session.publicKey);
+    if (trade.disputeTx === input.txHash) return trade;
+    if (trade.disputeTx !== null) throw bad("This trade's dispute is already recorded.");
+    const escrow = recordedEscrow(trade);
+    if (trade.state !== "funded" || !escrow) throw bad("Only a funded escrow can be disputed.");
+    const landed = await onChain(
+      verifyEscrowTx(input.txHash, { kind: "dispute", contractId: escrow.contractId, parties: { seller: trade.seller, buyer: trade.buyer } }),
+    );
+    // disputed_at is the ledger time; the 24 hours to answer start now, when Pairy records it (DECISIONS 1).
+    const by = landed.signer === trade.seller ? "seller" : "buyer";
+    return transitionTrade(ctx.db, trade.id, { type: "escrowDispute", by, txHash: input.txHash, disputedAt: landed.createdAt });
+  }),
+
+  /** Each trader's one answer to "Was the cash handed over in full?", final once saved (DECISIONS 10). */
+  answer: protectedProcedure
+    .input(
+      tradeIdInput.extend({
+        cashHandedOver: z.boolean(),
+        /** Shown to the other trader and the arbiter; deleted with the chat when the trade ends. */
+        note: z
+          .string()
+          .trim()
+          .max(NOTE_MAX)
+          // Postgres text cannot hold U+0000; without this the insert fails as a 500.
+          .refine((s) => !s.includes("\0"), "The note contains a character that can't be saved")
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { role } = await protectedTrade(ctx.db, input.tradeId, ctx.session.publicKey);
+      return ctx.db.transaction(async (tx) => {
+        // FOR SHARE, as chat.send: a terminal transition waits for this answer to commit, so its purge
+        // clears this note too, and this read waits for a transition already in flight.
+        const [trade] = await tx.select().from(trades).where(eq(trades.id, input.tradeId)).for("share");
+        if (trade.state !== "funded" || !trade.disputed || trade.disputeRecordedAt === null) {
+          throw bad("This trade has no open dispute to answer.");
+        }
+        const deadline = answerDeadline({ disputeRecordedAt: trade.disputeRecordedAt });
+        if (Date.now() >= deadline.getTime()) throw bad(`Answers closed at ${deadline.toISOString()}.`);
+        // The primary key (trade, role) keeps one answer per side; no path updates it.
+        const [saved] = await tx
+          .insert(disputeAnswers)
+          .values({ tradeId: trade.id, role, cashHandedOver: input.cashHandedOver, note: input.note || null })
+          .onConflictDoNothing()
+          .returning();
+        if (!saved) throw bad("You already answered.");
+        await tx.insert(tradeEvents).values({ tradeId: trade.id, type: input.cashHandedOver ? "answerYes" : "answerNo", by: role });
+        return trade;
+      });
+    }),
 });

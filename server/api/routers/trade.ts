@@ -3,9 +3,10 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { listings, tradeEvents, trades, users } from "@/lib/db/schema";
+import { disputeAnswers, listings, tradeEvents, trades, users } from "@/lib/db/schema";
 import { ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 import { FUNDED_NUDGE_MS, twViewerUrl } from "@/lib/escrow/config";
+import { answerDeadline, promiseDeadline } from "@/lib/escrow/rule";
 import { recomputeRemaining } from "@/lib/listing/remaining";
 import { ASSETS } from "@/lib/stellar/assets";
 import { CLAIM_WINDOW_SECONDS } from "@/lib/stellar/settlement";
@@ -56,6 +57,23 @@ function view(trade: TradeRow, me: string) {
   const role: TradeRole = trade.seller === me ? "seller" : "buyer";
   const counterparty = role === "seller" ? trade.buyer : trade.seller;
   return { ...trade, role, counterparty };
+}
+
+/**
+ * A protected trade's dispute as both traders see it: each side's one answer
+ * and its note (shown to both, MC-30), the 24 hours to answer from when Pairy
+ * recorded the dispute (DECISIONS 1) and the arbiter's 72-hour promise.
+ */
+function disputeView(trade: TradeRow, answers: (typeof disputeAnswers.$inferSelect)[]) {
+  const side = (role: TradeRole) => {
+    const a = answers.find((x) => x.tradeId === trade.id && x.role === role);
+    return a ? { cashHandedOver: a.cashHandedOver, note: a.note, answeredAt: a.answeredAt } : null;
+  };
+  return {
+    answers: { seller: side("seller"), buyer: side("buyer") },
+    answerDeadline: trade.disputeRecordedAt ? answerDeadline({ disputeRecordedAt: trade.disputeRecordedAt }) : null,
+    promiseDeadline: trade.disputedAt ? promiseDeadline({ disputedAt: trade.disputedAt }) : null,
+  };
 }
 
 export const tradeRouter = createTRPCRouter({
@@ -324,6 +342,11 @@ export const tradeRouter = createTRPCRouter({
 
   mine: protectedProcedure.query(async ({ ctx }) => {
     const me = ctx.session.publicKey;
+    const answers = await ctx.db
+      .select({ answer: disputeAnswers })
+      .from(disputeAnswers)
+      .innerJoin(trades, eq(trades.id, disputeAnswers.tradeId))
+      .where(or(eq(trades.seller, me), eq(trades.buyer, me)));
     const rows = await ctx.db
       .select({
         trade: trades,
@@ -336,13 +359,18 @@ export const tradeRouter = createTRPCRouter({
       .innerJoin(listings, eq(listings.id, trades.listingId))
       .where(or(eq(trades.seller, me), eq(trades.buyer, me)))
       .orderBy(desc(trades.updatedAt));
-    return rows.map((r) => ({ ...view(r.trade, me), cityName: r.cityName, lockedAt: r.lockedAt as Date | null }));
+    return rows.map((r) => ({
+      ...view(r.trade, me),
+      ...disputeView(r.trade, answers.map((a) => a.answer)),
+      cityName: r.cityName,
+      lockedAt: r.lockedAt as Date | null,
+    }));
   }),
 
   byId: protectedProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ ctx, input }) => {
     const me = ctx.session.publicKey;
     const { trade } = await tradeForParticipant(ctx.db, input.id, me);
-    const [[listing], events] = await Promise.all([
+    const [[listing], events, answers] = await Promise.all([
       ctx.db
         .select({ cityName: listings.cityName, countryCode: listings.countryCode, rate: listings.rate })
         .from(listings)
@@ -352,10 +380,12 @@ export const tradeRouter = createTRPCRouter({
         .from(tradeEvents)
         .where(eq(tradeEvents.tradeId, trade.id))
         .orderBy(asc(tradeEvents.createdAt)),
+      ctx.db.select().from(disputeAnswers).where(eq(disputeAnswers.tradeId, trade.id)),
     ]);
     const v = view(trade, me);
     return {
       ...v,
+      ...disputeView(trade, answers),
       cityName: listing.cityName,
       countryCode: listing.countryCode,
       // Listings' rates never change, so this is the rate the trade was priced at.
