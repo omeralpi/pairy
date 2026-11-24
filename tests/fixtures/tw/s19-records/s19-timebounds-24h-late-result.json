@@ -1,0 +1,766 @@
+{
+  "started": "2026-11-24T08:12:17.940Z",
+  "simulations": [
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T08:12:18.709Z",
+      "latestLedger": 5896859,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T08:12:19.137Z",
+      "latestLedger": 5896859,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T09:12:20.536Z",
+      "latestLedger": 5897579,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T09:12:20.943Z",
+      "latestLedger": 5897579,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T10:12:22.051Z",
+      "latestLedger": 5898299,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T10:12:22.487Z",
+      "latestLedger": 5898299,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T11:12:23.482Z",
+      "latestLedger": 5899020,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T11:12:23.913Z",
+      "latestLedger": 5899020,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T12:12:25.032Z",
+      "latestLedger": 5899740,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T12:12:25.475Z",
+      "latestLedger": 5899740,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T13:13:09.823Z",
+      "latestLedger": 5900469,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T13:13:10.223Z",
+      "latestLedger": 5900469,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T14:13:12.215Z",
+      "latestLedger": 5901189,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T14:13:12.682Z",
+      "latestLedger": 5901189,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T15:13:14.161Z",
+      "latestLedger": 5901910,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T15:13:14.616Z",
+      "latestLedger": 5901910,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T16:13:17.023Z",
+      "latestLedger": 5902630,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T16:13:17.603Z",
+      "latestLedger": 5902630,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T17:13:20.716Z",
+      "latestLedger": 5903351,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T17:13:21.198Z",
+      "latestLedger": 5903351,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T18:13:23.798Z",
+      "latestLedger": 5904072,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T18:13:24.322Z",
+      "latestLedger": 5904072,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-24T19:13:26.300Z",
+      "latestLedger": 5904792,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-24T19:13:26.812Z",
+      "latestLedger": 5904792,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    }
+  ],
+  "submits": [
+    {
+      "label": "window-24h-late-a",
+      "simulationBeforeSubmit": {
+        "at": "2026-11-24T19:51:28.536Z",
+        "latestLedger": 5905249,
+        "declaredResourceFee": "19916",
+        "simulatedMinResourceFee": "25729",
+        "headroomStroops": "-5813",
+        "footprintEqualsDeclared": true,
+        "simulatedInstructions": 1768825,
+        "declaredInstructions": 1759130,
+        "ttl": [
+          {
+            "key": "instance",
+            "lastModifiedLedger": 5887864,
+            "liveUntilLedger": 6008823
+          },
+          {
+            "key": "Escrow",
+            "lastModifiedLedger": 5887866,
+            "liveUntilLedger": 6008823
+          }
+        ]
+      },
+      "missedWindow": false,
+      "submit": {
+        "what": "window-24h-late-a 24 h envelope, late",
+        "ok": false,
+        "hash": "096947f5b3059131060a5bd51b42c066b7c579a3d8d3a8969f27e9263015e0a3",
+        "at": "2026-11-24T19:51:28.585Z",
+        "maxTime": "1795551035",
+        "signatures": 2,
+        "codes": [
+          "tx_failed",
+          "insufficient_refundable_fee"
+        ],
+        "resultXdr": "AAAAAAAAMdD/////AAAAAQAAAAAAAAAY////+wAAAAA=",
+        "inLedger": true,
+        "url": "https://stellar.expert/explorer/testnet/tx/096947f5b3059131060a5bd51b42c066b7c579a3d8d3a8969f27e9263015e0a3"
+      },
+      "distribution": null,
+      "failedOnChain": {
+        "hash": "096947f5b3059131060a5bd51b42c066b7c579a3d8d3a8969f27e9263015e0a3",
+        "url": "https://stellar.expert/explorer/testnet/tx/096947f5b3059131060a5bd51b42c066b7c579a3d8d3a8969f27e9263015e0a3",
+        "successful": false,
+        "ledger": 5905250,
+        "closedAt": "2026-11-24T19:51:32Z",
+        "feeChargedStroops": "12752",
+        "maxFeeStroops": "20016",
+        "envelopeSignatures": 2,
+        "horizonRecordHasResultMetaXdr": false,
+        "horizonOperation": [
+          {
+            "type": "invoke_host_function",
+            "source": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+            "assetBalanceChanges": null,
+            "address": "",
+            "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+          }
+        ],
+        "rpc": {
+          "status": "FAILED",
+          "returnValue": null,
+          "contractEvents": []
+        }
+      }
+    },
+    {
+      "label": "window-24h-late-b",
+      "simulationBeforeSubmit": {
+        "at": "2026-11-24T19:51:35.642Z",
+        "latestLedger": 5905250,
+        "declaredResourceFee": "1019916",
+        "simulatedMinResourceFee": "25729",
+        "headroomStroops": "994187",
+        "footprintEqualsDeclared": true,
+        "simulatedInstructions": 1768164,
+        "declaredInstructions": 1758469,
+        "ttl": [
+          {
+            "key": "instance",
+            "lastModifiedLedger": 5887867,
+            "liveUntilLedger": 6008826
+          },
+          {
+            "key": "Escrow",
+            "lastModifiedLedger": 5887869,
+            "liveUntilLedger": 6008826
+          }
+        ]
+      },
+      "missedWindow": false,
+      "submit": {
+        "what": "window-24h-late-b 24 h envelope, late",
+        "ok": true,
+        "hash": "b7bb9794ab0477912822af1351776fd60e5d9cf19346ab59aa8b29c162803d88",
+        "url": "https://stellar.expert/explorer/testnet/tx/b7bb9794ab0477912822af1351776fd60e5d9cf19346ab59aa8b29c162803d88",
+        "at": "2026-11-24T19:51:35.645Z",
+        "maxTime": "1795551036",
+        "signatures": 2,
+        "ledger": 5905251
+      },
+      "distribution": {
+        "distributionAsPrepared": true,
+        "checks": {
+          "recipient": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+          "toRecipient": [
+            "4.9850000"
+          ],
+          "toRecipientExpected": "4.9850000",
+          "toTwFeeAddress": [
+            "0.0150000"
+          ],
+          "toTwFeeAddressExpected": "0.0150000",
+          "otherTransfers": [],
+          "escrowSacBalanceAfter": "0"
+        },
+        "onChain": {
+          "hash": "b7bb9794ab0477912822af1351776fd60e5d9cf19346ab59aa8b29c162803d88",
+          "url": "https://stellar.expert/explorer/testnet/tx/b7bb9794ab0477912822af1351776fd60e5d9cf19346ab59aa8b29c162803d88",
+          "successful": true,
+          "ledger": 5905251,
+          "closedAt": "2026-11-24T19:51:37Z",
+          "feeChargedStroops": "20080",
+          "maxFeeStroops": "1020016",
+          "envelopeSignatures": 2,
+          "horizonRecordHasResultMetaXdr": false,
+          "horizonOperation": [
+            {
+              "type": "invoke_host_function",
+              "source": "GCHAPS3JEBDYNPT5QZXNXSK4XKE2K2FUV33JCINC6NTUBMM4ZEQ4WFHG",
+              "assetBalanceChanges": [
+                {
+                  "asset_type": "credit_alphanum4",
+                  "asset_code": "USDC",
+                  "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+                  "type": "transfer",
+                  "from": "CA5DBRLINALTD4LJLRED4W4G6ZLVYEQCXVKAZHTPP4NPARLWEZ4H75C3",
+                  "to": "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                  "amount": "0.0150000"
+                },
+                {
+                  "asset_type": "credit_alphanum4",
+                  "asset_code": "USDC",
+                  "asset_issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+                  "type": "transfer",
+                  "from": "CA5DBRLINALTD4LJLRED4W4G6ZLVYEQCXVKAZHTPP4NPARLWEZ4H75C3",
+                  "to": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                  "amount": "4.9850000"
+                }
+              ],
+              "address": "",
+              "function": "HostFunctionTypeHostFunctionTypeInvokeContract"
+            }
+          ],
+          "rpc": {
+            "status": "SUCCESS",
+            "returnValue": null,
+            "contractEvents": [
+              {
+                "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+                "type": "contract",
+                "topics": [
+                  "transfer",
+                  "CA5DBRLINALTD4LJLRED4W4G6ZLVYEQCXVKAZHTPP4NPARLWEZ4H75C3",
+                  "GDDL743M3SOW6GN4HOAKU5ACA7QN36ERFBXNHY5BS7HOR2DPOSGMRCYF",
+                  "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+                ],
+                "data": "150000"
+              },
+              {
+                "contractId": "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
+                "type": "contract",
+                "topics": [
+                  "transfer",
+                  "CA5DBRLINALTD4LJLRED4W4G6ZLVYEQCXVKAZHTPP4NPARLWEZ4H75C3",
+                  "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                  "USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+                ],
+                "data": "49850000"
+              },
+              {
+                "contractId": "CA5DBRLINALTD4LJLRED4W4G6ZLVYEQCXVKAZHTPP4NPARLWEZ4H75C3",
+                "type": "contract",
+                "topics": [
+                  "tw_disp_resolve",
+                  "pairy-s19-window-24h-late-b-1795462972628"
+                ],
+                "data": {
+                  "dispute_resolver": "GCHAPS3JEBDYNPT5QZXNXSK4XKE2K2FUV33JCINC6NTUBMM4ZEQ4WFHG",
+                  "distributions": [
+                    {
+                      "address": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+                      "amount": "49850000"
+                    }
+                  ],
+                  "platform_fee": "0",
+                  "trustless_work_fee": "150000"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "failedOnChain": null
+    }
+  ],
+  "finished": "2026-11-24T19:51:38.873Z"
+}

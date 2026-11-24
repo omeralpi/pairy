@@ -1,0 +1,115 @@
+{
+  "note": "S-19 early probe: throwaway testnet parties. Secrets were held in memory only and are gone.",
+  "started": "2026-11-23T19:40:37.629Z",
+  "parties": {
+    "seller": "GDF7V2LLAWVQP7VHZBZ4AWQ3NIE6SV2IYPRFSZBXHNW5STJRLBBKTE3K",
+    "buyer": "GAXOU5PDAF4P7435N7JDDKJYYSVGSWRNTZI3CWVZPZGPORQ5TUTX5UJN",
+    "platform": "GAIPFNEO7GRC4UEULXFWV3SB5FZ27FBVHDAYCWA7ZA5CMXVHERR6EXHA",
+    "creationKey": "GBVFSGIGTCEX3VFJJRFQLUFGPSLE5V7E2Z3RBTDXTYGQZTKJMFQNKTDN"
+  },
+  "usdcBuyTx": "f1e756752f1103f83dae33068f25567f3ea38cb71ae5bb4e44a409502a5c31bb",
+  "arbiters": {
+    "A": {
+      "account": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "signers": [
+        "GAVE6D35QFNBWKTXQ2OX7RSKFBU3BNER2TKGMKS6AXAIKIN2PI3QN52N",
+        "GAPLFDEV3PYMEVC6IWO2ZAKFXP3O663R6YVVECL7QWR3LVHHADQ3ETNP"
+      ],
+      "setOptionsTx": "25225dc0f25aeb3068972a9c615e3d84b3f8b831947ade742b4caf58fd39a275"
+    },
+    "B": {
+      "account": "GCHAPS3JEBDYNPT5QZXNXSK4XKE2K2FUV33JCINC6NTUBMM4ZEQ4WFHG",
+      "signers": [
+        "GCQMF4FXSVCSKRWAS3HA2JQJMXHJGRQDAP26CSX6F2WROFEHXVR5GBGU",
+        "GCRYVJP7NUCBFYUBMBAEEEM5PVU4SCFKM6CT33W4LJEDAI2GKBUDQ527"
+      ],
+      "setOptionsTx": "09347e5b4fa0066a13f8157a51e9ad73b7ef83397a2d09b197f708053bc4b9d8"
+    }
+  },
+  "escrows": [
+    {
+      "label": "exit-buyer",
+      "contractId": "CBW4GYCRER4HR2VQCRRCV4SL3MGD4GA57ITL6EDDY7OCLFPH6JACWUE6",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "buyer",
+      "txs": {
+        "deploy": "babb93f85e3c0a5757cb271bdc0ae272ece0285ee2eb43bad4ee7cbfff73fc0f",
+        "fund": "d0d0d6e164ea2e1285f2cf1b24b020e8d96444cafd717c08a7db9df2aef54ca3",
+        "dispute": "fc788ff6a4d245c3d6d40bcb764fd22247f6f6670a69c14a3cb7c60c1bac7bf2",
+        "resolve": "13c43a45016a63b0edea56e24024de264a17f4b72bdc940a87dede5ac80f7ee9"
+      }
+    },
+    {
+      "label": "seq-stale",
+      "contractId": "CBCQZRAOTFPGFH5LYD7UOPAYE4VVQCQ6RLGO3KNJNLHBQGRQOOL6OIXK",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "buyer",
+      "txs": {
+        "deploy": "8bf5b04137a944ad5508f0ca1a5b0550c3a9467916af3dbd1ee09f3d7bec907c",
+        "fund": "19c75afdc8d3ae906fa130ebb3677c13986a8f2da36973b7eda495bdb5122e2b",
+        "dispute": "fa1d47f3afbb2773bdca47cde70ffbce94080f07cd9221c6205a62526cb6bd6f",
+        "resolve": "645f6d1f45be29979648aed2bc60fd9bd40e27615a5cdf48271035adc35b2d9c"
+      }
+    },
+    {
+      "label": "seq-mover",
+      "contractId": "CC46D6SLH6PRSX7SQ3EBDK6Z5FNDONHH76NKLNICLCVISLDBPS7MUBBG",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "seller",
+      "txs": {
+        "deploy": "636997818d0d567c3875c0960b43b408f4bc8c2d9562560c1812b8867b62fcf7",
+        "fund": "633b76bc813411a6c34691abdcadbb03228a46b355290b0d643f8bfae0067a8a",
+        "dispute": "1e512c7ed4d272e75c3333d89f2a1c5bafb470657e594fbb06d800eb21d102bf",
+        "resolve": "cc2c63f3ad36b4be2ed8f15c43d891a84fe9ceec502b308727dda4c97e92434a"
+      }
+    },
+    {
+      "label": "window-24h-now",
+      "contractId": "CAU3B4O6TAQUN3DBTI45AA2PNAKVSH7HU2HHN5QYBCZD55GHK64YA6Q5",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "seller",
+      "txs": {
+        "deploy": "e1ae3602e2b38371bfdf4bf8e5a0aed4dfb9179a977d7c251dce18e80475271d",
+        "fund": "5d6b9b8bf337515b8fe26a1cfb1106b33554e34abffb778f4f5537903c6dca0d",
+        "dispute": "c8bfb93a6d30d10ba94dda4dbb1a88871241725e7468da4d0501f8eadee03d09",
+        "resolve": "38ec5bd9827a2f8005ebc63b02cab5d4a716ec0eec29cf12b7422c4581e72858"
+      }
+    },
+    {
+      "label": "window-30m",
+      "contractId": "CDWMESUXG6MWZYO4IRYUD4U3MT3ODJQCSPVQWZGICSLIA663HFLODFNW",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "seller",
+      "txs": {
+        "deploy": "6e6e6b66948892afa445bf63d2c7d795173a670c035e37f1047c2ba752a76f38",
+        "fund": "558e25296d70e8c4a8f097deaed408c41720a83c7190344f5ad2164fa92a9faf",
+        "dispute": "6d0ae04ef313a840d96b988ba12df6eb4153d9d51a7c38ab2cc7bf3aca3f5cc2",
+        "resolve": "49f399b92de4451f7b0a405365d9a137f74d0fb47e81cd9603d157bb2a2d2f72"
+      }
+    },
+    {
+      "label": "window-24h-late-a",
+      "contractId": "CAGVTIJIRUKXPPI2LDUZZ2KJENMZRBBLVRCF4WSLLWGNSC32K5HRQ3CX",
+      "resolver": "GCK5PS5XYLBUYUQWZPAPLGZ4OYM35UNIRVIB6QCITWCLBJD4SS3JLSBY",
+      "disputer": "buyer",
+      "txs": {
+        "deploy": "b6287baeefe5b2d59334944698a8c5d01c7bd1ca30292f27ecd8acba2a6cec1f",
+        "fund": "f885bdd536acbbebdb4f3b0fcc68c39463ad0085d9918f7c3691cb1280c88618",
+        "dispute": "8361e315002543bd8cc31303d8f2f54bc6d178f1d0186b71e3ba9c7ae11d1c90"
+      }
+    },
+    {
+      "label": "window-24h-late-b",
+      "contractId": "CA5DBRLINALTD4LJLRED4W4G6ZLVYEQCXVKAZHTPP4NPARLWEZ4H75C3",
+      "resolver": "GCHAPS3JEBDYNPT5QZXNXSK4XKE2K2FUV33JCINC6NTUBMM4ZEQ4WFHG",
+      "disputer": "seller",
+      "txs": {
+        "deploy": "2c4f9b03140bbd180b7fa50d27a21826a6f87ea6ed4a2422e20d7ede15960fe9",
+        "fund": "64fd20e835d6a52464f7401691137fec8657d0a6f71d7027cad74fed116c4282",
+        "dispute": "e6bb012f853ff6573520ad0e21d9dc544a7b45429d71303bbc6806cb3da9d373"
+      }
+    }
+  ],
+  "finished": "2026-11-23T20:10:37.150Z",
+  "failures": {}
+}

@@ -1,0 +1,98 @@
+{
+  "started": "2026-11-23T20:10:56.371Z",
+  "simulations": [
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-23T20:10:57.171Z",
+      "latestLedger": 5888202,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-23T20:10:57.660Z",
+      "latestLedger": 5888202,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-a",
+      "at": "2026-11-23T21:33:09.216Z",
+      "latestLedger": 5889189,
+      "declaredResourceFee": "19916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "-3",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1767376,
+      "declaredInstructions": 1759130,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887864,
+          "liveUntilLedger": 6008823
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887866,
+          "liveUntilLedger": 6008823
+        }
+      ]
+    },
+    {
+      "label": "window-24h-late-b",
+      "at": "2026-11-23T21:33:09.686Z",
+      "latestLedger": 5889189,
+      "declaredResourceFee": "1019916",
+      "simulatedMinResourceFee": "19919",
+      "headroomStroops": "999997",
+      "footprintEqualsDeclared": true,
+      "simulatedInstructions": 1766714,
+      "declaredInstructions": 1758469,
+      "ttl": [
+        {
+          "key": "instance",
+          "lastModifiedLedger": 5887867,
+          "liveUntilLedger": 6008826
+        },
+        {
+          "key": "Escrow",
+          "lastModifiedLedger": 5887869,
+          "liveUntilLedger": 6008826
+        }
+      ]
+    }
+  ],
+  "submits": []
+}
