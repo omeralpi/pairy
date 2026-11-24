@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { ARBITER_ACCOUNT } from "@/lib/escrow/config";
+import { explorerTxUrl } from "@/lib/stellar/horizon";
 
 import { EscrowProof } from "./escrow-proof";
 
@@ -65,8 +66,63 @@ describe("EscrowProof", () => {
     expect(html).toContain("GBUY…UYER");
     expect(html).toContain(`href="https://stellar.expert/explorer/testnet/account/${ARBITER_ACCOUNT}"`);
     expect(html).toContain("GA4Y…ZPRP");
-    expect(html).toContain("10 USDC");
-    expect(html).toContain("9.97 USDC");
+  });
+
+  // The escrow's amount is a term of the contract; who it pays, and whether it has paid, depends on the state.
+  const funded = { ...created, state: "funded", fundTx: "f".repeat(64) };
+  const payoutRows = (html: string) =>
+    [...html.matchAll(/<dt>([^<]*)<\/dt><dd class="text-ink">([^<]*)<\/dd>/g)].map((m) => `${m[1]} · ${m[2].replaceAll("&#x27;", "'")}`);
+
+  it("states the amount as a term and never claims the escrow holds a balance", () => {
+    for (const t of [created, funded, { ...funded, state: "released", releaseTx: "r".repeat(64) }, { ...created, state: "cancelled" }]) {
+      const html = render(t);
+      expect(html).toContain("amount</dt>");
+      expect(html).toContain("10 USDC");
+      expect(html).not.toMatch(/<dt>holds/);
+    }
+  });
+
+  it("says who a release would pay before the escrow is funded, and once it is", () => {
+    expect(payoutRows(render(created))).toContain("pays on release · 9.97 USDC to the buyer, once it is funded");
+    expect(render(created)).not.toContain("paid");
+    const rows = payoutRows(render(funded));
+    expect(rows).toContain("pays on release · 9.97 USDC to the buyer");
+    expect(rows).toContain("in a dispute · the arbiter pays 9.97 USDC to the buyer or the seller, by the rule");
+    expect(render(funded)).not.toContain("paid");
+  });
+
+  it("leaves only the arbiter's payout once a dispute is open", () => {
+    const rows = payoutRows(render({ ...funded, disputed: true, disputeTx: "d".repeat(64) }));
+    expect(rows).toContain("the arbiter pays · 9.97 USDC to the buyer or the seller, by the rule");
+    expect(rows.some((r) => r.startsWith("pays on release"))).toBe(false);
+  });
+
+  it("names who was paid after a release or a resolution, and never contradicts the status line", () => {
+    const released = render({ ...funded, state: "released", releaseTx: "r".repeat(64) });
+    expect(payoutRows(released)).toContain("paid · 9.97 USDC to the buyer, after Trustless Work's 0.3%");
+    expect(released).not.toMatch(/pays on release|in a dispute/);
+    const toBuyer = render({ ...funded, state: "resolved_buyer", disputed: true, disputeTx: "d".repeat(64), resolveTx: "e".repeat(64) });
+    expect(payoutRows(toBuyer)).toContain("paid by the arbiter · 9.97 USDC to the buyer, after Trustless Work's 0.3%");
+    const toSeller = render({ ...funded, state: "resolved_seller", disputed: true, disputeTx: "d".repeat(64), resolveTx: "e".repeat(64) });
+    expect(payoutRows(toSeller)).toContain("paid by the arbiter · 9.97 USDC to the seller, after Trustless Work's 0.3%");
+    expect(toSeller).not.toContain("to the buyer");
+  });
+
+  it("promises no payout on a cancelled trade, and no future escrow when none was created", () => {
+    const afterCreate = render({ ...created, state: "cancelled" });
+    expect(afterCreate).not.toMatch(/pays on release|in a dispute|paid|Once the seller creates it/);
+    expect(afterCreate).toContain(`href="https://viewer.trustlesswork.com/testnet/v2/${contract}"`);
+    const noEscrow = render({ state: "cancelled" });
+    expect(noEscrow).toContain("No escrow was created.");
+    expect(noEscrow).not.toMatch(/No escrow exists yet|Once the seller creates it|pays|paid/);
+  });
+
+  // WP-30's trade-room fixture has no escrow columns at all.
+  it("treats missing escrow columns as no escrow, without throwing", () => {
+    const { escrowContractId: _c, escrowAdmin: _a, createTx: _t, fundTx: _f, disputeTx: _d, releaseTx: _r, resolveTx: _e, viewerUrl: _v, ...bare } = base;
+    const html = renderToStaticMarkup(<EscrowProof trade={bare as never} />);
+    expect(html).toContain("No escrow exists yet.");
+    expect(html).not.toContain("viewer.trustlesswork.com");
   });
 
   it("links the published rule and the viewer so anyone can check it", () => {
@@ -76,21 +132,21 @@ describe("EscrowProof", () => {
     expect(html).toContain("72 hours");
   });
 
-  it("lists one receipt per recorded transaction, in order", () => {
-    const html = render({
-      ...created,
-      state: "resolved_buyer",
-      disputed: true,
-      fundTx: "f".repeat(64),
-      disputeTx: "d".repeat(64),
-      resolveTx: "e".repeat(64),
-    });
-    const receipts = [...html.matchAll(/(Create|Fund|Dispute|Release|Resolve) receipt/g)].map((m) => m[1]);
-    expect(receipts).toEqual(["Create", "Fund", "Dispute", "Resolve"]);
-    expect(html).toContain(`href="https://stellar.expert/explorer/testnet/tx/${"e".repeat(64)}"`);
-    expect(render({ ...created, state: "released", fundTx: "f".repeat(64), releaseTx: "r".repeat(64) })).toMatch(
-      /Create receipt.*Fund receipt.*Release receipt/s,
-    );
+  it("lists one receipt per recorded transaction, in order, each linking its own hash", () => {
+    const tx = { createTx: "1".repeat(64), fundTx: "2".repeat(64), disputeTx: "3".repeat(64), releaseTx: "4".repeat(64), resolveTx: "5".repeat(64) };
+    const receiptLinks = (html: string) =>
+      [...html.matchAll(/(Create|Fund|Dispute|Release|Resolve) receipt · <a href="([^"]+)"/g)].map((m) => [m[1], m[2]]);
+    expect(receiptLinks(render({ ...created, ...tx, releaseTx: null, state: "resolved_buyer", disputed: true }))).toEqual([
+      ["Create", explorerTxUrl(tx.createTx)],
+      ["Fund", explorerTxUrl(tx.fundTx)],
+      ["Dispute", explorerTxUrl(tx.disputeTx)],
+      ["Resolve", explorerTxUrl(tx.resolveTx)],
+    ]);
+    expect(receiptLinks(render({ ...created, ...tx, disputeTx: null, resolveTx: null, state: "released" }))).toEqual([
+      ["Create", explorerTxUrl(tx.createTx)],
+      ["Fund", explorerTxUrl(tx.fundTx)],
+      ["Release", explorerTxUrl(tx.releaseTx)],
+    ]);
   });
 
   it("opens every outside link in a new tab without a referrer", () => {

@@ -122,7 +122,7 @@ function protectedSentence(t: TradeStatus): string {
       if (t.disputed) return "Dispute open. Only the arbiter can settle this escrow now.";
       return t.role === "seller"
         ? "Funded. Release only when you hold the cash."
-        : "Funded. Hand over the cash only when the release shows here.";
+        : "Funded. Let go of the cash only when the release shows on this screen.";
     case "released":
       return t.role === "buyer"
         ? `Settled. You received ${netOf(t.amount ?? "0")} USDC.`

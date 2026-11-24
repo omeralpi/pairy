@@ -10,13 +10,39 @@ const linkClass = "text-ink underline decoration-ink/30 underline-offset-4 hover
 /** The published rule, as the acceptance screen links it. */
 const ARBITRATION_DOC = "https://github.com/omeralpi/pairy/blob/main/docs/arbitration.md";
 
+/** Who the escrow pays, or has paid, in this state; `net` is the amount after Trustless Work's 0.3%. */
+function payout(state: TradeView["state"], disputed: boolean, net: string): { dt: string; dd: string }[] {
+  const byTheRule = `${net} USDC to the buyer or the seller, by the rule`;
+  switch (state) {
+    case "escrow_created":
+      return [{ dt: "pays on release", dd: `${net} USDC to the buyer, once it is funded` }];
+    case "funded":
+      return disputed
+        ? [{ dt: "the arbiter pays", dd: byTheRule }]
+        : [
+            { dt: "pays on release", dd: `${net} USDC to the buyer` },
+            { dt: "in a dispute", dd: `the arbiter pays ${byTheRule}` },
+          ];
+    case "released":
+      return [{ dt: "paid", dd: `${net} USDC to the buyer, after Trustless Work's 0.3%` }];
+    case "resolved_buyer":
+      return [{ dt: "paid by the arbiter", dd: `${net} USDC to the buyer, after Trustless Work's 0.3%` }];
+    case "resolved_seller":
+      return [{ dt: "paid by the arbiter", dd: `${net} USDC to the seller, after Trustless Work's 0.3%` }];
+    default:
+      // Cancelled: the escrow pays nobody. (Never funded, or gone with a testnet reset.)
+      return [];
+  }
+}
+
 /**
  * The technical record of a protected trade, collapsed: what the escrow is,
  * who can move it, and the receipts. The protected counterpart of the
  * claimable room's "How this is enforced".
  */
 export function EscrowProof({ trade }: { trade: TradeView }) {
-  const exists = trade.createTx !== null && trade.escrowContractId !== null;
+  // Truthy, not `!== null`: a trade read without its escrow columns has none.
+  const exists = !!trade.createTx && !!trade.escrowContractId;
   const net = fromStroops(netAfterFee(toStroops(trade.amount)));
   const receipts = [
     { label: "Create", hash: trade.createTx },
@@ -51,12 +77,17 @@ export function EscrowProof({ trade }: { trade: TradeView }) {
               </dd>
             </div>
             <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-2.5">
-              <dt>holds</dt>
+              <dt>amount</dt>
               <dd className="text-ink">
-                {trimAmount(trade.amount)} {trade.asset} → {net} {trade.asset} to the buyer after Trustless Work&apos;s
-                0.3%
+                {trimAmount(trade.amount)} {trade.asset}
               </dd>
             </div>
+            {payout(trade.state, trade.disputed, net).map((row) => (
+              <div key={row.dt} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-2.5">
+                <dt>{row.dt}</dt>
+                <dd className="text-ink">{row.dd}</dd>
+              </div>
+            ))}
             <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-2.5">
               <dt>release signer · seller</dt>
               <dd className="text-ink">{shortAddress(trade.seller)}</dd>
@@ -80,6 +111,8 @@ export function EscrowProof({ trade }: { trade: TradeView }) {
               </div>
             )}
           </dl>
+        ) : trade.state === "cancelled" ? (
+          <p>No escrow was created.</p>
         ) : (
           <p>No escrow exists yet. Once the seller creates it, its contract, roles and receipts show here.</p>
         )}

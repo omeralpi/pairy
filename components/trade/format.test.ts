@@ -54,8 +54,9 @@ describe("statusSentence for a protected trade", () => {
 
   it("ties the cash to the release once funded, and to the arbiter once disputed", () => {
     expect(seller({ state: "funded", createTx: "c", fundTx: "f" })).toBe("Funded. Release only when you hold the cash.");
+    // D2 §7.3: the seller holds the cash; the buyer lets go of it once the release shows.
     expect(buyer({ state: "funded", createTx: "c", fundTx: "f" })).toBe(
-      "Funded. Hand over the cash only when the release shows here.",
+      "Funded. Let go of the cash only when the release shows on this screen.",
     );
     for (const role of [seller, buyer]) {
       expect(role({ state: "funded", createTx: "c", fundTx: "f", disputed: true })).toBe(
