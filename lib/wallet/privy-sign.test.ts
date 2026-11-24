@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildClaimTransaction } from "@/lib/stellar/settlement";
 
+import privyUser from "./__fixtures__/privy-user.json";
 import {
   findStellarWallet,
   hexSignatureToBytes,
@@ -95,8 +96,11 @@ describe("sep53Hash and signMessageWithRawSigner", () => {
 });
 
 describe("findStellarWallet", () => {
-  // Field names from S-01's WalletWithMetadata type (WP-06); the anonymised
-  // capture lib/wallet/__fixtures__/privy-user.json follows once HX-1 runs.
+  it("finds the Stellar wallet in the user Privy returned on Gate D1 (S-04 capture, anonymised)", () => {
+    expect(findStellarWallet(privyUser.linkedAccounts)).toEqual({ address: "GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA" });
+  });
+
+  // Field names as in that capture (S-01's WalletWithMetadata type).
   const wallet = (address: string, firstVerifiedAt: string | Date | null, chainType = "stellar") => ({
     type: "wallet",
     address,

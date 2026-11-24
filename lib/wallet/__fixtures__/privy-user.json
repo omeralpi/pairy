@@ -1,0 +1,28 @@
+{
+  "id": "did:privy:redacted",
+  "createdAt": "2026-11-24T08:53:45.000Z",
+  "linkedAccounts": [
+    {
+      "address": "redacted",
+      "type": "email",
+      "firstVerifiedAt": "2026-11-24T08:53:45.000Z",
+      "latestVerifiedAt": "2026-11-24T08:53:45.000Z"
+    },
+    {
+      "id": "redacted",
+      "address": "GDOL5A7SX44JXOSLAJG7YK2X7H6BZI3RONWK5TN3FIY7W65S4XJ3IKFA",
+      "type": "wallet",
+      "imported": false,
+      "delegated": false,
+      "userCanSign": true,
+      "firstVerifiedAt": "2026-11-24T08:54:01.000Z",
+      "latestVerifiedAt": "2026-11-24T08:54:01.000Z",
+      "chainType": "stellar",
+      "walletClientType": "privy",
+      "connectorType": "embedded",
+      "recoveryMethod": "privy-v2",
+      "walletIndex": 0,
+      "publicKey": "00dcbe83f2bf389bba4b024dfc2b57f9fc1ca371736caecdbb2a31fb7bb2e5d3b4"
+    }
+  ]
+}
