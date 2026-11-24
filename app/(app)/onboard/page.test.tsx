@@ -87,6 +87,14 @@ describe("OnboardPage: the Privy choice", () => {
   });
 });
 
+describe("OnboardPage: the Freighter choice", () => {
+  it("names the extension as it ships today, Varial (formerly Freighter), where a person must recognise it (O-30)", () => {
+    const html = render(withPrivy);
+    expect(html).toMatch(/Use Varial \(formerly Freighter\)<\/span><span[^>]*>For people who already have the Varial extension/);
+    expect(html).not.toContain("Use Freighter");
+  });
+});
+
 describe("OnboardPage: the wallet kind label", () => {
   it("names a signed-in Privy wallet an email wallet, not a key on this device", () => {
     const html = render({ ...withPrivy, wallet: privyWallet }, privyWallet.publicKey);
