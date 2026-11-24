@@ -180,8 +180,8 @@ export default function OnboardPage() {
               />
             )}
             <Choice
-              title="Use Freighter"
-              description="For people who already have the Freighter extension. Switch it to Testnet first."
+              title="Use Varial (formerly Freighter)"
+              description="For people who already have the Varial extension. Switch it to Testnet first."
               disabled={busy}
               onClick={() => run(walletCtx.connectFreighter)}
             />

@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
@@ -53,8 +56,30 @@ describe("WalletPage for a Privy wallet", () => {
     const html = render({ ...base, wallet: wallet("privy") });
     expect(html).toMatch(/<button[^>]*>(?:(?!<\/button>).)*Export key<\/button>/);
     expect(html).toContain("Pairy never sees the key");
-    expect(html).toMatch(/<a[^>]*href="https:\/\/github\.com\/omeralpi\/pairy\/blob\/main\/README\.md#[^"]+"[^>]*>(?:(?!<\/a>).)*Freighter/);
+    expect(html).toMatch(
+      /<a[^>]*href="https:\/\/github\.com\/omeralpi\/pairy\/blob\/main\/README\.md#use-this-key-in-freighter"[^>]*>(?:(?!<\/a>).)*Freighter/,
+    );
     expect(html).not.toContain("Export backup");
+  });
+
+  it("links to a README note that exists and tells the user where the exported key may go", () => {
+    const readme = readFileSync(path.join(process.cwd(), "README.md"), "utf8");
+    // The note alone: from its heading to the next heading or rule.
+    const note = readme.split(/^### Use this key in Freighter$/m)[1]?.split(/^(?:---|#{1,3} )/m)[0];
+    expect(note, "README.md has no '### Use this key in Freighter' heading").toBeDefined();
+    // The key's one destination, named as the extension ships today (O-30), and that Pairy is not one of them.
+    expect(note).toContain("Varial (formerly Freighter)");
+    expect(note).toContain("Import a Stellar secret key");
+    expect(note).toMatch(/never paste it anywhere else/i);
+    // The offline converter reads the key from stdin, never from the command line (shell history).
+    const converter = note!.match(/```sh\n(node -e '[^\n]*')\n```/)?.[1];
+    expect(converter, "the note has no node -e converter in a ```sh block").toBeDefined();
+    expect(converter).toContain("process.stdin");
+    expect(converter).not.toContain("process.argv");
+    // The package that receives the key is pinned to the verified version, and copying the
+    // commands replaced the key in the clipboard, so the note asks for a fresh copy.
+    expect(note).toContain("npm i @stellar/stellar-base@15.0.0");
+    expect(note).toContain("press **Copy key** in Privy again");
   });
 
   it("says that logging out also signs out of Privy", () => {

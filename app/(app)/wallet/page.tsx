@@ -324,7 +324,7 @@ function PrivyPanel({ loginLabel, onExport }: { loginLabel: string | null; onExp
       <p className="text-xs text-slate">
         Export opens Privy&apos;s own screen. Pairy never sees the key.{" "}
         <a
-          href="https://github.com/omeralpi/pairy/blob/main/README.md#keys-stay-with-you"
+          href="https://github.com/omeralpi/pairy/blob/main/README.md#use-this-key-in-freighter"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink"
