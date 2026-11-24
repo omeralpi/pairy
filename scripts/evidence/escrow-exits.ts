@@ -46,7 +46,8 @@ import {
 } from "../../lib/escrow/config";
 import { makeCreationKey, type Signer } from "../../lib/escrow/creation-key";
 import { netAfterFee, twFee } from "../../lib/escrow/fee";
-import { decodeEscrowCall, validateEscrowCall, type CallExpectation, type EscrowTerms } from "../../lib/escrow/xdr";
+import type { EscrowTerms } from "../../lib/escrow/terms";
+import { decodeEscrowCall, validateEscrowCall, type CallExpectation } from "../../lib/escrow/xdr";
 import { fundWithFriendbot, horizon } from "../../lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
 import { TW_ENDPOINTS, twAmount, twCall, type TwInput, type TwOutput } from "../../server/tw/client";

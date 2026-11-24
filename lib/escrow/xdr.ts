@@ -20,23 +20,9 @@ import { fromStroops } from "@/lib/trade/amount";
 
 import { DISPUTE_REASON, ESCROW_XLM_NEED, TW_ESCROW_WASM_HASH, TW_FACTORY_CONTRACT_ID, TW_FEE_ADDRESS, USDC_SAC } from "./config";
 import { netAfterFee } from "./fee";
+import { checkEscrowTerms, termsOfEscrow, type EscrowTerms } from "./terms";
 
 export type EscrowCall = "deploy" | "fund" | "release" | "dispute" | "resolve";
-
-/** What an escrow promises. Moves to lib/escrow/terms.ts with WP-14's expectedTerms and checkEscrowTerms. */
-export type EscrowTerms = {
-  admin: string;
-  platform: string;
-  receiver: string;
-  approvers: string[];
-  releaseSigners: string[];
-  disputeResolvers: string[];
-  serviceProviders: string[];
-  amountStroops: bigint;
-  platformFeePercent: number;
-  tokenContract: string;
-  milestones: { description: string }[];
-};
 
 /** One authorized contract call, and the calls it authorizes in turn. */
 export type AuthCall = { contractId: string; fn: string; args: unknown[]; subInvocations: AuthCall[] };
@@ -177,44 +163,14 @@ function show(v: unknown): string {
   return v === undefined ? "missing" : String(v);
 }
 
-const TERM_LABEL: Record<keyof EscrowTerms, string> = {
-  admin: "admin",
-  platform: "platform",
-  receiver: "receiver",
-  approvers: "approvers",
-  releaseSigners: "release signers",
-  disputeResolvers: "dispute resolvers",
-  serviceProviders: "service providers",
-  amountStroops: "amount",
-  platformFeePercent: "platform fee",
-  tokenContract: "token",
-  milestones: "milestones",
-};
-
 /**
  * An escrow as the contract stores it (the deploy's init argument, fund's
  * expected_escrow): its terms against Pairy's, and whether it is untouched.
  */
 function escrowProblems(found: unknown, expected: EscrowTerms): string[] {
-  // The contract's struct, decoded; every field read here is compared below.
+  // The contract's struct, decoded; its terms go through the same check as the escrow read from the chain.
   const s: any = found ?? {};
-  const roles = s.roles ?? {};
-  const terms: Record<keyof EscrowTerms, unknown> = {
-    admin: roles.admin,
-    platform: roles.platform,
-    receiver: roles.receiver,
-    approvers: roles.approvers,
-    releaseSigners: roles.release_signers,
-    disputeResolvers: roles.dispute_resolvers,
-    serviceProviders: roles.service_providers,
-    amountStroops: s.amount,
-    platformFeePercent: s.platform_fee,
-    tokenContract: s.trustline?.address,
-    milestones: Array.isArray(s.milestones) ? s.milestones.map((m: { description?: unknown }) => ({ description: m?.description })) : s.milestones,
-  };
-  const problems = (Object.keys(TERM_LABEL) as (keyof EscrowTerms)[])
-    .filter((k) => canon(terms[k]) !== canon(expected[k]))
-    .map((k) => `The escrow's ${TERM_LABEL[k]} ${Array.isArray(expected[k]) ? "are" : "is"} ${show(terms[k])}, not ${show(expected[k])}.`);
+  const problems = checkEscrowTerms(termsOfEscrow(s), expected).map((p) => p.message);
   if (s.released !== false) problems.push("The escrow is already marked released.");
   if (s.dispute?.is_disputed !== false || s.dispute?.resolved !== false) problems.push("The escrow is already in a dispute.");
   return problems;

@@ -10,6 +10,7 @@ import { Address, Networks, StrKey, TransactionBuilder, nativeToScVal, xdr, type
 import { describe, expect, it, vi } from "vitest";
 
 import { ARBITER_ACCOUNT, MILESTONE_DESCRIPTION, PLATFORM_ACCOUNT, RESOLVE_WINDOW_SECONDS, USDC_SAC } from "./config";
+import type { EscrowTerms } from "./terms";
 import {
   decodeEscrowCall,
   deriveEscrowId,
@@ -18,7 +19,6 @@ import {
   rebuildMaxTime,
   validateEscrowCall,
   type CallExpectation,
-  type EscrowTerms,
 } from "./xdr";
 
 type Fixture = { at: string; response: { body: { unsignedXdr: string; txHash: string; contractId?: string } } };
