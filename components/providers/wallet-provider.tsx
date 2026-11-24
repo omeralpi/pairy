@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { PincodeDialog } from "@/components/wallet/pincode-dialog";
 import { PRIVY_LOGIN_TEXT, SignConfirmDialog } from "@/components/wallet/sign-confirm-dialog";
-import { PrivyAdapterContext, type PrivyAdapter, type PrivyState } from "@/lib/wallet/privy-adapter";
+import { PRIVY_DOWN, PrivyAdapterContext, type PrivyAdapter, type PrivyState } from "@/lib/wallet/privy-adapter";
 import {
   WalletContext,
   type PrivyStep,
@@ -33,8 +33,8 @@ const PRIVY_ENABLED = !!process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 /** How long a returning Privy user waits for Privy before the app carries on without it (F-18). */
 export const PRIVY_READY_TIMEOUT_MS = 10_000;
 
+export { PRIVY_DOWN };
 export const PRIVY_LOADING = "Privy is still loading. Try again in a moment.";
-export const PRIVY_DOWN = "Privy isn't answering. Try again, or make a key on this device.";
 export const PRIVY_OTHER_ACCOUNT = "You signed in to Privy with a different account than this wallet. Use the same email or Google account.";
 export const PRIVY_BAD_SIGNATURE = "Privy returned a signature that does not match this transaction. Nothing was sent.";
 const PRIVY_TRANSACTION_TEXT =

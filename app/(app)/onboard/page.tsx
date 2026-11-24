@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { shortAddress } from "@/components/listing/format";
-import { PRIVY_DOWN } from "@/components/providers/wallet-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +13,7 @@ import { safeNextPath } from "@/lib/auth/next-path";
 import { useLogin } from "@/lib/auth/use-login";
 import { useSession } from "@/lib/auth/use-session";
 import { PINCODE_MIN_LENGTH, pincodeIsWeak, pincodeProblem } from "@/lib/wallet/pincode";
-import { PRIVY_LOGIN_CLOSED } from "@/lib/wallet/privy-adapter";
+import { PRIVY_DOWN, PRIVY_LOGIN_CLOSED } from "@/lib/wallet/privy-adapter";
 import { useWalletContext, type PrivyStep, type Wallet } from "@/lib/wallet/use-wallet";
 
 type Mode = "choose" | "create" | "import" | "replace";
@@ -126,7 +125,10 @@ export default function OnboardPage() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => walletCtx.disconnect().catch((e) => setError(message(e)))}
+              onClick={() => {
+                setError(null);
+                walletCtx.disconnect().catch((e) => setError(message(e)));
+              }}
               className="text-sm text-slate underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
             >
               Use a different account
