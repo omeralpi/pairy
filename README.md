@@ -243,7 +243,7 @@ pnpm db:migrate
 pnpm dev                      # http://localhost:3000
 ```
 
-`SESSION_SECRET` signs the login cookie. It is not a Stellar key. In production, set `CRON_SECRET` (32+ random characters) too: Vercel Cron sends it to the daily cleanup job, which refuses every call without it. Run `pnpm db:migrate` against the production database before deploying code that needs a new migration. After a testnet reset, `DATABASE_URL=... pnpm tsx scripts/ops/testnet-reset.ts --before=<reset time>` lists the trades the reset wiped; `--apply` closes them.
+`SESSION_SECRET` signs the login cookie. It is not a Stellar key. In production, set `CRON_SECRET` (32+ random characters) too: Vercel Cron sends it to the daily cleanup job, which refuses every call without it. Run `pnpm db:migrate` against the production database before deploying code that needs a new migration. After a testnet reset, `DATABASE_URL=... pnpm tsx scripts/ops/testnet-reset.ts --before=<reset time>` lists the trades the reset wiped; `--apply` closes them. `DATABASE_URL=... pnpm tsx scripts/ops/protected-report.ts` prints every protected trade's dispute times, answers, outcome, resolutions and missed 72-hour promises as Markdown (`--json` for JSON); it writes, signs and sends nothing.
 
 ## Tests
 
