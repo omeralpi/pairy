@@ -71,6 +71,8 @@ UPDATE "listings" l SET "remaining_amount" = GREATEST(0, l."max_amount" - COALES
 
 The first run changed exactly L1 (35.3765433 → 45.5) and L6 (100 → 40) and nothing else. The second run left every value as it was, and `remaining_amount IS DISTINCT FROM` the recomputed value matched 0 rows. L6 then showed "40 of 100 USDC left" and My listings "45.5 of 100.5 USDC left".
 
+That is the statement as it ran here, before the protected trade states existed. The release re-runs it with every state that `recomputeRemaining` counts (step 2 under "What this means for the release").
+
 ### 5. A fresh listing through the new build (the three R4 states)
 
 T created "Selling 10 to 100 USDC" (L9). Its page said **"100 of 100 USDC left"**. B opened a trade of 60: the page, My listings and the map card said **"40 of 100 USDC left"**, and C's attempt to open 50 was refused with `BAD_REQUEST` "Only 40 USDC left on this listing. Enter 10 to 40.". B cancelled: the page said **"100 of 100 USDC left"** again and the stored value was 100.0000000 with the one trade `cancelled`. The map card shows the left label only once something is reserved; a full listing's card shows the range alone.
@@ -78,14 +80,15 @@ T created "Selling 10 to 100 USDC" (L9). Its page said **"100 of 100 USDC left"*
 ## What this means for the release
 
 1. Migrate production first, then deploy immediately: during the window only `listing.create` fails (500), every read and every trade action works. This was checked for 0006 alone; the release migrates 0006 to 0008 in one run, so WP-44 repeats this check with all three migrations once 0008 exists (WP-27's local `0005 → 0008` rehearsal is the place for it).
-2. Once the old deployment no longer serves requests, run 0006's backfill `UPDATE` once more, inside a transaction that first locks every listing:
+2. Once the old deployment no longer serves requests, and before `PROTECTED_MODE` is switched on, run the backfill `UPDATE` once more, inside a transaction that first locks every listing. It is 0006's statement with the state list widened to every state `recomputeRemaining` counts (`COUNTED_STATES` in `lib/listing/remaining.ts`, pinned by `lib/listing/backfill-runbook.test.ts`), so it stays correct once protected trades exist:
 
    ```sql
    BEGIN;
    SELECT 1 FROM "listings" FOR UPDATE;
    UPDATE "listings" l SET "remaining_amount" = GREATEST(0, l."max_amount" - COALESCE((
      SELECT SUM(t."amount") FROM "trades" t
-     WHERE t."listing_id" = l."id" AND t."state"::text IN ('listed', 'agreed', 'locked', 'claimed')), 0));
+     WHERE t."listing_id" = l."id" AND t."state"::text IN ('listed', 'agreed', 'locked', 'claimed',
+       'escrow_created', 'funded', 'released', 'resolved_buyer')), 0));
    COMMIT;
    ```
 
