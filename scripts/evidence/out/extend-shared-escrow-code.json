@@ -1,0 +1,75 @@
+{
+  "runs": [
+    {
+      "at": "2026-11-24T09:25:47Z",
+      "targetLedger": 6305672,
+      "target": "2026-12-18T00:00:00.000Z",
+      "entries": [
+        {
+          "label": "escrow code 1231807d01111bee78a846ddacdd0a6cf88b762115e70f5bce16ffabd660e47f",
+          "key": "AAAABxIxgH0BERvueKhG3azdCmz4i3YhFecPW84W/6vWYOR/",
+          "liveUntilBefore": 5973900,
+          "beforeAbout": "2026-11-28T19:12:22.000Z",
+          "short": true,
+          "liveUntilAfter": 6305674,
+          "afterAbout": "2026-12-18T00:00:12.000Z"
+        },
+        {
+          "label": "factory instance",
+          "key": "AAAABgAAAAGw7N9IyFhbN6xDDQ+YDR/VICIiILa4SpLopyT6SlTnhQAAABQAAAAB",
+          "liveUntilBefore": 5973900,
+          "beforeAbout": "2026-11-28T19:12:22.000Z",
+          "short": true,
+          "liveUntilAfter": 6305674,
+          "afterAbout": "2026-12-18T00:00:12.000Z"
+        },
+        {
+          "label": "USDC contract instance",
+          "key": "AAAABgAAAAFQRc1ewHKado/VrQJQWFLfTwKNzoMOWsUiCbpISDsvAQAAABQAAAAB",
+          "liveUntilBefore": 8487243,
+          "beforeAbout": "2027-04-23T05:57:37.000Z",
+          "short": false,
+          "liveUntilAfter": 8487243,
+          "afterAbout": "2027-04-23T05:57:37.000Z"
+        },
+        {
+          "label": "EURC contract instance",
+          "key": "AAAABgAAAAGpQbOb4FmWYtgaJnLc42IrMxh+npHaKbfoZLuu3z1jxgAAABQAAAAB",
+          "liveUntilBefore": 7969907,
+          "beforeAbout": "2027-03-24T07:26:17.000Z",
+          "short": false,
+          "liveUntilAfter": 7969907,
+          "afterAbout": "2027-03-24T07:26:17.000Z"
+        },
+        {
+          "label": "factory [\"ApprovedWasmHash\"]",
+          "key": "AAAABgAAAAGw7N9IyFhbN6xDDQ+YDR/VICIiILa4SpLopyT6SlTnhQAAABAAAAABAAAAAQAAAA8AAAAQQXBwcm92ZWRXYXNtSGFzaAAAAAE=",
+          "liveUntilBefore": 5973900,
+          "beforeAbout": "2026-11-28T19:12:22.000Z",
+          "short": true,
+          "liveUntilAfter": 6305674,
+          "afterAbout": "2026-12-18T00:00:12.000Z"
+        },
+        {
+          "label": "factory [\"Escrow\"]",
+          "key": "AAAABgAAAAGw7N9IyFhbN6xDDQ+YDR/VICIiILa4SpLopyT6SlTnhQAAABAAAAABAAAAAQAAAA8AAAAGRXNjcm93AAAAAAAB",
+          "liveUntilBefore": null,
+          "beforeAbout": null,
+          "short": false,
+          "liveUntilAfter": null,
+          "afterAbout": null
+        }
+      ],
+      "tx": {
+        "hash": "cf80eb8673f4312bf52f6ed87b65ad8832f6cacd8746ac75dd0bae91b0a6f0bb",
+        "url": "https://stellar.expert/explorer/testnet/tx/cf80eb8673f4312bf52f6ed87b65ad8832f6cacd8746ac75dd0bae91b0a6f0bb",
+        "ledger": 5897741,
+        "source": "GCUIEW2XKFXOIESGWITD3MEYKUEP356EGUVXF2GRYWK7CQP7KZTEJE5Z",
+        "extendTo": 407933,
+        "simulatedFeeStroops": "75679587",
+        "maxFeeStroops": "75679815",
+        "feeChargedStroops": "65804752"
+      }
+    }
+  ]
+}
