@@ -23,6 +23,10 @@ const nextConfig = {
         config.resolve.alias = {
             ...config.resolve.alias,
             'pino-pretty': false,
+            // @privy-io/react-auth probes for a Farcaster mini-app host with a
+            // dynamic import of this optional peer; webpack fails the build
+            // when it is absent (S-01). Pairy is never a Farcaster mini-app.
+            '@farcaster/mini-app-solana': false,
         };
         return config;
     },

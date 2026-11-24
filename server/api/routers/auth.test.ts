@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { loadSession, readSessionToken } from "@/lib/auth/session";
 import { authChallenges, sessions, users } from "@/lib/db/schema";
 import { createTestDb, type TestDb } from "@/lib/db/test-setup";
+import { signMessageWithRawSigner } from "@/lib/wallet/privy-sign";
 import { createCallerFactory } from "@/server/api/trpc";
 
 import { authRouter, challengeMessage } from "./auth";
@@ -50,6 +51,24 @@ describe("auth", () => {
       .digest();
     const signature = Buffer.from(kp.sign(digest)).toString("base64");
     expect(await caller().verify({ publicKey: kp.publicKey(), nonce, signature })).toEqual({ publicKey: kp.publicKey() });
+  });
+
+  it("accepts a Privy-style signature: the raw ed25519 signature over the SEP-53 hash (signMessageWithRawSigner)", async () => {
+    // A local key stands in for Privy's signRawHash: it signs exactly the 32 bytes it is given.
+    const kp = Keypair.random();
+    const { nonce, message } = await caller().challenge({ publicKey: kp.publicKey() });
+    const signature = await signMessageWithRawSigner(message, async (hash32) => new Uint8Array(kp.sign(Buffer.from(hash32))));
+    expect(await caller().verify({ publicKey: kp.publicKey(), nonce, signature })).toEqual({ publicKey: kp.publicKey() });
+  });
+
+  it("rejects a raw signature over the plain message instead of the SEP-53 hash", async () => {
+    const kp = Keypair.random();
+    const { nonce, message } = await caller().challenge({ publicKey: kp.publicKey() });
+    const signature = Buffer.from(kp.sign(Buffer.from(message, "utf8"))).toString("base64");
+    await expect(caller().verify({ publicKey: kp.publicKey(), nonce, signature })).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+      message: expect.stringMatching(/Signature/),
+    });
   });
 
   it("rejects a replayed nonce", async () => {

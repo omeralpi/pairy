@@ -2,18 +2,21 @@
 
 import { createContext, useContext } from "react";
 
-export type WalletKind = "device" | "freighter";
+export type WalletKind = "device" | "freighter" | "privy";
+
+export type SignOptions = { signal?: AbortSignal; summary?: string };
 
 export type Wallet = {
   publicKey: string;
   kind: WalletKind;
   /**
-   * Signs a base64 transaction XDR on this device and returns the signed XDR.
-   * For the device wallet this prompts for the pincode; for Freighter it opens
-   * the extension. Never sends anything to the Pairy server. `summary` is
-   * shown in the pincode dialog; aborting `signal` closes that dialog.
+   * Signs a base64 transaction XDR and returns the signed XDR. For the device
+   * wallet this prompts for the pincode; for Freighter it opens the extension;
+   * for Privy it shows Pairy's confirm dialog, then Privy signs the hash.
+   * Never sends anything to the Pairy server. `summary` is shown in the
+   * dialog; aborting `signal` closes that dialog.
    */
-  signTransaction: (xdr: string, opts?: { signal?: AbortSignal; summary?: string }) => Promise<string>;
+  signTransaction: (xdr: string, opts?: SignOptions) => Promise<string>;
 };
 
 /** Everything the onboarding and wallet screens need beyond `useWallet()`. */
@@ -37,8 +40,18 @@ export type WalletContextValue = {
   signMessage: (wallet: Wallet, message: string, pincode?: string) => Promise<string>;
   /** Downloads the pincode-encrypted keystore entry as a JSON file. */
   exportBackup: () => Promise<void>;
-  /** Forgets the selected wallet. The device wallet stays stored in this browser. */
+  /** Forgets the selected wallet. The device wallet stays stored in this browser; a Privy wallet is logged out of Privy too. */
   disconnect: () => Promise<void>;
+  /**
+   * Logs in with Privy (email or Google), reuses or creates its Stellar wallet
+   * and funds it with Friendbot if needed. null when NEXT_PUBLIC_PRIVY_APP_ID
+   * is unset (local dev, CI build): the option is hidden.
+   */
+  connectPrivy: (() => Promise<Wallet>) | null;
+  /** Opens Privy's own export screen for the selected Privy wallet. Pairy never sees the key. null without an App ID. */
+  exportPrivyKey: (() => Promise<void>) | null;
+  /** `failed`: Privy's code did not load, or Privy did not answer in time; the Privy option should say so or hide. */
+  privy: { enabled: boolean; ready: boolean; failed: boolean; authenticated: boolean; loginLabel: string | null };
 };
 
 export const WalletContext = createContext<WalletContextValue | null>(null);
