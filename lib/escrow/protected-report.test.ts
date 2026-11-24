@@ -1,7 +1,7 @@
 // The protected-trade report (WP-41) on pglite: every protected trade in each
 // state, disputes in each stage of the rule, a resolution kept inside 72 hours,
 // one at exactly 72 hours, one late, open disputes inside and past their 72
-// hours, disputes ended without a resolution, and every resolution status.
+// hours, disputes closed by the testnet reset, and every resolution status.
 // The report reads the database only; nothing here touches the chain.
 
 import { eq } from "drizzle-orm";
@@ -110,6 +110,12 @@ async function resolution(tradeId: string, values: Partial<ResolutionInsert> & P
   return r;
 }
 
+/** What transitionTrade writes when scripts/ops/testnet-reset.ts closes a trade (persist.ts, testnet-reset.ts). */
+async function reset<T extends { id: string }>(t: T, at = "2026-12-16T18:00:00Z") {
+  await f.db.insert(tradeEvents).values({ tradeId: t.id, type: "reset", by: "system", createdAt: d(at) });
+  return t;
+}
+
 beforeEach(async () => {
   f = await tradeFixture("sell_crypto", "USDC");
   order = 0;
@@ -160,10 +166,10 @@ async function seedAll() {
     }),
     // Resolved, with the dispute's transaction but none of its times recorded.
     noTimes: await seed({ ...funded(14), disputeTx: hash(14, "dispute"), ...resolved(14, "seller", "2026-12-03T09:00:00Z") }),
-    // Closed after a testnet reset 632 hours after its dispute, never resolved: the promise was missed.
-    endedLate: await seed({ ...disputed(15, "2026-11-20T10:00:00Z"), state: "cancelled", updatedAt: d("2026-12-16T18:00:00Z") }),
-    // Closed after a testnet reset 10 hours after its dispute, inside the 72 hours.
-    endedInside: await seed({ ...disputed(16, "2026-12-16T08:00:00Z"), state: "cancelled", updatedAt: d("2026-12-16T18:00:00Z") }),
+    // Closed by the testnet reset 632 hours after its dispute, never resolved: the promise was missed.
+    endedLate: await reset(await seed({ ...disputed(15, "2026-11-20T10:00:00Z"), state: "cancelled", updatedAt: d("2026-12-16T18:00:00Z") })),
+    // Closed by the testnet reset 10 hours after its dispute: never resolved, so the promise was missed too (O-35).
+    endedInside: await reset(await seed({ ...disputed(16, "2026-12-16T08:00:00Z"), state: "cancelled", updatedAt: d("2026-12-16T18:00:00Z") })),
   };
   const r = {
     failed: await resolution(t.missedOpen.id, {
@@ -335,7 +341,7 @@ describe("protectedReport", () => {
     expect(tradeIn(r, waiting.id).dispute).toMatchObject({ rule: { outcome: "buyer", rule: 2 }, resolvedTo: null, followsRule: null });
   });
 
-  it("checks the 72-hour promise: kept, late, open, missed, ended inside it, and not recorded", async () => {
+  it("checks the 72-hour promise: kept, late, open, missed, closed by the reset after or inside it, and not recorded", async () => {
     const { t } = await seedAll();
     const r = await report();
     const promise = (id: string) => {
@@ -349,7 +355,10 @@ describe("protectedReport", () => {
     expect(promise(t.waiting.id)).toEqual({ promise: "open", tookMs: 2 * H });
     expect(promise(t.missedOpen.id)).toEqual({ promise: "missed", tookMs: 80 * H });
     expect(promise(t.endedLate.id)).toEqual({ promise: "missed", tookMs: 632 * H });
-    expect(promise(t.endedInside.id)).toEqual({ promise: "ended", tookMs: 10 * H });
+    expect(promise(t.endedInside.id)).toEqual({ promise: "missed", tookMs: 10 * H });
+    expect(tradeIn(r, t.endedLate.id).resetAt).toEqual(d("2026-12-16T18:00:00Z"));
+    expect(tradeIn(r, t.endedInside.id).resetAt).toEqual(d("2026-12-16T18:00:00Z"));
+    expect(tradeIn(r, t.cancelled.id).resetAt).toBeNull();
     // No resolve time, or no dispute time: nothing to measure.
     expect(promise(t.offRule.id)).toEqual({ promise: null, tookMs: null });
     expect(promise(t.noTimes.id)).toEqual({ promise: null, tookMs: null });
@@ -382,6 +391,7 @@ describe("protectedReport", () => {
         rule: 3,
         recipient: f.owner,
         amount: "5.0000000",
+        net: "4.985",
         txHash: hash(8, "other"),
         url: null,
         signers: [OMER, ENSAR],
@@ -428,6 +438,13 @@ describe("protectedReport", () => {
       const [x] = tradeIn(await protectedReport(f.db, { now: NOW, threshold }), t.id).resolutions;
       expect(x).toMatchObject({ id: row.id, status, stored: "collecting", url: null });
       if (expiresAt === null) expect(x.validUntil).toEqual(new Date(row.createdAt.getTime() + 10 * 60_000));
+    });
+
+    it("is expired when Pairy marked it so inside its window (the arbiter's sequence moved on, WP-29)", async () => {
+      const t = await seed(disputed(1, "2026-12-18T08:00:00Z"));
+      await resolution(t.id, { txHash: hash(1, "resolve"), status: "expired", signers: [OMER], expiresAt: d("2026-12-18T10:30:00Z") });
+      const [x] = tradeIn(await report(), t.id).resolutions;
+      expect(x).toMatchObject({ status: "expired", stored: "expired", url: null });
     });
 
     it("is landed when the trade's sync recorded its resolve and the row was never marked (WP-29 N6)", async () => {
@@ -508,9 +525,10 @@ describe("protectedReportMarkdown", () => {
     const md = protectedReportMarkdown(await report());
     const late = md.slice(md.indexOf("## Late promises"), md.indexOf("## Disputes"));
     expect(late.split("\n").filter((l) => l.startsWith("| `"))).toEqual([
-      `| ${id8(t.endedLate.id)} | 2026-11-20 10:00:00 UTC | 2026-11-23 10:00:00 UTC | not resolved; the trade ended cancelled on 2026-12-16 18:00:00 UTC | 560 h 0 min |`,
+      `| ${id8(t.endedLate.id)} | 2026-11-20 10:00:00 UTC | 2026-11-23 10:00:00 UTC | not resolved; closed by the testnet reset on 2026-12-16 18:00:00 UTC | 560 h 0 min |`,
       `| ${id8(t.late.id)} | 2026-12-05 12:00:00 UTC | 2026-12-08 12:00:00 UTC | 2026-12-08 14:30:00 UTC, ${tx(hash(10, "resolve"))} | 2 h 30 min |`,
       `| ${id8(t.missedOpen.id)} | 2026-12-15 02:00:00 UTC | 2026-12-18 02:00:00 UTC | not resolved; still open | 8 h 0 min so far |`,
+      `| ${id8(t.endedInside.id)} | 2026-12-16 08:00:00 UTC | 2026-12-19 08:00:00 UTC | not resolved; closed by the testnet reset on 2026-12-16 18:00:00 UTC | none: closed by the testnet reset before the deadline |`,
     ]);
     expect(late).toContain(`Not checked, a time is not recorded: ${id8(t.offRule.id)}, ${id8(t.noTimes.id)}.`);
   });
@@ -520,6 +538,42 @@ describe("protectedReportMarkdown", () => {
     const md = protectedReportMarkdown(await report());
     expect(md).toContain("None: every dispute was resolved within 72 hours of its ledger time, or is still inside them.");
     expect(md).not.toContain("Not checked");
+  });
+
+  it("says None only of the disputes it could check when some could not be", async () => {
+    await seed({ ...disputed(1, "2026-12-10T10:00:00Z"), ...resolved(1, "buyer", "2026-12-10T15:00:00Z") }, { seller: { cash: true, at: "2026-12-10T11:00:00Z" } });
+    const unchecked = await seed({ ...disputed(2, "2026-12-11T10:00:00Z"), ...resolved(2, "seller", null) });
+    const md = protectedReportMarkdown(await report());
+    expect(md).toContain("None among the disputes with recorded times: each was resolved within 72 hours of its ledger time, or is still inside them.");
+    expect(md).not.toContain("None: every dispute");
+    expect(md).toContain(`Not checked, a time is not recorded: ${id8(unchecked.id)}.`);
+  });
+
+  it("lists a dispute the testnet reset closed inside its 72 hours as missed, naming the reset", async () => {
+    const t = await reset(await seed({ ...disputed(1, "2026-12-16T08:00:00Z"), state: "cancelled", updatedAt: d("2026-12-16T18:00:00Z") }));
+    const md = protectedReportMarkdown(await report());
+    const late = md.slice(md.indexOf("## Late promises"), md.indexOf("## Disputes"));
+    expect(late.split("\n").filter((l) => l.startsWith("| `"))).toEqual([
+      `| ${id8(t.id)} | 2026-12-16 08:00:00 UTC | 2026-12-19 08:00:00 UTC | not resolved; closed by the testnet reset on 2026-12-16 18:00:00 UTC | none: closed by the testnet reset before the deadline |`,
+    ]);
+    expect(late).not.toContain("None");
+    expect(md).toContain("| not resolved | missed: due 2026-12-19 08:00:00 UTC; closed by the testnet reset on 2026-12-16 18:00:00 UTC |");
+  });
+
+  it("says only that the trade ended when no reset is recorded for it", async () => {
+    const t = await seed({ ...disputed(1, "2026-11-20T10:00:00Z"), state: "cancelled", updatedAt: d("2026-12-16T18:00:00Z") });
+    // Its other events are not a reset.
+    await f.db.insert(tradeEvents).values([
+      { tradeId: t.id, type: "open", by: "buyer", createdAt: d("2026-11-01T00:00:00Z") },
+      { tradeId: t.id, type: "cancel", by: "seller", createdAt: d("2026-12-16T18:00:00Z") },
+    ]);
+    const r = await report();
+    expect(tradeIn(r, t.id)).toMatchObject({ resetAt: null, dispute: { promise: "missed", tookMs: 632 * 3_600_000 } });
+    const md = protectedReportMarkdown(r);
+    expect(md).toContain(`| ${id8(t.id)} | 2026-11-20 10:00:00 UTC | 2026-11-23 10:00:00 UTC | not resolved; the trade ended cancelled on 2026-12-16 18:00:00 UTC | 560 h 0 min |`);
+    expect(md).toContain("| not resolved | missed: due 2026-11-23 10:00:00 UTC; the trade ended cancelled on 2026-12-16 18:00:00 UTC |");
+    // The rows name no reason the database does not hold.
+    expect(md.split("\n").filter((l) => l.startsWith("| `")).join("\n")).not.toContain("reset");
   });
 
   it("writes one row per dispute: times, both answers, the rule, the outcome and the promise", async () => {
@@ -539,21 +593,25 @@ describe("protectedReportMarkdown", () => {
     expect(rowOf(t.noTimes.id)).toBe(
       `| ${id8(t.noTimes.id)} | ${viewer(contract(14))} | not recorded, ${tx(hash(14, "dispute"))} | not recorded | not recorded | no answer | no answer | 3: all back to the seller | all back to the seller, 2026-12-03 09:00:00 UTC, ${tx(hash(14, "resolve"))}; follows rule 3 | not recorded |`,
     );
-    expect(rowOf(t.endedLate.id)).toContain("| none; the trade ended cancelled | missed: due 2026-11-23 10:00:00 UTC |");
-    expect(rowOf(t.endedInside.id)).toContain("| none; the trade ended cancelled | ended cancelled without a resolution, 10 h 0 min after the dispute |");
+    expect(rowOf(t.endedLate.id)).toContain(
+      "| not resolved | missed: due 2026-11-23 10:00:00 UTC; closed by the testnet reset on 2026-12-16 18:00:00 UTC |",
+    );
+    expect(rowOf(t.endedInside.id)).toContain(
+      "| not resolved | missed: due 2026-12-19 08:00:00 UTC; closed by the testnet reset on 2026-12-16 18:00:00 UTC |",
+    );
     expect(rowOf(t.funded.id)).toBeUndefined();
   });
 
-  it("writes one row per resolution prepared in Pairy, in the order they were prepared, with its status and signatures", async () => {
+  it("writes one row per resolution prepared in Pairy, in the order they were prepared: status, what the payee receives (HD-3 paid 4.985 of 5), signatures", async () => {
     const { t } = await seedAll();
     const md = protectedReportMarkdown(await report());
     const rows = md.slice(md.indexOf("## Resolutions prepared in Pairy"), md.indexOf("## Every protected trade")).split("\n");
     expect(rows.filter((l) => l.startsWith("| `"))).toEqual([
-      `| ${id8(t.late.id)} | ${tx(hash(10, "resolve"))} | landed | 5 USDC to the seller ${acct(f.owner)}, rule 3 | 2 of 2: \`GDH2…N6J7\`, \`GDRJ…LD5Q\` | 2026-12-08 13:45:00 UTC by \`GDRJ…LD5Q\` | 2026-12-08 14:45:00 UTC |`,
-      `| ${id8(t.kept.id)} | \`${hash(9, "other").slice(0, 8)}…${hash(9, "other").slice(-4)}\` | expired | 5 USDC to the buyer ${acct(f.taker)}, rule 1 | 0 of 2 | 2026-12-10 11:30:00 UTC by \`GDRJ…LD5Q\` | 2026-12-10 12:30:00 UTC |`,
-      `| ${id8(t.kept.id)} | ${tx(hash(9, "resolve"))} | landed | 5 USDC to the buyer ${acct(f.taker)}, rule 1 | 2 of 2: \`GDRJ…LD5Q\`, \`GDH2…N6J7\` | 2026-12-10 14:00:00 UTC by \`GDH2…N6J7\` | 2026-12-10 15:00:00 UTC |`,
-      `| ${id8(t.missedOpen.id)} | \`${hash(8, "other").slice(0, 8)}…${hash(8, "other").slice(-4)}\` | failed | 5 USDC to the seller ${acct(f.owner)}, rule 3 | 2 of 2: \`GDRJ…LD5Q\`, \`GDH2…N6J7\` | 2026-12-18 00:00:00 UTC by \`GDRJ…LD5Q\` | 2026-12-18 01:00:00 UTC |`,
-      `| ${id8(t.missedOpen.id)} | \`${hash(8, "resolve").slice(0, 8)}…${hash(8, "resolve").slice(-4)}\` | collecting | 5 USDC to the seller ${acct(f.owner)}, rule 3 | 1 of 2: \`GDRJ…LD5Q\` | 2026-12-18 09:30:00 UTC by \`GDRJ…LD5Q\` | 2026-12-18 10:30:00 UTC |`,
+      `| ${id8(t.late.id)} | ${tx(hash(10, "resolve"))} | landed | 4.985 USDC to the seller ${acct(f.owner)} (5 USDC less Trustless Work's 0.3%), rule 3 | 2 of 2: \`GDH2…N6J7\`, \`GDRJ…LD5Q\` | 2026-12-08 13:45:00 UTC by \`GDRJ…LD5Q\` | 2026-12-08 14:45:00 UTC |`,
+      `| ${id8(t.kept.id)} | \`${hash(9, "other").slice(0, 8)}…${hash(9, "other").slice(-4)}\` | expired | 4.985 USDC to the buyer ${acct(f.taker)} (5 USDC less Trustless Work's 0.3%), rule 1 | 0 of 2 | 2026-12-10 11:30:00 UTC by \`GDRJ…LD5Q\` | 2026-12-10 12:30:00 UTC |`,
+      `| ${id8(t.kept.id)} | ${tx(hash(9, "resolve"))} | landed | 4.985 USDC to the buyer ${acct(f.taker)} (5 USDC less Trustless Work's 0.3%), rule 1 | 2 of 2: \`GDRJ…LD5Q\`, \`GDH2…N6J7\` | 2026-12-10 14:00:00 UTC by \`GDH2…N6J7\` | 2026-12-10 15:00:00 UTC |`,
+      `| ${id8(t.missedOpen.id)} | \`${hash(8, "other").slice(0, 8)}…${hash(8, "other").slice(-4)}\` | failed | 4.985 USDC to the seller ${acct(f.owner)} (5 USDC less Trustless Work's 0.3%), rule 3 | 2 of 2: \`GDRJ…LD5Q\`, \`GDH2…N6J7\` | 2026-12-18 00:00:00 UTC by \`GDRJ…LD5Q\` | 2026-12-18 01:00:00 UTC |`,
+      `| ${id8(t.missedOpen.id)} | \`${hash(8, "resolve").slice(0, 8)}…${hash(8, "resolve").slice(-4)}\` | collecting | 4.985 USDC to the seller ${acct(f.owner)} (5 USDC less Trustless Work's 0.3%), rule 3 | 1 of 2: \`GDRJ…LD5Q\` | 2026-12-18 09:30:00 UTC by \`GDRJ…LD5Q\` | 2026-12-18 10:30:00 UTC |`,
     ]);
   });
 
