@@ -4,7 +4,7 @@ import { TransactionFailedError, type Transaction } from "@stellar/stellar-sdk";
 import { useEffect, useRef, useState } from "react";
 
 import type { AssetCode } from "@/lib/stellar/assets";
-import { clearPendingTx, savePendingTx, type PendingTx } from "@/lib/trade/pending-tx";
+import { clearPendingTx, savePendingTx, setStepRunning, type PendingTx } from "@/lib/trade/pending-tx";
 import { describeStellarError } from "@/lib/trade/stellar-errors";
 import { signAndSubmit, type Signer, type SubmitOptions } from "@/lib/trade/sign-and-submit";
 
@@ -12,7 +12,8 @@ import { signAndSubmit, type Signer, type SubmitOptions } from "@/lib/trade/sign
  * build → sign on device → submit to Horizon → report the hash to Pairy. If
  * the transaction lands but reporting fails, the hash is kept so the report
  * can be retried without signing again. With `pending`, the signed hash is
- * also kept in this browser until it is recorded, so a reload can report it.
+ * also kept in this browser until it is recorded, so a reload can report it;
+ * while this step sends and records it, useTradeSync leaves it to the step.
  * Leaving the screen cancels a signature still being asked for.
  */
 export function useChainStep(
@@ -54,7 +55,9 @@ export function useChainStep(
         signal: controller.signal,
         // Kept only once the send is certain, so an aborted step leaves nothing to retry.
         onSending: (signedHash) => {
-          if (pending) savePendingTx(pending.tradeId, { kind: pending.kind, hash: signedHash });
+          if (!pending) return;
+          savePendingTx(pending.tradeId, { kind: pending.kind, hash: signedHash });
+          setStepRunning(pending.tradeId, true);
         },
       });
       await report(hash);
@@ -63,6 +66,7 @@ export function useChainStep(
       if (pending && e instanceof TransactionFailedError) clearPendingTx(pending.tradeId);
       if (!controller.signal.aborted) setError(describeStellarError(e, asset));
     } finally {
+      if (pending) setStepRunning(pending.tradeId, false);
       if (!controller.signal.aborted) setBusy(false);
     }
   }
@@ -71,7 +75,9 @@ export function useChainStep(
     if (!unreported) return;
     setBusy(true);
     setError(null);
+    if (pending) setStepRunning(pending.tradeId, true);
     await report(unreported);
+    if (pending) setStepRunning(pending.tradeId, false);
     setBusy(false);
   }
 

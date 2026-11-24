@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import type { TradeView } from "@/components/trade/format";
 import { api } from "@/lib/api";
-import { PENDING_TX_MAX_AGE_MS, clearPendingTx, pendingTxAction, readPendingTx } from "@/lib/trade/pending-tx";
+import { PENDING_TX_MAX_AGE_MS, clearPendingTx, pendingTxAction, readPendingTx, stepRunning } from "@/lib/trade/pending-tx";
 
 const SYNC_EVERY_MS = 20_000;
 
@@ -74,6 +74,9 @@ export function useTradeSync(trade: TradeView) {
         clearInterval(timer);
         return;
       }
+      // A step on this page is sending or recording its hash: it reports it
+      // itself, and a sync now would only race that record (WP-34 judge N1).
+      if (stepRunning(id)) return;
       const pending = readPendingTx(id);
       if (pending && current) {
         if (pendingTxAction(current, pending) === "clear") {
@@ -98,10 +101,13 @@ export function useTradeSync(trade: TradeView) {
     }
 
     timer = setInterval(() => void tick(), SYNC_EVERY_MS);
-    void tick();
+    // The first tick right away, on a timer the cleanup cancels: React mounts
+    // twice in development (StrictMode), and a kept hash is reported once.
+    const first = setTimeout(() => void tick(), 0);
     return () => {
       stopped = true;
       clearInterval(timer);
+      clearTimeout(first);
     };
   }, [active, id, utils, sync, recordLock, recordClaim, recordCreate, recordFund, recordRelease]);
 }

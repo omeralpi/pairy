@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { readPendingTx, savePendingTx } from "@/lib/trade/pending-tx";
+import { readPendingTx, savePendingTx, setStepRunning } from "@/lib/trade/pending-tx";
 
 // For useTradeSync itself: React's useEffect is captured instead of
 // scheduled, so a test runs the effect by hand, and every tRPC call is a
@@ -125,5 +125,87 @@ describe("useTradeSync after a reload (WP-34)", () => {
       { path: "trade.sync", input: { tradeId: ID } },
     ]);
     expect(readPendingTx(ID)).toBeNull();
+  });
+
+  it("leaves a hash this page's own step is sending or recording to that step, so each record is sent once (WP-34 judge N1)", async () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    const trade = {
+      id: ID,
+      mode: "protected",
+      state: "escrow_created",
+      escrowAdmin: "GADMIN",
+      balanceId: null,
+      lockTx: null,
+      claimTx: null,
+      reclaimTx: null,
+      createTx: "c".repeat(64),
+      fundTx: null,
+      releaseTx: null,
+      events: [],
+    };
+    byId.data = trade;
+    savePendingTx(ID, { kind: "fund", hash: HASH });
+
+    setStepRunning(ID, true);
+    useTradeSync(trade as never);
+    const stop = effects[0]();
+    await new Promise((r) => setTimeout(r, 50));
+    if (typeof stop === "function") stop();
+    // Neither the report nor a sync that would race it.
+    expect(calls).toEqual([]);
+    expect(readPendingTx(ID)?.hash).toBe(HASH);
+
+    // The step ended without recording it (or the page was reloaded): the hook reports it.
+    setStepRunning(ID, false);
+    calls.length = 0;
+    const again = effects[0]();
+    await vi.waitFor(() => expect(calls.map((c) => c.path)).toContain("trade.sync"));
+    if (typeof again === "function") again();
+    expect(calls).toEqual([
+      { path: "escrow.recordFund", input: { tradeId: ID, txHash: HASH } },
+      { path: "trade.sync", input: { tradeId: ID } },
+    ]);
+  });
+
+  it("reports a kept hash once when React mounts the room twice (development's StrictMode)", async () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    const trade = {
+      id: ID,
+      mode: "protected",
+      state: "funded",
+      escrowAdmin: "GADMIN",
+      balanceId: null,
+      lockTx: null,
+      claimTx: null,
+      reclaimTx: null,
+      createTx: "c".repeat(64),
+      fundTx: "f".repeat(64),
+      releaseTx: null,
+      events: [],
+    };
+    byId.data = trade;
+    savePendingTx(ID, { kind: "release", hash: HASH });
+
+    useTradeSync(trade as never);
+    // Mount, unmount, mount again: what StrictMode does to every effect in development.
+    const first = effects[0]();
+    if (typeof first === "function") first();
+    const stop = effects[0]();
+    await vi.waitFor(() => expect(calls.map((c) => c.path)).toContain("trade.sync"));
+    if (typeof stop === "function") stop();
+    expect(calls).toEqual([
+      { path: "escrow.recordRelease", input: { tradeId: ID, txHash: HASH } },
+      { path: "trade.sync", input: { tradeId: ID } },
+    ]);
   });
 });

@@ -55,6 +55,22 @@ export function clearPendingTx(tradeId: string, store = storage()) {
   }
 }
 
+// The trades whose step this page is sending or recording now, from the
+// moment its hash is kept until it is recorded or fails. Meanwhile that hash
+// is the step's to report, not useTradeSync's, so each record is sent once
+// (WP-34 judge N1). Kept in memory only: after a reload, or in another tab,
+// no step runs and the hook reports the hash as before.
+const running = new Set<string>();
+
+export function setStepRunning(tradeId: string, on: boolean) {
+  if (on) running.add(tradeId);
+  else running.delete(tradeId);
+}
+
+export function stepRunning(tradeId: string): boolean {
+  return running.has(tradeId);
+}
+
 /**
  * What to do with a stored hash given the trade as Pairy has it: report it,
  * drop it (already recorded, or no longer needed), or leave it alone.
