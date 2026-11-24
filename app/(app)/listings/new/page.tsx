@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ListingForm } from "@/components/listing/listing-form";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
+import { useWalletContext } from "@/lib/wallet/use-wallet";
 
 export default function NewListingPage() {
   const { publicKey, loading } = useSession();
+  const { privy } = useWalletContext();
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 md:py-12">
@@ -25,8 +27,9 @@ export default function NewListingPage() {
           <div className="rounded-xl bg-sand p-6">
             <p className="font-semibold text-ink">Sign in to post a listing.</p>
             <p className="mt-2 text-sm text-slate">
-              A listing belongs to a Stellar public key. Connect Varial (formerly Freighter) or create a testnet wallet on this device;
-              the key stays with you.
+              A listing belongs to a Stellar public key.{" "}
+              {privy.enabled ? "Sign in with email or Google, connect Varial (formerly Freighter), or" : "Connect Varial (formerly Freighter) or"}{" "}
+              create a testnet wallet on this device. Pairy never gets the key.
             </p>
             <Button asChild className="mt-5">
               <Link href="/onboard">Sign in</Link>

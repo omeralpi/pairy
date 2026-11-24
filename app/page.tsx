@@ -147,7 +147,8 @@ export default function Home() {
                 Nobody else is on the lock. Pairy has no key to it and cannot move the money.
               </p>
               <p>
-                Your key is made on your device and is never sent to Pairy. If you use Varial (formerly Freighter), it stays in Varial.
+                Your key is never sent to Pairy: it is made on your device, kept in Varial (formerly Freighter), or held by
+                Privy behind your email or Google login.
               </p>
             </div>
           </div>
