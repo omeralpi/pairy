@@ -43,7 +43,7 @@ export function minimumBalance(
 }
 
 /** Balance minus what open offers already promise to sell. */
-function spendable(account: Horizon.AccountResponse, code: AssetCode): bigint {
+export function spendable(account: Horizon.AccountResponse, code: AssetCode): bigint {
   const line = account.balances.find((b) => isLineOf(b, code));
   if (!line) return 0n;
   const selling = "selling_liabilities" in line ? toStroops(line.selling_liabilities) : 0n;
@@ -51,7 +51,7 @@ function spendable(account: Horizon.AccountResponse, code: AssetCode): bigint {
 }
 
 /** Whether `account` can receive `amount` of a non-native asset on a claim. */
-function receivable(
+export function receivable(
   account: Horizon.AccountResponse,
   code: AssetCode,
   amount: bigint,

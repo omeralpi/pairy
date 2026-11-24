@@ -47,7 +47,8 @@ export class VerifyError extends Error {}
 /** The transaction is not this trade's lock. */
 export class LockMismatchError extends VerifyError {}
 
-async function loadSuccessfulTx(hash: string): Promise<{ tx: Transaction; createdAt: Date }> {
+/** A successful testnet transaction by hash, with its ledger close time; lib/escrow/verify.ts reads escrow calls through it too. */
+export async function loadSuccessfulTx(hash: string): Promise<{ tx: Transaction; createdAt: Date }> {
   let record;
   try {
     record = await horizon.transactions().transaction(hash).call();

@@ -150,14 +150,24 @@ function parseJson(text: string): unknown {
   }
 }
 
+function apiKey(): string | undefined {
+  return process.env.TRUSTLESS_WORK_API_KEY?.trim() || undefined;
+}
+
+/** Whether this server has a Trustless Work key; the key itself never leaves this file. */
+export function twConfigured(): boolean {
+  return apiKey() !== undefined;
+}
+
 /** The only function that talks to Trustless Work: 15 s timeout, x-api-key, every answer zod-checked, one log line. */
 export async function twCall<E extends TwEndpoint>(
   ep: E,
   input: TwInput[E],
   ctx: { tradeId?: string },
 ): Promise<TwOutput[E]> {
-  const key = process.env.TRUSTLESS_WORK_API_KEY?.trim();
-  if (!key) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Protected trades are not configured" });
+  const key = apiKey();
+  // Not INTERNAL_SERVER_ERROR: production hides those messages, and this one is for the trader.
+  if (!key) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Protected trades are not configured" });
   // A bad body is Pairy's own bug: refused here, before anything is sent.
   const body = INPUT[ep].parse(input);
   const get = TW_ENDPOINTS[ep].method === "GET";
@@ -174,6 +184,8 @@ export async function twCall<E extends TwEndpoint>(
       signal: AbortSignal.timeout(15_000),
       // Next caches server-side GETs by default; an escrow read must be fresh.
       cache: "no-store",
+      // A redirect would carry x-api-key to wherever it points: refuse it.
+      redirect: "error",
     });
     status = res.status;
     text = await res.text();

@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TW_API_BASE } from "@/lib/escrow/config";
 
-import { TW_ENDPOINTS, TwApiError, twAmount, twCall, type TwEndpoint } from "./client";
+import { TW_ENDPOINTS, TwApiError, twAmount, twCall, twConfigured, type TwEndpoint } from "./client";
 
 type Recorded = {
   endpoint: string;
@@ -147,9 +147,27 @@ describe("twCall", () => {
       vi.stubEnv("TRUSTLESS_WORK_API_KEY", unset);
       const err = await failure(twCall("fund", ACCEPTED.fund, {}));
       expect(err).toBeInstanceOf(TRPCError);
-      expect(err).toMatchObject({ code: "INTERNAL_SERVER_ERROR", message: "Protected trades are not configured" });
+      // PRECONDITION_FAILED, not INTERNAL_SERVER_ERROR: production shows this sentence instead of "Something went wrong".
+      expect(err).toMatchObject({ code: "PRECONDITION_FAILED", message: "Protected trades are not configured" });
     }
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("says whether a key is set, without handing it out", () => {
+    expect(twConfigured()).toBe(true);
+    for (const unset of ["", "   "]) {
+      vi.stubEnv("TRUSTLESS_WORK_API_KEY", unset);
+      expect(twConfigured()).toBe(false);
+    }
+    vi.unstubAllEnvs();
+    delete process.env.TRUSTLESS_WORK_API_KEY;
+    expect(twConfigured()).toBe(false);
+  });
+
+  it("never follows a redirect, so the key cannot be carried to another host (WP-08 judge N5)", async () => {
+    answer(200, load("fund.json").response.body);
+    await twCall("fund", ACCEPTED.fund, {});
+    expect(sent().init.redirect).toBe("error");
   });
 
   it("fails loudly when an answer has an unknown shape", async () => {
