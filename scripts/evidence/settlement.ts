@@ -5,9 +5,10 @@
 //   pnpm tsx scripts/evidence/settlement.ts USDC
 //   pnpm tsx scripts/evidence/settlement.ts EURC
 //
-// Writes scripts/evidence/out/settlement-<asset>.json. XLM and USDC move 5 per
-// run; EURC moves 1, since it comes from Circle's faucet through the team
-// treasury (FIXES X-04).
+// Writes scripts/evidence/out/settlement-<asset>.json. Each run makes two
+// locks (the buyer claims the first, so the seller is funded for both): 5 XLM
+// or USDC per lock, 1 EURC per lock, so 2 EURC per run from the team treasury
+// that Circle's faucet fills (FIXES X-04).
 
 import { Asset, type Keypair } from "@stellar/stellar-sdk";
 
@@ -63,10 +64,14 @@ async function main() {
   if (needsTrustline(code)) {
     setup.push(await txEvidence("seller trustline", await addTrustline(seller, code)));
     setup.push(await txEvidence("buyer trustline", await addTrustline(buyer, code)));
-    const bought = await acquire(seller, code, AMOUNT);
+    // Two locks: the buyer claims the first, so the seller needs both amounts up front.
+    const funding = (Number(AMOUNT) * 2).toFixed(7);
+    const bought = await acquire(seller, code, funding);
     setup.push(
       await txEvidence(
-        bought.source === "dex" ? `seller buys ${AMOUNT} ${code} on the DEX` : `seller receives ${AMOUNT} ${code} from the team treasury`,
+        bought.source === "dex"
+          ? `seller buys ${funding} ${code} on the DEX (two locks of ${AMOUNT})`
+          : `seller receives ${funding} ${code} from the team treasury (two locks of ${AMOUNT})`,
         bought,
       ),
     );
