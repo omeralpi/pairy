@@ -86,7 +86,7 @@ import {
   USDC_SAC,
   twViewerUrl,
 } from "../../lib/escrow/config";
-import { makeCreationKey, type Signer } from "../../lib/escrow/creation-key";
+import { makeCreationKey } from "../../lib/escrow/creation-key";
 import { netAfterFee, twFee } from "../../lib/escrow/fee";
 import type { EscrowTerms } from "../../lib/escrow/terms";
 import { mergeSignatures } from "../../lib/escrow/multisig";
@@ -100,6 +100,7 @@ import {
 import { explorerTxUrl, fundWithFriendbot, horizon, networkDeadline } from "../../lib/stellar/horizon";
 import { NETWORK_PASSPHRASE } from "../../lib/stellar/settlement";
 import { fromStroops } from "../../lib/trade/amount";
+import type { Signer } from "../../lib/trade/sign-and-submit";
 import { TW_ENDPOINTS, twAmount, twCall, type TwInput, type TwOutput } from "../../server/tw/client";
 import {
   USDC,

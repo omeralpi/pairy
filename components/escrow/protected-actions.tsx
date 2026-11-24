@@ -1,9 +1,11 @@
 'use client';
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { ConfirmAction } from "@/components/confirm-action";
 import { AcceptanceScreen } from "@/components/escrow/acceptance-screen";
+import { CreatePanel } from "@/components/escrow/create-panel";
 import { roleName, type TradeView } from "@/components/trade/format";
 import { TrustlineButton } from "@/components/trade/trustline-button";
 import { useMutationOpts } from "@/components/trade/use-mutation-opts";
@@ -13,9 +15,9 @@ import { ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 
 /**
  * What the viewer can do now in a protected trade, by role and state: the
- * peer who did not open it accepts the protected-trade terms by agreeing, and
- * the buyer adds the USDC trustline the escrow needs. The escrow's own panels
- * (create, fund, release, dispute) come in later work packages.
+ * peer who did not open it accepts the protected-trade terms by agreeing, the
+ * buyer adds the USDC trustline the escrow needs, and the seller creates the
+ * escrow. Its other panels (fund, release, dispute) come in later work packages.
  */
 export function ProtectedActions({ trade }: { trade: TradeView }) {
   const utils = api.useUtils();
@@ -29,6 +31,7 @@ export function ProtectedActions({ trade }: { trade: TradeView }) {
     { enabled: trade.role === "buyer" && (trade.state === "listed" || trade.state === "agreed"), refetchInterval: 30_000 },
   );
   const buyerNeedsTrustline = preflight.data?.checks.some((c) => c.id === "buyerTrustline" && !c.ok);
+  const buyerHasNoAccount = preflight.data?.checks.some((c) => c.id === "buyerAccount" && !c.ok);
   const other = roleName(trade.role === "seller" ? "buyer" : "seller").toLowerCase();
 
   const cancelButton = (
@@ -46,6 +49,15 @@ export function ProtectedActions({ trade }: { trade: TradeView }) {
 
   const trustline = buyerNeedsTrustline && (
     <TrustlineButton asset="USDC" buyer={trade.buyer} escrow onDone={() => utils.trade.invalidate()} />
+  );
+
+  const noAccountNote = buyerHasNoAccount && (
+    <div className="space-y-2 rounded-xl bg-sand p-5 text-sm leading-relaxed text-ink">
+      <p>Your account isn&apos;t on Stellar testnet yet, so the seller can&apos;t create the escrow for you. Fund it first.</p>
+      <Link href="/wallet" className="font-medium text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-ink">
+        Open wallet
+      </Link>
+    </div>
   );
 
   switch (trade.state) {
@@ -67,18 +79,23 @@ export function ProtectedActions({ trade }: { trade: TradeView }) {
               </Button>
             </>
           )}
+          {noAccountNote}
           {trustline}
           <div>{cancelButton}</div>
         </section>
       );
     case "agreed":
       return trade.role === "seller" ? (
-        <div className="space-y-6">{cancelButton}</div>
+        <div className="space-y-6">
+          <CreatePanel trade={trade} />
+          {cancelButton}
+        </div>
       ) : (
         <section className="space-y-5">
           <p className="leading-relaxed text-slate">
             Waiting for the seller to create the escrow. Nothing is yours until the release shows here.
           </p>
+          {noAccountNote}
           {trustline}
           <div>{cancelButton}</div>
         </section>

@@ -1,6 +1,10 @@
-import { Account, BadResponseError, Keypair, TransactionFailedError } from "@stellar/stellar-sdk";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import { Account, BadResponseError, Keypair, Networks, TransactionBuilder, TransactionFailedError, type Transaction } from "@stellar/stellar-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { makeCreationKey } from "@/lib/escrow/creation-key";
 import { buildClaimTransaction } from "@/lib/stellar/settlement";
 import type { Wallet } from "@/lib/wallet/use-wallet";
 
@@ -84,6 +88,27 @@ describe("signAndSubmit (Q-3)", () => {
     expect(seen).toEqual([hex(t), hex(t)]);
     expect(hash).toBe(seen[0]);
     expect(submit).toHaveBeenCalledOnce();
+  });
+});
+
+describe("signAndSubmit with a protected trade's one-time creation key (WP-34)", () => {
+  beforeEach(() => {
+    submit.mockClear();
+  });
+
+  it("signs Trustless Work's deploy with the key and sends it, though the key is no wallet", async () => {
+    const deploy = JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/tw/gate-d2-deploy.json"), "utf8")).response.body;
+    const key = makeCreationKey();
+    const tx = TransactionBuilder.fromXDR(deploy.unsignedXdr, Networks.TESTNET) as Transaction;
+    const seen: string[] = [];
+
+    const hash = await signAndSubmit(key, tx, { summary: "Create this trade's escrow for 5 USDC", beforeSubmit: (h) => void seen.push(h) });
+
+    expect(hash).toBe(deploy.txHash);
+    expect(seen).toEqual([deploy.txHash]);
+    const sent = submit.mock.calls[0][0] as Transaction;
+    expect(sent.signatures).toHaveLength(1);
+    expect(Keypair.fromPublicKey(key.publicKey).verify(sent.hash(), sent.signatures[0].signature.value)).toBe(true);
   });
 });
 

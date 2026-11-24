@@ -12,6 +12,9 @@ import type { Wallet } from "@/lib/wallet/use-wallet";
 export const MAYBE_SENT =
   "Stellar testnet didn't confirm this in time, but it may still go through. Don't send it again yet: this page checks the ledger and updates once it lands.";
 
+/** What signing and sending needs: the user's wallet, or a protected trade's one-time creation key (lib/escrow/creation-key.ts). */
+export type Signer = Pick<Wallet, "publicKey" | "signTransaction">;
+
 export type SubmitOptions = {
   /** Aborting it cancels an open pincode prompt, and a signature that comes back late is never sent. */
   signal?: AbortSignal;
@@ -23,7 +26,7 @@ export type SubmitOptions = {
   onSending?: (hash: string) => void;
 };
 
-export async function signAndSubmit(wallet: Wallet, tx: Transaction, opts: SubmitOptions = {}): Promise<string> {
+export async function signAndSubmit(wallet: Signer, tx: Transaction, opts: SubmitOptions = {}): Promise<string> {
   const signed = await wallet.signTransaction(tx.toXDR(), { signal: opts.signal, summary: opts.summary });
   if (opts.signal?.aborted) throw new Error("Signing cancelled. Nothing was sent.");
   const ready = TransactionBuilder.fromXDR(signed, NETWORK_PASSPHRASE) as Transaction;

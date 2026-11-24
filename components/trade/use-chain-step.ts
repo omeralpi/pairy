@@ -6,8 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AssetCode } from "@/lib/stellar/assets";
 import { clearPendingTx, savePendingTx, type PendingTx } from "@/lib/trade/pending-tx";
 import { describeStellarError } from "@/lib/trade/stellar-errors";
-import { signAndSubmit, type SubmitOptions } from "@/lib/trade/sign-and-submit";
-import type { Wallet } from "@/lib/wallet/use-wallet";
+import { signAndSubmit, type Signer, type SubmitOptions } from "@/lib/trade/sign-and-submit";
 
 /**
  * build → sign on device → submit to Horizon → report the hash to Pairy. If
@@ -41,7 +40,7 @@ export function useChainStep(
   }
 
   async function run(
-    wallet: Wallet,
+    signer: Signer,
     build: () => Promise<Transaction>,
     opts: Pick<SubmitOptions, "summary" | "beforeSubmit"> = {},
   ) {
@@ -50,7 +49,7 @@ export function useChainStep(
     const controller = new AbortController();
     abort.current = controller;
     try {
-      const hash = await signAndSubmit(wallet, await build(), {
+      const hash = await signAndSubmit(signer, await build(), {
         ...opts,
         signal: controller.signal,
         // Kept only once the send is certain, so an aborted step leaves nothing to retry.

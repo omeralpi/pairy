@@ -8,10 +8,7 @@
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
 
 import { NETWORK_PASSPHRASE } from "@/lib/stellar/settlement";
-import type { Wallet } from "@/lib/wallet/use-wallet";
-
-/** What signing and sending a transaction needs from a wallet. Moves to lib/trade/sign-and-submit.ts in WP-34. */
-export type Signer = Pick<Wallet, "publicKey" | "signTransaction">;
+import type { Signer } from "@/lib/trade/sign-and-submit";
 
 /** A new key, as a signer. Signs on this device and sends nothing. */
 export function makeCreationKey(): Signer {
