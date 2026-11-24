@@ -9,7 +9,7 @@ import path from "node:path";
 import { Address, Networks, StrKey, TransactionBuilder, nativeToScVal, xdr, type Transaction } from "@stellar/stellar-sdk";
 import { describe, expect, it, vi } from "vitest";
 
-import { RESOLVE_WINDOW_SECONDS, USDC_SAC } from "./config";
+import { ARBITER_ACCOUNT, MILESTONE_DESCRIPTION, PLATFORM_ACCOUNT, RESOLVE_WINDOW_SECONDS, USDC_SAC } from "./config";
 import {
   decodeEscrowCall,
   deriveEscrowId,
@@ -517,6 +517,43 @@ describe("the resolve's time policy (O-17)", () => {
     refused(validateEscrowCall(decodeEscrowCall(tw), policy("browser-rebuilt"), now), /less than 10 minutes/);
     expect(validateEscrowCall(retimed(prepared + 10 * 60), policy("browser-rebuilt"), now)).toEqual([]);
     expect(validateEscrowCall(retimed(prepared + 24 * 3600), policy("browser-rebuilt"), now)).toEqual([]);
+  });
+});
+
+describe("the Gate D2 release (WP-11): Pairy's own platform and arbiter, and the pinned factory, code and fee address", () => {
+  // Recorded by scripts/evidence/escrow-exits.ts release --arbiter=real. The parties
+  // are the ones Pairy asked Trustless Work for; the platform, resolver, token and
+  // milestone are Pairy's constants, so a call that differs from them is refused.
+  type DeployRequest = { signer: string; roles: { approvers: string[]; receiver: string } };
+  const gate = (step: string) => `gate-d2-${step}`;
+  const parties = () => {
+    const f = fixture(gate("deploy")) as Fixture & { request: { body: DeployRequest } };
+    const { signer, roles } = f.request.body;
+    return { admin: signer, seller: roles.approvers[0], buyer: roles.receiver, contractId: f.response.body.contractId! };
+  };
+  const expectation = (step: string): CallExpectation => {
+    const { admin, seller, buyer, contractId } = parties();
+    const amountStroops = 50_000_000n; // the script's 5 USDC
+    const terms: EscrowTerms = {
+      admin,
+      platform: PLATFORM_ACCOUNT,
+      receiver: buyer,
+      approvers: [seller],
+      releaseSigners: [seller],
+      disputeResolvers: [ARBITER_ACCOUNT],
+      serviceProviders: [seller],
+      amountStroops,
+      platformFeePercent: 0,
+      tokenContract: USDC_SAC,
+      milestones: [{ description: MILESTONE_DESCRIPTION }],
+    };
+    if (step === "deploy") return { kind: "deploy", admin, contractId, terms };
+    if (step === "fund") return { kind: "fund", contractId, seller, amountStroops, terms };
+    return { kind: "release", contractId, seller };
+  };
+
+  it.each(["deploy", "fund", "release"])("passes the %s as Trustless Work prepared it", (step) => {
+    expect(validateEscrowCall(decoded(gate(step)), expectation(step), at(gate(step)))).toEqual([]);
   });
 });
 
