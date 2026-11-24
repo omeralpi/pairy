@@ -58,6 +58,13 @@ const LABEL = "eyebrow text-[11px] font-normal";
 const FIELD = "border-line bg-paper text-ink placeholder:text-slate focus-visible:ring-ink";
 const NUMBER = cn(FIELD, "font-mono text-lg tabular-nums");
 
+/** The asset a new listing starts on; it is offered first, the others follow in registry order. */
+const DEFAULT_ASSET: CreateInput["asset"] = "USDC";
+const ASSET_OPTIONS = [DEFAULT_ASSET, ...ASSET_CODES.filter((c) => c !== DEFAULT_ASSET)].map((code) => ({
+  value: code,
+  label: ASSETS[code].label,
+}));
+
 /** "1,000" or "1 000" is not taken as a number; say why before the server does. */
 const dotHint = (v: string) =>
   /[,\s]/.test(normalizeDecimal(v)) ? ["Use a dot for decimals and no thousands separators, e.g. 1000.5."] : undefined;
@@ -66,7 +73,7 @@ export function ListingForm() {
   const router = useRouter();
   const utils = api.useUtils();
   const [side, setSide] = useState<CreateInput["side"]>("sell_crypto");
-  const [asset, setAsset] = useState<CreateInput["asset"]>("USDC");
+  const [asset, setAsset] = useState<CreateInput["asset"]>(DEFAULT_ASSET);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
   const [fiatCode, setFiatCode] = useState<CreateInput["fiatCode"]>("USD");
@@ -119,7 +126,7 @@ export function ListingForm() {
           labelledBy="asset-label"
           value={asset}
           onChange={setAsset}
-          options={ASSET_CODES.map((code) => ({ value: code, label: ASSETS[code].label }))}
+          options={ASSET_OPTIONS}
         />
       </div>
 
