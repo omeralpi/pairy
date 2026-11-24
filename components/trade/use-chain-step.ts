@@ -3,6 +3,7 @@
 import { TransactionFailedError, type Transaction } from "@stellar/stellar-sdk";
 import { useEffect, useRef, useState } from "react";
 
+import type { AssetCode } from "@/lib/stellar/assets";
 import { clearPendingTx, savePendingTx, type PendingTx } from "@/lib/trade/pending-tx";
 import { describeStellarError } from "@/lib/trade/stellar-errors";
 import { signAndSubmit, type SubmitOptions } from "@/lib/trade/sign-and-submit";
@@ -18,6 +19,8 @@ import type { Wallet } from "@/lib/wallet/use-wallet";
 export function useChainStep(
   record: (txHash: string) => Promise<unknown>,
   pending?: { tradeId: string; kind: PendingTx["kind"] },
+  /** The asset the step moves, so a trustline refusal can name it. */
+  asset?: AssetCode,
 ) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +36,7 @@ export function useChainStep(
       if (pending) clearPendingTx(pending.tradeId);
     } catch (e) {
       setUnreported(hash);
-      setError(`It went through on Stellar testnet, but Pairy could not record it yet: ${describeStellarError(e)}`);
+      setError(`It went through on Stellar testnet, but Pairy could not record it yet: ${describeStellarError(e, asset)}`);
     }
   }
 
@@ -59,7 +62,7 @@ export function useChainStep(
     } catch (e) {
       // The network refused it outright, so there is nothing to record later.
       if (pending && e instanceof TransactionFailedError) clearPendingTx(pending.tradeId);
-      if (!controller.signal.aborted) setError(describeStellarError(e));
+      if (!controller.signal.aborted) setError(describeStellarError(e, asset));
     } finally {
       if (!controller.signal.aborted) setBusy(false);
     }

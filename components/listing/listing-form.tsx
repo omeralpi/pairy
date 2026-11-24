@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type RouterInputs } from "@/lib/api";
 import { FIAT_CODES } from "@/lib/fiat";
+import { ASSETS, ASSET_CODES } from "@/lib/stellar/assets";
 import { cn } from "@/lib/utils";
 
 import { CityPicker, type PickedCity } from "./city-picker";
@@ -118,10 +119,7 @@ export function ListingForm() {
           labelledBy="asset-label"
           value={asset}
           onChange={setAsset}
-          options={[
-            { value: "USDC", label: "USDC" },
-            { value: "XLM", label: "XLM" },
-          ]}
+          options={ASSET_CODES.map((code) => ({ value: code, label: ASSETS[code].label }))}
         />
       </div>
 

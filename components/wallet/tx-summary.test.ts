@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { toAsset } from "@/lib/stellar/assets";
 import { buildClaimTransaction, buildLockTransaction } from "@/lib/stellar/settlement";
-import { buildUsdcTrustlineTransaction } from "@/lib/stellar/trustline";
+import { buildTrustlineTransaction } from "@/lib/stellar/trustline";
 
 import { describeTransaction } from "./tx-summary";
 
@@ -27,7 +27,7 @@ describe("describeTransaction (Q-7)", () => {
     expect(describeTransaction(buildClaimTransaction(new Account(buyer, "1"), balanceId).toXDR())).toBe(
       `Claim the locked balance 00000000abab…abab`,
     );
-    expect(describeTransaction(buildUsdcTrustlineTransaction(new Account(buyer, "1")).toXDR())).toBe(
+    expect(describeTransaction(buildTrustlineTransaction(new Account(buyer, "1"), "USDC").toXDR())).toBe(
       "Add USDC to your wallet",
     );
   });

@@ -11,6 +11,7 @@ import { useChainStep } from "@/components/trade/use-chain-step";
 import { useNow } from "@/components/trade/use-now";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { needsTrustline } from "@/lib/stellar/assets";
 import { buildClaimTransaction } from "@/lib/stellar/settlement";
 import { loadSourceAccount } from "@/lib/trade/sign-and-submit";
 import { useWallet } from "@/lib/wallet/use-wallet";
@@ -67,6 +68,7 @@ function useClaimStep(
       await utils.trade.invalidate();
     },
     { tradeId: trade.id, kind: "claim" },
+    trade.asset,
   );
   const problem = walletProblem(wallet, ready, account);
   const verb = account === trade.buyer ? "Claim" : "Take back";
@@ -111,14 +113,14 @@ export function ClaimPanel({ trade }: { trade: TradeView }) {
   const { window, w, now } = useClaimWindow(trade, "buyerClaimUntil");
   const preflight = api.trade.lockPreflight.useQuery(
     { tradeId: trade.id },
-    { enabled: trade.asset === "USDC", refetchInterval: 30_000 },
+    { enabled: needsTrustline(trade.asset), refetchInterval: 30_000 },
   );
   const trust = preflight.data ? claimTrustlineProblem(preflight.data.checks, trade.asset) : null;
   // Re-read the trustline right before signing: it can be removed, or its
   // limit lowered, after the lock (N-3).
   const { step, problem, run } = useClaimStep(trade, trade.buyer, {
     check: async () => {
-      if (trade.asset !== "USDC") return;
+      if (!needsTrustline(trade.asset)) return;
       const fresh = await utils.trade.lockPreflight.fetch({ tradeId: trade.id }, { staleTime: 0 });
       const p = claimTrustlineProblem(fresh.checks, trade.asset);
       if (p) {
@@ -171,7 +173,9 @@ export function ClaimPanel({ trade }: { trade: TradeView }) {
           . After that the seller can take it back, even if you paid.
         </p>
       )}
-      {trust?.code === "op_no_trust" && <TrustlineButton buyer={trade.buyer} locked onDone={() => preflight.refetch()} />}
+      {trust?.code === "op_no_trust" && (
+        <TrustlineButton asset={trade.asset} buyer={trade.buyer} locked onDone={() => preflight.refetch()} />
+      )}
       <div className="space-y-3">
         <Button
           variant="beacon"

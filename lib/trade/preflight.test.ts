@@ -1,4 +1,4 @@
-import type { Horizon } from "@stellar/stellar-sdk";
+import { Keypair, type Horizon } from "@stellar/stellar-sdk";
 import { describe, expect, it } from "vitest";
 
 import { TESTNET_USDC_ISSUER } from "@/lib/stellar/assets";
@@ -15,6 +15,7 @@ function account(opts: {
   xlmSelling?: string;
   usdcLimit?: string;
   usdcAuthorized?: boolean;
+  usdcIssuer?: string;
 }): Horizon.AccountResponse {
   const balances: object[] = [
     { asset_type: "native", balance: opts.xlm, selling_liabilities: opts.xlmSelling ?? "0.0000000" },
@@ -23,7 +24,7 @@ function account(opts: {
     balances.push({
       asset_type: "credit_alphanum4",
       asset_code: "USDC",
-      asset_issuer: TESTNET_USDC_ISSUER,
+      asset_issuer: opts.usdcIssuer ?? TESTNET_USDC_ISSUER,
       balance: opts.usdc,
       limit: opts.usdcLimit ?? "922337203685.4775807",
       is_authorized: opts.usdcAuthorized ?? true,
@@ -61,6 +62,21 @@ describe("checkLock before the buyer can actually receive (S-5, N-3, T-4)", () =
     const r = checkLock({ asset: "USDC", amount: "25", seller, buyer: account({ xlm: "5", usdc: "0", usdcLimit: "1" }) });
     expect(r.ok).toBe(false);
     expect(r.blockedReason).toMatch(/limit/);
+  });
+
+  it("treats USDC from another issuer as no trustline at all, on both sides", () => {
+    const other = Keypair.random().publicKey();
+    const buyer = checkLock({ asset: "USDC", amount: "25", seller, buyer: account({ xlm: "5", usdc: "0", usdcIssuer: other }) });
+    expect(buyer.ok).toBe(false);
+    expect(buyer.blockedReason).toMatch(/^The buyer needs to add a USDC trustline first/);
+
+    const sellerLookalike = checkLock({
+      asset: "USDC",
+      amount: "25",
+      seller: account({ xlm: "10", usdc: "100", usdcIssuer: other }),
+      buyer: account({ xlm: "5", usdc: "0" }),
+    });
+    expect(sellerLookalike.blockedReason).toBe("You need 25 USDC but hold 0 USDC.");
   });
 
   it("blocks a second lock when one for this trade is already on Stellar", () => {

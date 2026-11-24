@@ -27,6 +27,7 @@ import { useTradeSync } from "@/components/trade/use-trade-sync";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/auth/use-session";
+import { needsTrustline } from "@/lib/stellar/assets";
 import { HORIZON_URL, explorerTxUrl } from "@/lib/stellar/horizon";
 import { isTerminal } from "@/lib/trade/state-machine";
 import { useWallet } from "@/lib/wallet/use-wallet";
@@ -108,7 +109,9 @@ function Actions({ trade }: { trade: TradeView }) {
             </>
           )}
           {trade.role === "buyer" && noAccountNote}
-          {buyerNeedsTrustline && <TrustlineButton buyer={trade.buyer} onDone={() => utils.trade.invalidate()} />}
+          {buyerNeedsTrustline && (
+            <TrustlineButton asset={trade.asset} buyer={trade.buyer} onDone={() => utils.trade.invalidate()} />
+          )}
           <div>{cancelButton}</div>
         </section>
       );
@@ -126,7 +129,9 @@ function Actions({ trade }: { trade: TradeView }) {
             after that, then claim before you part.
           </p>
           {noAccountNote}
-          {buyerNeedsTrustline && <TrustlineButton buyer={trade.buyer} onDone={() => utils.trade.invalidate()} />}
+          {buyerNeedsTrustline && (
+            <TrustlineButton asset={trade.asset} buyer={trade.buyer} onDone={() => utils.trade.invalidate()} />
+          )}
           <div>{cancelButton}</div>
         </section>
       );
@@ -254,7 +259,7 @@ export function StatusLine({ trade }: { trade: TradeView }) {
   // Same query as the claim screen's trustline re-check, so it is shared.
   const preflight = api.trade.lockPreflight.useQuery(
     { tradeId: trade.id },
-    { enabled: locked && trade.role === "buyer" && trade.asset === "USDC", refetchInterval: 30_000 },
+    { enabled: locked && trade.role === "buyer" && needsTrustline(trade.asset), refetchInterval: 30_000 },
   );
   const w = locked && !window.error ? window.data : undefined;
   const serverNow = w ? serverClock(now, w.serverNow, window.dataUpdatedAt) : now;

@@ -49,6 +49,7 @@ export function LockPanel({ trade }: { trade: TradeView }) {
       await utils.trade.invalidate();
     },
     { tradeId: trade.id, kind: "lock" },
+    trade.asset,
   );
   const alreadyLocked = preflight.data?.checks.find((c) => c.id === "noExistingLock" && !c.ok);
 
