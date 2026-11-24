@@ -79,7 +79,7 @@ T created "Selling 10 to 100 USDC" (L9). Its page said **"100 of 100 USDC left"*
 
 ## What this means for the release
 
-1. Migrate production first, then deploy immediately: during the window only `listing.create` fails (500), every read and every trade action works. This was checked for 0006 alone; the release migrates 0006 to 0008 in one run, so WP-44 repeats this check with all three migrations once 0008 exists (WP-27's local `0005 → 0008` rehearsal is the place for it).
+1. Migrate production first, then deploy immediately: during the window only `listing.create` fails (500), every read and every trade action works. WP-27's local rehearsal (2026-11-24, `0005 → 0008` in one run) repeated this check with all three migrations: only `listing.create` fails.
 2. Once the old deployment no longer serves requests, and before `PROTECTED_MODE` is switched on, run the backfill `UPDATE` once more, inside a transaction that first locks every listing. It is 0006's statement with the state list widened to every state `recomputeRemaining` counts (`COUNTED_STATES` in `lib/listing/remaining.ts`, pinned by `lib/listing/backfill-runbook.test.ts`), so it stays correct once protected trades exist:
 
    ```sql
