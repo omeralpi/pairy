@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { shortAddress } from "@/components/listing/format";
+import { PRIVY_DOWN } from "@/components/providers/wallet-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,8 +64,9 @@ export default function OnboardPage() {
     }
   };
 
-  // A Privy wallet signs through Privy, so its buttons wait for Privy's chunk.
-  const privyWaiting = (kind: Wallet["kind"] | undefined) => kind === "privy" && !privy.ready;
+  // A Privy wallet signs through Privy, so its buttons wait for Privy's chunk,
+  // but not once Privy has failed: then they say so, and a click reports it.
+  const privyWaiting = (kind: Wallet["kind"] | undefined) => kind === "privy" && !privy.ready && !privy.failed;
 
   if (!ready) return <Shell><p className="text-sm text-slate">Loading your wallet…</p></Shell>;
 
@@ -114,10 +116,22 @@ export default function OnboardPage() {
               Your {wallet.kind === "freighter" ? "Freighter account" : wallet.kind === "privy" ? "email wallet (Privy)" : "key on this device"}{" "}
               <span className="font-mono text-ink">{shortAddress(wallet.publicKey)}</span> is connected but not signed in.
             </p>
+            {wallet.kind === "privy" && privy.failed && <p className="text-sm text-ink">{PRIVY_DOWN}</p>}
           </div>
           <Button className="w-full" disabled={busy || privyWaiting(wallet.kind)} onClick={() => run(() => wallet)}>
             Sign in
           </Button>
+          {wallet.kind === "privy" && (
+            // Privy may be logged in as someone else: logging out of it clears this wallet too.
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => walletCtx.disconnect().catch((e) => setError(message(e)))}
+              className="text-sm text-slate underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+            >
+              Use a different account
+            </button>
+          )}
         </section>
       )}
 
@@ -127,9 +141,17 @@ export default function OnboardPage() {
             {walletCtx.connectPrivy && (
               <Choice
                 note="New here? Start here"
-                title={privyStep ? PRIVY_STEP_TEXT[privyStep] : privy.ready ? "Continue with email or Google" : PRIVY_STEP_TEXT.login}
+                title={
+                  privyStep
+                    ? PRIVY_STEP_TEXT[privyStep]
+                    : privy.ready
+                      ? "Continue with email or Google"
+                      : privy.failed
+                        ? PRIVY_DOWN
+                        : PRIVY_STEP_TEXT.login
+                }
                 description="A wallet is made for you and opens again wherever you sign in. The key is split and held by Privy, not by Pairy. Whoever controls that email or Google account controls this wallet."
-                disabled={busy || !privy.ready}
+                disabled={busy || privyWaiting("privy")}
                 onClick={() => run(() => walletCtx.connectPrivy!(setPrivyStep), "/wallet?new=1")}
               />
             )}

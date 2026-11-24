@@ -19,14 +19,17 @@ const base = {
   deviceWalletPublicKey: null,
   connectPrivy: null,
   exportPrivyKey: null,
-  privy: { enabled: false, ready: false, authenticated: false, loginLabel: null },
+  privy: { enabled: false, ready: false, failed: false, authenticated: false, loginLabel: null },
 };
 const withPrivy = {
   ...base,
   connectPrivy: async () => ({}),
   exportPrivyKey: async () => {},
-  privy: { enabled: true, ready: true, authenticated: false, loginLabel: null },
+  disconnect: async () => {},
+  privy: { enabled: true, ready: true, failed: false, authenticated: false, loginLabel: null },
 };
+const privyDown = { ...withPrivy, privy: { ...withPrivy.privy, ready: false, failed: true } };
+const PRIVY_DOWN = "Privy isn&#x27;t answering. Try again, or make a key on this device.";
 const render = (value: Record<string, unknown>, session: string | null = null) => {
   ctx.value = value;
   ctx.session = session;
@@ -73,6 +76,15 @@ describe("OnboardPage: the Privy choice", () => {
     // Only the Privy choice waits; the device key and Freighter are usable now.
     expect(html.match(/disabled=""/g)).toHaveLength(1);
   });
+
+  it("says Privy isn't answering once it failed, and leaves every choice usable (D1 §7.1)", () => {
+    const html = render(privyDown);
+    expect(html).toMatch(new RegExp(`New here\\? Start here</span><span[^>]*>${PRIVY_DOWN}`));
+    expect(html).not.toContain("Opening Privy…");
+    expect(html).not.toContain("Continue with email or Google");
+    expect(html).not.toContain('disabled=""');
+    expect(html).toContain("Make a key on this device");
+  });
 });
 
 describe("OnboardPage: the wallet kind label", () => {
@@ -90,5 +102,21 @@ describe("OnboardPage: the wallet kind label", () => {
     expect(html).not.toContain("Your key on this device");
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Sign in<\/button>/);
     expect(render({ ...withPrivy, wallet: privyWallet })).toMatch(/<button[^>]*(?<!disabled="")>Sign in<\/button>/);
+  });
+
+  it("tells a returning Privy user that Privy isn't answering instead of waiting forever", () => {
+    const html = render({ ...privyDown, wallet: privyWallet });
+    expect(html).toContain("Sign in again");
+    expect(html).toMatch(new RegExp(`Sign in again(?:(?!</section>).)*${PRIVY_DOWN}`));
+    expect(html).not.toContain("Opening Privy…");
+    expect(html).toMatch(/<button[^>]*(?<!disabled="")>Sign in<\/button>/);
+  });
+
+  it("offers a way out of a Privy session on another account: Use a different account (N1)", () => {
+    const html = render({ ...withPrivy, wallet: privyWallet });
+    expect(html).toMatch(/Sign in again(?:(?!<\/section>).)*<button[^>]*>Use a different account<\/button>/);
+    const device = render({ ...withPrivy, wallet: { ...privyWallet, kind: "device" } });
+    expect(device).toContain("Sign in again");
+    expect(device).not.toContain("Use a different account");
   });
 });
