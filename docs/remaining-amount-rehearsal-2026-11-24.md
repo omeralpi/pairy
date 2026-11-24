@@ -77,6 +77,15 @@ T created "Selling 10 to 100 USDC" (L9). Its page said **"100 of 100 USDC left"*
 
 ## What this means for the release
 
-1. Migrate production first, then deploy immediately: during the window only `listing.create` fails (500), every read and every trade action works.
-2. Right after the new build is live, run 0006's backfill `UPDATE` once more. Trades opened or cancelled by the old build during the window leave `remaining_amount` stale, and that statement corrects every listing in one go; running it again is harmless.
+1. Migrate production first, then deploy immediately: during the window only `listing.create` fails (500), every read and every trade action works. This was checked for 0006 alone; the release migrates 0006 to 0008 in one run, so WP-44 repeats this check with all three migrations once 0008 exists (WP-27's local `0005 → 0008` rehearsal is the place for it).
+2. Once the old deployment no longer serves requests, run 0006's backfill `UPDATE` once more, inside a transaction that first locks every listing:
+
+   ```sql
+   BEGIN;
+   SELECT 1 FROM "listings" FOR UPDATE;
+   -- 0006's backfill UPDATE, unchanged
+   COMMIT;
+   ```
+
+   Trades opened or cancelled by the old build during the window leave `remaining_amount` stale, and the statement corrects every listing in one go. The lock matters: run bare while the new build is serving, the `UPDATE` can wait behind an in-flight `trade.open` or transition on a listing and then write a sum that does not see that trade (its statement snapshot predates the commit), leaving a too-high amount that `trade.open` would trust. `SELECT … FOR UPDATE` waits for every in-flight open or transition first, the `UPDATE` then reads a fresh snapshot, and new opens queue behind it; no path takes a second listing lock, so there is no deadlock. Afterwards confirm that `remaining_amount IS DISTINCT FROM` the recomputed value matches 0 rows. On a quiet database a second run changes nothing.
 3. Listings whose remaining amount is below their minimum disappear from the map at the deploy (L2 and L5 here); their owners still see them under My listings with the "Hidden from the map" note.
