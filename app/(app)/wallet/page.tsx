@@ -67,7 +67,9 @@ export default function WalletPage() {
       <Page>
         <section className="space-y-4 border-t border-line pt-8">
           <h2 className="text-xl font-semibold tracking-tight">No wallet connected.</h2>
-          <p className="text-sm text-slate">Make a key on this device, use Freighter, or restore a backup file.</p>
+          <p className="text-sm text-slate">
+            {privy.enabled ? "Sign in with email or Google, make" : "Make"} a key on this device, use Freighter, or restore a backup file.
+          </p>
           <Button asChild className="w-full">
             <Link href="/onboard">Get started</Link>
           </Button>

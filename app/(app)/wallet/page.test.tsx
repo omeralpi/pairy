@@ -25,7 +25,7 @@ const base = {
   exportBackup: async () => {},
   disconnect: async () => {},
   exportPrivyKey: async () => {},
-  privy: { enabled: true, ready: true, authenticated: true, loginLabel: "a…@example.com" },
+  privy: { enabled: true, ready: true, failed: false, authenticated: true, loginLabel: "a…@example.com" },
 };
 const render = (value: Record<string, unknown>, session: string | null = publicKey) => {
   ctx.value = value;
@@ -77,6 +77,13 @@ describe("WalletPage for the other kinds", () => {
     expect(html).toContain("Export backup");
     expect(html).toContain("keeps the locked key in this browser");
     expect(html).not.toContain("Privy");
+  });
+
+  it("names the email option among the ways in when no wallet is connected, only with an App ID (N2)", () => {
+    expect(render({ ...base, wallet: null }, null)).toContain("Sign in with email or Google, make a key on this device, use Freighter, or restore a backup file.");
+    expect(render({ ...base, wallet: null, privy: { ...base.privy, enabled: false } }, null)).toContain(
+      "Make a key on this device, use Freighter, or restore a backup file.",
+    );
   });
 
   it("shows Freighter with neither panel", () => {
