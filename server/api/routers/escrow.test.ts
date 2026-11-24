@@ -12,7 +12,7 @@ import { Keypair, type Horizon } from "@stellar/stellar-sdk";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { chatMessages, listings, trades, users } from "@/lib/db/schema";
+import { chatMessages, disputeAnswers, listings, trades, users } from "@/lib/db/schema";
 import { createTestDb } from "@/lib/db/test-setup";
 import { ACCEPTANCE_ITEMS, ACCEPTANCE_VERSION } from "@/lib/escrow/acceptance";
 import {
@@ -29,6 +29,7 @@ import { expectedTerms } from "@/lib/escrow/terms";
 import { EscrowMismatchError, findEscrowTx, verifyEscrowTx } from "@/lib/escrow/verify";
 import { TESTNET_USDC_ISSUER } from "@/lib/stellar/assets";
 import { loadAccount } from "@/lib/stellar/horizon";
+import { transitionTrade } from "@/lib/trade/persist";
 import { callerFor } from "@/lib/trade/test-helpers";
 import { arbiterAccountState, isArbiterSigner } from "@/server/api/arbiter-auth";
 import { TwApiError, twCall, twConfigured } from "@/server/tw/client";
@@ -537,6 +538,26 @@ describe("escrow.preflight and the create's checks", () => {
     expect(twCall).not.toHaveBeenCalled();
   });
 
+  it("refuses with CONFLICT when another prepare stored its escrow while Trustless Work was answering this one", async () => {
+    const t = await agreedTrade();
+    vi.setSystemTime(during(DEPLOY));
+    let other: unknown;
+    // While Trustless Work answers the first prepare, a second one (past the 5 s throttle) runs to the end and stores its escrow.
+    vi.mocked(twCall)
+      .mockImplementationOnce(async () => {
+        vi.setSystemTime(during(DEPLOY, 7));
+        other = await f.as(SELLER).escrow.prepareCreate({ tradeId: t.id, admin: ADMIN });
+        return DEPLOY.response.body as never;
+      })
+      .mockResolvedValueOnce(DEPLOY.response.body as never);
+    await expect(f.as(SELLER).escrow.prepareCreate({ tradeId: t.id, admin: ADMIN })).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "This trade changed while the escrow was being prepared. Reload the page.",
+    });
+    expect(other).toMatchObject({ contractId: ESCROW });
+    expect(await row(t.id)).toMatchObject({ escrowAdmin: ADMIN, escrowContractId: ESCROW });
+  });
+
   it("asks Trustless Work at most once every 5 seconds per trade", async () => {
     const t = await agreedTrade();
     vi.setSystemTime(during(DEPLOY));
@@ -793,6 +814,349 @@ describe("trade.byId on a protected trade", () => {
       expect(await f.as(SELLER).trade.byId({ id: funded.id })).toMatchObject({ viewerUrl: `${TW_VIEWER_BASE}/testnet/v2/${ESCROW}`, stallNudge: false });
       vi.setSystemTime(new Date(Date.parse("2026-11-24T08:28:02Z") + 72 * 3600_000 + 1000));
       expect((await f.as(SELLER).trade.byId({ id: funded.id })).stallNudge).toBe(true);
+    });
+  });
+});
+
+// ---- Part 2 (WP-26): disputes, answers, and cancelling a protected trade ----
+
+/**
+ * WP-15's second test-arbiter run (scripts/evidence/out/escrow-dispute-*-test.json):
+ * in the buyer exit the buyer disputed, in the seller exit the seller. Their
+ * Trustless Work dispute answers are the recorded fixtures, so the server's own
+ * validateEscrowCall runs on real dispute transactions.
+ */
+const DISPUTES = {
+  buyer: {
+    seller: "GBHJ2SXQHGE44MWYUELDSLP3CCMYPA4RFNFIOAKHI6TC5SZJ4I6J6G3E",
+    buyer: "GB4SRNTZC2IPDRHBQMAMHVRNUOEUEIGLJKPP7SXBLRYKD4EC6RMJ34TT",
+    contractId: "CD2SQ73L66QEHOZTFZ3EVTEHQCOP64KSC4KZHFMB2NMRKACSTIF5EAXX",
+    prepared: tw("exits-test-dispute-buyer"),
+  },
+  seller: {
+    seller: "GDK5RUFARH53VBUNAX7VWGV2PWYCLSWN45CRE4YBZYM5XHV2KM64LAYI",
+    buyer: "GBBLEBFJQQ2GLDVB4GIGLJ2D5W5N7GOEJVJO6CXHPKYVLISDVNLJ3SVI",
+    contractId: "CDAITJCFLGRYDPQBTMEJU2MDU24KWZA5W245PEES272DCYGE3VMFJKTM",
+    prepared: tw("exits-test-dispute-seller"),
+  },
+} as const;
+type DisputeRun = (typeof DISPUTES)[keyof typeof DISPUTES];
+const DISPUTE_HASH = "d".repeat(64);
+
+/** A funded protected trade between a dispute run's two traders, on its escrow, written straight into the database. */
+async function fundedBetween(run: DisputeRun, values: Partial<typeof trades.$inferInsert> = {}) {
+  await f.db.insert(users).values([run.seller, run.buyer].map((publicKey) => ({ publicKey }))).onConflictDoNothing();
+  const [listing] = await f.db
+    .insert(listings)
+    .values({ ...(await f.db.select().from(listings).where(eq(listings.id, f.listing.id)))[0], id: undefined, owner: run.seller, remainingAmount: "95" })
+    .returning();
+  const [t] = await f.db
+    .insert(trades)
+    .values({
+      listingId: listing.id,
+      seller: run.seller,
+      buyer: run.buyer,
+      openedBy: "buyer",
+      mode: "protected",
+      asset: "USDC",
+      amount: "5",
+      fiatCode: "TRY",
+      fiatAmount: "205.00",
+      windowSeconds: 0,
+      acceptanceVersion: ACCEPTANCE_VERSION,
+      sellerAcceptedAt: new Date("2026-11-24T09:00:00Z"),
+      buyerAcceptedAt: new Date("2026-11-24T09:00:00Z"),
+      escrowAdmin: ADMIN,
+      escrowContractId: run.contractId,
+      createTx: "1".repeat(64),
+      fundTx: "2".repeat(64),
+      fundedAt: new Date("2026-11-24T09:07:30Z"),
+      state: "funded",
+      ...values,
+    })
+    .returning();
+  return t;
+}
+
+/** A dispute Pairy recorded `hoursAgo` hours ago; its transaction landed two days ago. */
+const disputed = (hoursAgo: number, by: "seller" | "buyer" = "buyer") => ({
+  disputed: true,
+  disputeTx: DISPUTE_HASH,
+  disputedAt: new Date(Date.now() - 48 * 3600_000),
+  disputeRecordedAt: new Date(Date.now() - hoursAgo * 3600_000),
+  disputeOpenedBy: by,
+});
+
+describe("escrow.prepareDispute", () => {
+  it("lets either trader dispute, asking Trustless Work for that trader with Pairy's fixed reason, and checks the answer", async () => {
+    for (const [who, run] of [
+      ["buyer", DISPUTES.buyer],
+      ["seller", DISPUTES.seller],
+    ] as const) {
+      const t = await fundedBetween(run);
+      vi.setSystemTime(during(run.prepared));
+      chainHas({ balance: 50_000_000n });
+      prepared(run.prepared);
+      const out = await f.as(run[who]).escrow.prepareDispute({ tradeId: t.id });
+      expect(twCall).toHaveBeenLastCalledWith(
+        "dispute",
+        { contractId: run.contractId, signer: run[who], reason: "Pairy protected trade: a trader opened a dispute." },
+        { tradeId: t.id },
+      );
+      expect(out).toEqual({ unsignedXdr: run.prepared.response.body.unsignedXdr, txHash: run.prepared.response.body.txHash, summary: "Open a dispute on this trade's escrow" });
+    }
+  });
+
+  it("refuses Trustless Work's dispute when it is for the other trader", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run);
+    vi.setSystemTime(during(run.prepared));
+    chainHas({ balance: 50_000_000n });
+    prepared(run.prepared);
+    await expect(f.as(run.seller).escrow.prepareDispute({ tradeId: t.id })).rejects.toThrow(/won't ask you to sign: .*not from GBHJ/);
+  });
+
+  it("refuses a step the trade is not at before asking Trustless Work: not funded, already disputed, ended, or not a trader's", async () => {
+    const run = DISPUTES.buyer;
+    vi.setSystemTime(during(run.prepared));
+    chainHas({ balance: 50_000_000n });
+    const created = await fundedBetween(run, { state: "escrow_created", fundTx: null, fundedAt: null });
+    await expect(f.as(run.buyer).escrow.prepareDispute({ tradeId: created.id })).rejects.toThrow(/Only a funded escrow can be disputed/);
+    await set(created.id, { state: "funded", fundTx: "2".repeat(64), fundedAt: new Date(), ...disputed(1) });
+    await expect(f.as(run.buyer).escrow.prepareDispute({ tradeId: created.id })).rejects.toThrow(/already in dispute/);
+    await set(created.id, { state: "resolved_seller", resolveTx: "3".repeat(64), resolvedAt: new Date() });
+    await expect(f.as(run.buyer).escrow.prepareDispute({ tradeId: created.id })).rejects.toThrow(/Only a funded escrow can be disputed/);
+    await expect(f.as(f.stranger).escrow.prepareDispute({ tradeId: created.id })).rejects.toThrow(/Trade not found/);
+    const claimable = await f.as(BUYER).trade.open({ listingId: f.listing.id, amount: "5" });
+    await expect(f.as(SELLER).escrow.prepareDispute({ tradeId: claimable.id })).rejects.toThrow(/not a protected trade/);
+    expect(twCall).not.toHaveBeenCalled();
+  });
+
+  it("reads the escrow first: a dispute or a settlement already on chain, or no answer from Soroban RPC, is refused before Trustless Work", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run);
+    vi.setSystemTime(during(run.prepared));
+    await set(t.id, { escrowContractId: "CCYX2DAOGUDNCUCOZPPPKTHPYHHZXLA4I73POY66ULQHB7ANTZJSG6M2" });
+    await chainRecorded("wp15-dispute-buyer-real"); // the day-12 gate's buyer exit, mid-dispute
+    await expect(f.as(run.seller).escrow.prepareDispute({ tradeId: t.id })).rejects.toThrow("This trade already has a dispute on chain; refresh the trade.");
+    vi.unstubAllGlobals();
+    chainHas({ balance: 0n });
+    vi.mocked(readEscrow).mockResolvedValue({ ...(await readEscrow(ESCROW)), status: { disputed: false, released: true, resolved: false, balanceStroops: 0n } });
+    await expect(f.as(run.buyer).escrow.prepareDispute({ tradeId: t.id })).rejects.toThrow("This escrow is already settled on chain; refresh the trade.");
+    vi.mocked(readEscrow).mockRejectedValue(new Error("fetch failed"));
+    await expect(f.as(run.buyer).escrow.prepareDispute({ tradeId: t.id })).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      message: "Couldn't read the escrow from Stellar testnet; try again in a minute.",
+    });
+    expect(twCall).not.toHaveBeenCalled();
+  });
+});
+
+describe("escrow.recordDispute", () => {
+  const landed = (signer: string, contractId: string) => ({ createdAt: new Date("2026-11-24T09:07:50Z"), signer, contractId, transfers: [] });
+
+  it("records the dispute from the chain: who signed it, its ledger time, and when Pairy recorded it (DECISIONS 1)", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run);
+    vi.setSystemTime(new Date("2026-11-24T12:00:00Z"));
+    vi.mocked(verifyEscrowTx).mockResolvedValueOnce(landed(run.buyer, run.contractId));
+    // Either trader may report it; the transaction says who opened it.
+    const out = await f.as(run.seller).escrow.recordDispute({ tradeId: t.id, txHash: DISPUTE_HASH });
+    expect(verifyEscrowTx).toHaveBeenLastCalledWith(DISPUTE_HASH, { kind: "dispute", contractId: run.contractId, parties: { seller: run.seller, buyer: run.buyer } });
+    expect(out).toMatchObject({
+      state: "funded",
+      disputed: true,
+      disputeTx: DISPUTE_HASH,
+      disputedAt: new Date("2026-11-24T09:07:50Z"),
+      disputeRecordedAt: new Date("2026-11-24T12:00:00Z"),
+      disputeOpenedBy: "buyer",
+    });
+    const events = (await f.as(run.buyer).trade.byId({ id: t.id })).events.map((e) => [e.type, e.by, e.txHash]);
+    expect(events.at(-1)).toEqual(["escrowDispute", "buyer", DISPUTE_HASH]);
+  });
+
+  it("is idempotent for the same hash and refuses a second dispute", async () => {
+    const run = DISPUTES.seller;
+    const t = await fundedBetween(run);
+    vi.mocked(verifyEscrowTx).mockResolvedValueOnce(landed(run.seller, run.contractId));
+    await f.as(run.seller).escrow.recordDispute({ tradeId: t.id, txHash: DISPUTE_HASH });
+    vi.mocked(verifyEscrowTx).mockClear();
+    await expect(f.as(run.buyer).escrow.recordDispute({ tradeId: t.id, txHash: DISPUTE_HASH.toUpperCase() })).resolves.toMatchObject({ disputeOpenedBy: "seller" });
+    await expect(f.as(run.buyer).escrow.recordDispute({ tradeId: t.id, txHash: "e".repeat(64) })).rejects.toThrow(/already recorded/);
+    expect(verifyEscrowTx).not.toHaveBeenCalled();
+  });
+
+  it("refuses a trade with no funded escrow before reading the chain, and a transaction that is not this dispute", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run, { state: "escrow_created", fundTx: null, fundedAt: null });
+    await expect(f.as(run.buyer).escrow.recordDispute({ tradeId: t.id, txHash: DISPUTE_HASH })).rejects.toThrow(/Only a funded escrow can be disputed/);
+    expect(verifyEscrowTx).not.toHaveBeenCalled();
+    await set(t.id, { state: "funded", fundTx: "2".repeat(64), fundedAt: new Date() });
+    vi.mocked(verifyEscrowTx).mockRejectedValueOnce(new EscrowMismatchError(`Transaction ${DISPUTE_HASH} is not this trade's escrow dispute: It calls fund_escrow.`));
+    await expect(f.as(run.buyer).escrow.recordDispute({ tradeId: t.id, txHash: DISPUTE_HASH })).rejects.toThrow(/is not this trade's escrow dispute/);
+    expect(await row(t.id)).toMatchObject({ disputed: false, disputeTx: null });
+  });
+});
+
+describe("escrow.answer: one answer per side, within 24 hours of Pairy recording the dispute", () => {
+  const run = DISPUTES.buyer;
+
+  it("saves each side's one answer and never changes it (DECISIONS 10)", async () => {
+    const t = await fundedBetween(run, disputed(1));
+    await f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: true, note: "  He paid me at the cafe.  " });
+    await f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: false });
+    await expect(f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: false })).rejects.toMatchObject({ code: "BAD_REQUEST", message: "You already answered." });
+    const saved = await f.db.select().from(disputeAnswers).where(eq(disputeAnswers.tradeId, t.id));
+    expect(saved.map((a) => [a.role, a.cashHandedOver, a.note]).sort()).toEqual([
+      ["buyer", false, null],
+      ["seller", true, "He paid me at the cafe."],
+    ]);
+    const events = (await f.as(run.buyer).trade.byId({ id: t.id })).events.map((e) => [e.type, e.by]);
+    expect(events).toEqual([
+      ["answerYes", "seller"],
+      ["answerNo", "buyer"],
+    ]);
+  });
+
+  it("counts the 24 hours from when Pairy recorded the dispute, not from its ledger time", async () => {
+    // The dispute landed two days ago but Pairy recorded it 23 h 59 min ago: still open.
+    const t = await fundedBetween(run, disputed(23 + 59 / 60));
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true })).resolves.toBeDefined();
+    vi.setSystemTime(new Date(Date.now() + 60_000));
+    await expect(f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: true })).rejects.toThrow(/Answers closed at/);
+    expect(await f.db.select().from(disputeAnswers).where(eq(disputeAnswers.tradeId, t.id))).toHaveLength(1);
+  });
+
+  it("is refused without a dispute, on an ended trade, for a stranger, and on a claimable trade", async () => {
+    const t = await fundedBetween(run);
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true })).rejects.toThrow(/no open dispute/);
+    await set(t.id, { ...disputed(1), state: "resolved_seller", resolveTx: "3".repeat(64), resolvedAt: new Date() });
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true })).rejects.toThrow(/no open dispute/);
+    await expect(f.as(f.stranger).escrow.answer({ tradeId: t.id, cashHandedOver: true })).rejects.toThrow(/Trade not found/);
+    const claimable = await f.as(BUYER).trade.open({ listingId: f.listing.id, amount: "5" });
+    await expect(f.as(BUYER).escrow.answer({ tradeId: claimable.id, cashHandedOver: true })).rejects.toThrow(/not a protected trade/);
+  });
+
+  it("takes a note of up to 500 characters with no NUL; a blank note is none", async () => {
+    const t = await fundedBetween(run, disputed(1));
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true, note: "x".repeat(501) })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true, note: "a\0b" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true, note: "   " });
+    await f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: false, note: "y".repeat(500) });
+    const saved = await f.db.select().from(disputeAnswers).where(eq(disputeAnswers.tradeId, t.id));
+    expect(saved.map((a) => [a.role, a.note?.length ?? null]).sort()).toEqual([
+      ["buyer", null],
+      ["seller", 500],
+    ]);
+  });
+
+  it("an answer after the trade ended is refused; one saved before it loses its note with the chat (FOR SHARE, both orders)", async () => {
+    const t = await fundedBetween(run, disputed(1));
+    await f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: true, note: "Paid in full." });
+    await transitionTrade(f.db, t.id, { type: "resolve", by: "arbiter", outcome: "buyer", txHash: "3".repeat(64), resolvedAt: new Date() });
+    await expect(f.as(run.buyer).escrow.answer({ tradeId: t.id, cashHandedOver: true, note: "Too late?" })).rejects.toThrow(/no open dispute/);
+    const saved = await f.db.select().from(disputeAnswers).where(eq(disputeAnswers.tradeId, t.id));
+    expect(saved.map((a) => [a.role, a.cashHandedOver, a.note])).toEqual([["seller", true, null]]);
+  });
+});
+
+describe("trade.byId and trade.mine on a disputed protected trade", () => {
+  it("show both answers and both notes to both traders, the answer deadline and the arbiter's promise", async () => {
+    const run = DISPUTES.buyer;
+    const t = await fundedBetween(run);
+    for (const who of [run.seller, run.buyer]) {
+      expect(await f.as(who).trade.byId({ id: t.id })).toMatchObject({ answers: { seller: null, buyer: null }, answerDeadline: null, promiseDeadline: null });
+    }
+    await set(t.id, disputed(2));
+    const recorded = (await row(t.id)).disputeRecordedAt!;
+    await f.as(run.seller).escrow.answer({ tradeId: t.id, cashHandedOver: false, note: "Never saw the buyer." });
+    for (const who of [run.seller, run.buyer]) {
+      const room = await f.as(who).trade.byId({ id: t.id });
+      expect(room).toMatchObject({
+        answers: { seller: { cashHandedOver: false, note: "Never saw the buyer.", answeredAt: expect.any(Date) }, buyer: null },
+        answerDeadline: new Date(recorded.getTime() + 24 * 3600_000),
+        promiseDeadline: new Date((await row(t.id)).disputedAt!.getTime() + 72 * 3600_000),
+      });
+      const [listed] = (await f.as(who).trade.mine()).filter((m) => m.id === t.id);
+      expect(listed).toMatchObject({ answers: room.answers, answerDeadline: room.answerDeadline, promiseDeadline: room.promiseDeadline });
+    }
+  });
+});
+
+describe("trade.cancel on a protected trade checks the chain first", () => {
+  const FUNDED_SENTENCE = "This escrow is already funded. A dispute is the way to a refund.";
+
+  it("lets the buyer cancel a created escrow that holds nothing, after reading it (F-16)", async () => {
+    const t = await createdTrade();
+    vi.mocked(readEscrow).mockClear();
+    chainHas({ balance: 0n });
+    await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).resolves.toMatchObject({ state: "cancelled" });
+    expect(readEscrow).toHaveBeenCalledWith(ESCROW);
+    expect((await f.db.select().from(listings).where(eq(listings.id, f.listing.id)))[0].remainingAmount).toBe("100.0000000");
+  });
+
+  it("refuses with the funded sentence when the escrow holds the amount, recording the fund when it finds it", async () => {
+    const t = await createdTrade();
+    chainHas({ balance: 50_000_000n });
+    // The fund is on chain but Horizon does not show it yet: still refused, nothing recorded.
+    await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).rejects.toThrow(FUNDED_SENTENCE);
+    expect(await row(t.id)).toMatchObject({ state: "escrow_created" });
+    // Found: the fund is recorded, and the cancel is still refused.
+    vi.mocked(findEscrowTx).mockResolvedValue(HASH.fund);
+    vi.mocked(verifyEscrowTx).mockResolvedValueOnce({
+      createdAt: new Date("2026-11-24T08:28:02Z"),
+      signer: SELLER,
+      contractId: ESCROW,
+      transfers: [{ from: SELLER, to: ESCROW, amountStroops: 50_000_000n }],
+    });
+    await expect(f.as(SELLER).trade.cancel({ tradeId: t.id })).rejects.toThrow(FUNDED_SENTENCE);
+    expect(await row(t.id)).toMatchObject({ state: "funded", fundTx: HASH.fund });
+  });
+
+  it("refuses, not guesses, when the escrow cannot be read", async () => {
+    const t = await createdTrade();
+    vi.mocked(readEscrow).mockRejectedValue(new Error("fetch failed"));
+    await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    expect(await row(t.id)).toMatchObject({ state: "escrow_created" });
+  });
+
+  describe("while a prepared escrow creation is outstanding (O-23)", () => {
+    async function preparedTrade() {
+      const t = await agreedTrade();
+      vi.setSystemTime(during(DEPLOY));
+      prepared(DEPLOY);
+      await f.as(SELLER).escrow.prepareCreate({ tradeId: t.id, admin: ADMIN });
+      return t;
+    }
+
+    it("is refused until the prepared deploy has expired, then allowed once Soroban RPC shows no contract", async () => {
+      const t = await preparedTrade();
+      chainHas(null);
+      vi.setSystemTime(during(DEPLOY, 300));
+      await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).rejects.toThrow(/may still land on Stellar testnet/);
+      vi.setSystemTime(during(DEPLOY, 400));
+      await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).resolves.toMatchObject({ state: "cancelled" });
+      expect(readEscrow).toHaveBeenLastCalledWith(ESCROW);
+    });
+
+    it("records the escrow first when the deploy landed, then follows the created escrow's rule", async () => {
+      const t = await preparedTrade();
+      chainHas({});
+      vi.setSystemTime(during(DEPLOY, 30));
+      vi.mocked(findEscrowTx).mockResolvedValue(HASH.deploy);
+      vi.mocked(verifyEscrowTx).mockResolvedValueOnce({ createdAt: new Date("2026-11-24T08:27:57Z"), signer: ADMIN, contractId: ESCROW, transfers: [] });
+      await expect(f.as(SELLER).trade.cancel({ tradeId: t.id })).resolves.toMatchObject({ state: "cancelled", createTx: HASH.deploy });
+      expect(findEscrowTx).toHaveBeenCalledWith(ADMIN, "CCYOZX2IZBMFWN5MIMGQ7GAND7KSAIRCEC3LQSUS5CTSJ6SKKTTYL7GL", "tw_new_single_release_escrow", t.createdAt);
+      const events = (await f.as(BUYER).trade.byId({ id: t.id })).events.map((e) => e.type);
+      expect(events.slice(-2)).toEqual(["escrowCreate", "cancel"]);
+    });
+
+    it("is refused while the escrow exists on chain but its deploy cannot be placed yet", async () => {
+      const t = await preparedTrade();
+      chainHas({});
+      vi.setSystemTime(during(DEPLOY, 400));
+      await expect(f.as(BUYER).trade.cancel({ tradeId: t.id })).rejects.toThrow(/escrow exists on Stellar testnet/);
+      expect(await row(t.id)).toMatchObject({ state: "agreed" });
     });
   });
 });

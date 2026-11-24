@@ -2,10 +2,11 @@ import { NotFoundError } from "@stellar/stellar-sdk";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { chatMessages, tradeEvents, trades } from "@/lib/db/schema";
+import { chatMessages, listings, tradeEvents, trades } from "@/lib/db/schema";
+import { EscrowNotFoundError, readWasmHash } from "@/lib/escrow/read";
 import { horizon, loadAccount } from "@/lib/stellar/horizon";
 import { findClaimTx } from "@/lib/stellar/verify";
-import { TX, tradeFixture } from "@/lib/trade/test-helpers";
+import { TX, openProtectedTrade, tradeFixture } from "@/lib/trade/test-helpers";
 
 import { closeResetTrades } from "./testnet-reset";
 
@@ -20,6 +21,7 @@ vi.mock("@/lib/stellar/horizon", async (orig) => ({
   ...(await orig<typeof import("@/lib/stellar/horizon")>()),
   loadAccount: vi.fn(async () => null),
 }));
+vi.mock("@/lib/escrow/read", async (orig) => ({ ...(await orig<typeof import("@/lib/escrow/read")>()), readEscrow: vi.fn(), readWasmHash: vi.fn() }));
 
 const BALANCE = "00000000" + "f".repeat(64);
 let f: Awaited<ReturnType<typeof tradeFixture>>;
@@ -105,5 +107,79 @@ describe("closeResetTrades", () => {
     const reset = new Date(t.createdAt.getTime() - 1000);
     expect(await closeResetTrades(f.db, { apply: true, before: reset })).toEqual([]);
     expect((await row(t.id)).state).toBe("listed");
+  });
+});
+
+describe("closeResetTrades: protected trades (FIXES F-13)", () => {
+  const ESCROW = "CDQOPLC2P7JNMMT62WDCC5EW5ESLFCHSAVQ66X7EWFE7E3QPT674QO34";
+  const CREATE_TX = "1".repeat(64);
+  let createOnHorizon: boolean;
+  let contractOnLedger: "live" | "archived" | "gone";
+
+  beforeEach(() => {
+    createOnHorizon = false;
+    contractOnLedger = "gone";
+    vi.spyOn(horizon, "transactions").mockReturnValue({
+      transaction: (hash: string) => ({
+        call: async () => {
+          if (hash !== CREATE_TX || !createOnHorizon) throw new NotFoundError("Not Found", {});
+          return { hash, successful: true };
+        },
+      }),
+    } as never);
+    // An archived instance is still returned by Soroban RPC (C-3); only a missing one is gone.
+    vi.mocked(readWasmHash).mockImplementation(async (id) => {
+      if (contractOnLedger === "gone") throw new EscrowNotFoundError(id);
+      return "1231807d01111bee78a846ddacdd0a6cf88b762115e70f5bce16ffabd660e47f";
+    });
+  });
+
+  async function escrowTrade(state: "escrow_created" | "funded") {
+    const [usdc] = await f.db.insert(listings).values({ ...f.listing, id: undefined, asset: "USDC" }).returning();
+    const t = await openProtectedTrade({ ...f, listing: usdc }, "20");
+    await f.db
+      .update(trades)
+      .set({
+        state,
+        sellerAcceptedAt: new Date(),
+        escrowAdmin: f.stranger,
+        escrowContractId: ESCROW,
+        createTx: CREATE_TX,
+        ...(state === "funded" ? { fundTx: "2".repeat(64), fundedAt: new Date() } : {}),
+      })
+      .where(eq(trades.id, t.id));
+    await f.as(f.taker).chat.send({ tradeId: t.id, body: "see you" });
+    return { ...t, listingId: usdc.id };
+  }
+  const left = async (listingId: string) => (await f.db.select().from(listings).where(eq(listings.id, listingId)))[0].remainingAmount;
+
+  it.each(["escrow_created", "funded"] as const)("closes a %s trade whose creation is gone from Horizon and whose contract is gone from the ledger", async (state) => {
+    const t = await escrowTrade(state);
+    expect(await left(t.listingId)).toBe("80.0000000");
+    expect((await closeResetTrades(f.db, { apply: true, before: later })).map((c) => [c.id, c.state])).toEqual([[t.id, state]]);
+    expect(await row(t.id)).toMatchObject({ state: "cancelled", createTx: CREATE_TX, escrowContractId: ESCROW });
+    expect(await f.db.select().from(chatMessages).where(eq(chatMessages.tradeId, t.id))).toEqual([]);
+    // The listing gets its reservation back.
+    expect(await left(t.listingId)).toBe("100.0000000");
+  });
+
+  it("keeps it while Horizon still has the creation: a missing contract alone is not a reset", async () => {
+    const t = await escrowTrade("funded");
+    createOnHorizon = true;
+    expect(await closeResetTrades(f.db, { apply: true, before: later })).toEqual([]);
+    expect((await row(t.id)).state).toBe("funded");
+  });
+
+  it.each(["live", "archived"] as const)("keeps it while the contract is on the ledger (%s), whatever Horizon says", async (onLedger) => {
+    const t = await escrowTrade("escrow_created");
+    contractOnLedger = onLedger;
+    expect(await closeResetTrades(f.db, { apply: true, before: later })).toEqual([]);
+    expect((await row(t.id)).state).toBe("escrow_created");
+  });
+
+  it("stops on a Soroban RPC failure rather than guessing", async () => {
+    await escrowTrade("funded");
+    vi.mocked(readWasmHash).mockRejectedValue(new Error("fetch failed"));
+    await expect(closeResetTrades(f.db, { apply: true, before: later })).rejects.toThrow("fetch failed");
   });
 });

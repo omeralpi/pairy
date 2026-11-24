@@ -1,24 +1,31 @@
-// verifyEscrowTx and findEscrowTx against Gate D2's deploy, fund and release
-// as Horizon recorded them (tests/fixtures/horizon/gate-d2.json: the
+// verifyEscrowTx and findEscrowTx against Gate D2's deploy, fund and release,
+// and the day-12 gate's two real disputes and resolutions, as Horizon recorded
+// them (tests/fixtures/horizon/gate-d2.json and wp15-disputes.json: the
 // transaction and operation records, FIXES F-02 and X-09). Horizon is faked
 // from those records; nothing reaches the network.
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { Address, NotFoundError, xdr } from "@stellar/stellar-sdk";
+import { Address, Memo, NotFoundError, TransactionBuilder, xdr } from "@stellar/stellar-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { horizon } from "@/lib/stellar/horizon";
+import { NETWORK_PASSPHRASE } from "@/lib/stellar/settlement";
 import { VerifyError } from "@/lib/stellar/verify";
 
-import { TW_FACTORY_CONTRACT_ID, TW_FEE_ADDRESS } from "./config";
+import { ARBITER_ACCOUNT, TW_FACTORY_CONTRACT_ID, TW_FEE_ADDRESS } from "./config";
 import { expectedTerms } from "./terms";
 import { EscrowMismatchError, findEscrowTx, verifyEscrowTx } from "./verify";
 
 type Recorded = { hash: string; transaction: Record<string, any>; operations: Record<string, any>[] };
 const GATE: { steps: Record<"deploy" | "fund" | "release", Recorded>; accounts: Record<string, { account: string; operations: Record<string, any>[] }> } =
   JSON.parse(readFileSync(path.join(process.cwd(), "tests/fixtures/horizon/gate-d2.json"), "utf8"));
+type Exit = { contractId: string; accounts: { creation: string; seller: string; buyer: string }; steps: Record<"deploy" | "fund" | "dispute" | "resolve", Recorded> };
+/** HD-3's two real-arbiter exits: the buyer disputed and was paid; the seller disputed and was paid back. */
+const WP15: { exits: Record<"buyer" | "seller", Exit>; accounts: Record<string, Record<string, any>[]> } = JSON.parse(
+  readFileSync(path.join(process.cwd(), "tests/fixtures/horizon/wp15-disputes.json"), "utf8"),
+);
 
 const SELLER = "GA7GKEVEKUQIGEF25EOULFCI5MUIWAVXSFAELQZECK5DWLIO27SPAP5Y";
 const BUYER = "GB2HNRJNZDLD2FRPS4SKS5Y4HB65IUDI6QSVPID7ZADMLBBQ255TZOYQ";
@@ -50,9 +57,13 @@ function pageOf(records: Record<string, any>[], size: number, from = 0): unknown
 }
 
 beforeEach(() => {
-  txs = Object.fromEntries(Object.values(GATE.steps).map((s) => [s.hash, structuredClone(s.transaction)]));
-  opsByTx = Object.fromEntries(Object.values(GATE.steps).map((s) => [s.hash, structuredClone(s.operations)]));
-  opsByAccount = Object.fromEntries(Object.values(GATE.accounts).map((a) => [a.account, structuredClone(a.operations)]));
+  const steps = [...Object.values(GATE.steps), ...Object.values(WP15.exits).flatMap((e) => Object.values(e.steps))];
+  txs = Object.fromEntries(steps.map((s) => [s.hash, structuredClone(s.transaction)]));
+  opsByTx = Object.fromEntries(steps.map((s) => [s.hash, structuredClone(s.operations)]));
+  opsByAccount = {
+    ...Object.fromEntries(Object.values(GATE.accounts).map((a) => [a.account, structuredClone(a.operations)])),
+    ...structuredClone(WP15.accounts),
+  };
   horizonDown = false;
   accountPages = 0;
   vi.spyOn(horizon, "transactions").mockReturnValue({
@@ -163,6 +174,12 @@ describe("verifyEscrowTx", () => {
     await mismatch(verifyEscrowTx(fund.hash, fundOf()));
     opsByTx[fund.hash][0].asset_balance_changes = [];
     await mismatch(verifyEscrowTx(fund.hash, fundOf()));
+    // The USDC went to a stranger, or came from one (WP-24 judge).
+    const STRANGER = "GDPDAXYC6DTRVDM2SBN24JQ4I2EKLSAGMUQ6FSNUYNXKZ566BXGENDYV";
+    opsByTx[fund.hash][0].asset_balance_changes = [{ ...transfer, to: STRANGER }];
+    await mismatch(verifyEscrowTx(fund.hash, fundOf()));
+    opsByTx[fund.hash][0].asset_balance_changes = [{ ...transfer, from: STRANGER }];
+    await mismatch(verifyEscrowTx(fund.hash, fundOf()));
   });
 
   it("refuses a transaction that landed after it could have (its envelope's time bounds)", async () => {
@@ -216,5 +233,113 @@ describe("findEscrowTx", () => {
     opsByAccount[SELLER] = [...Array.from({ length: 2_000 }, () => noise), ...opsByAccount[SELLER]];
     expect(await findEscrowTx(SELLER, ESCROW, "fund_escrow", since)).toBeNull();
     expect(accountPages).toBe(10);
+  });
+});
+
+describe("verifyEscrowTx: the day-12 gate's real disputes and resolutions", () => {
+  const { buyer: b, seller: s } = WP15.exits;
+  const partiesOf = (e: Exit) => ({ seller: e.accounts.seller, buyer: e.accounts.buyer });
+  const disputeOf = (e: Exit, over: Partial<{ contractId: string; parties: { seller: string; buyer: string } }> = {}) =>
+    ({ kind: "dispute", contractId: e.contractId, parties: partiesOf(e), ...over }) as const;
+  const resolveOf = (e: Exit, over: Partial<{ contractId: string; resolver: string; parties: { seller: string; buyer: string } }> = {}) =>
+    ({ kind: "resolve", contractId: e.contractId, resolver: ARBITER_ACCOUNT, parties: partiesOf(e), ...over }) as const;
+  const envelopeOf = (r: Recorded): any => xdr.TransactionEnvelope.fromXDR(r.transaction.envelope_xdr, "base64").toXdrObject();
+  const maxTimeOf = (r: Recorded) => Number(envelopeOf(r).v1.tx.cond.timeBounds.maxTime);
+
+  /**
+   * The buyer's real dispute as another tool might have built it: its own
+   * reason, a memo, a 30 XLM fee cap and a day's validity, all of which
+   * Pairy's prepare would refuse. `disputer` changes the account it disputes for.
+   */
+  function foreignDispute(disputer = b.accounts.buyer): string {
+    const r = b.steps.dispute;
+    const env = envelopeOf(r);
+    const tx = env.v1.tx;
+    tx.fee = 300_000_000;
+    tx.memo = Memo.text("cash never came").toXDRObject().toXdrObject();
+    tx.cond.timeBounds.maxTime += 86_400n;
+    const args = [Address.fromString(disputer).toScVal(), xdr.ScVal.scvString("The cash never came.")].map((a) => a.toXdrObject());
+    const op = tx.operations[0].body.invokeHostFunctionOp;
+    op.hostFunction.invokeContract.args = args;
+    op.auth[0].rootInvocation.function.contractFn.args = args;
+    const envelope = xdr.TransactionEnvelope.fromXdrObject(env).toXDR("base64");
+    const hash = Buffer.from(TransactionBuilder.fromXDR(envelope, NETWORK_PASSPHRASE).hash()).toString("hex");
+    txs[hash] = { ...structuredClone(r.transaction), hash, envelope_xdr: envelope };
+    opsByTx[hash] = structuredClone(r.operations).map((o) => ({ ...o, transaction_hash: hash }));
+    return hash;
+  }
+
+  it("reads each dispute back with the trader who opened it, at its ledger time", async () => {
+    await expect(verifyEscrowTx(b.steps.dispute.hash, disputeOf(b))).resolves.toEqual({
+      createdAt: new Date("2026-11-24T09:56:07Z"),
+      signer: b.accounts.buyer,
+      contractId: b.contractId,
+      transfers: [],
+    });
+    await expect(verifyEscrowTx(s.steps.dispute.hash, disputeOf(s))).resolves.toMatchObject({
+      createdAt: new Date("2026-11-24T10:28:02Z"),
+      signer: s.accounts.seller,
+      contractId: s.contractId,
+    });
+  });
+
+  it("refuses a dispute on another escrow, by someone who is not one of the two traders, or another call reported as one", async () => {
+    await mismatch(verifyEscrowTx(b.steps.dispute.hash, disputeOf(b, { contractId: s.contractId })));
+    await mismatch(verifyEscrowTx(b.steps.dispute.hash, disputeOf(b, { parties: partiesOf(s) })));
+    await mismatch(verifyEscrowTx(b.steps.fund.hash, disputeOf(b)));
+    await mismatch(verifyEscrowTx(b.steps.resolve.hash, disputeOf(b)));
+    // Signed by the buyer, disputing for the seller.
+    await mismatch(verifyEscrowTx(foreignDispute(b.accounts.seller), disputeOf(b)));
+  });
+
+  it("records a dispute built outside Pairy: its reason, memo, fee and validity are not the record's business (D2 §13)", async () => {
+    await expect(verifyEscrowTx(foreignDispute(), disputeOf(b))).resolves.toMatchObject({ signer: b.accounts.buyer, contractId: b.contractId });
+  });
+
+  it("reads each resolution back with the trader it paid, which is the outcome", async () => {
+    await expect(verifyEscrowTx(b.steps.resolve.hash, resolveOf(b))).resolves.toEqual({
+      createdAt: new Date("2026-11-24T10:26:57Z"),
+      signer: ARBITER_ACCOUNT,
+      contractId: b.contractId,
+      transfers: [
+        { from: b.contractId, to: TW_FEE_ADDRESS, amountStroops: 150_000n },
+        { from: b.contractId, to: b.accounts.buyer, amountStroops: 49_850_000n },
+      ],
+      payout: { to: b.accounts.buyer, amountStroops: 50_000_000n },
+    });
+    await expect(verifyEscrowTx(s.steps.resolve.hash, resolveOf(s))).resolves.toMatchObject({
+      createdAt: new Date("2026-11-24T11:32:52Z"),
+      payout: { to: s.accounts.seller, amountStroops: 50_000_000n },
+    });
+  });
+
+  it("refuses a resolution by another resolver, on another escrow, or paying someone who is not a trader", async () => {
+    await mismatch(verifyEscrowTx(b.steps.resolve.hash, resolveOf(b, { resolver: s.accounts.seller })));
+    await mismatch(verifyEscrowTx(b.steps.resolve.hash, resolveOf(b, { contractId: s.contractId })));
+    await mismatch(verifyEscrowTx(b.steps.resolve.hash, resolveOf(b, { parties: partiesOf(s) })));
+    await mismatch(verifyEscrowTx(b.steps.dispute.hash, resolveOf(b)));
+  });
+
+  it("accepts a resolution that landed late in its re-timed window, but not after it (O-17)", async () => {
+    const r = b.steps.resolve;
+    txs[r.hash].created_at = new Date((maxTimeOf(r) - 300) * 1000).toISOString();
+    await expect(verifyEscrowTx(r.hash, resolveOf(b))).resolves.toMatchObject({ payout: { to: b.accounts.buyer } });
+    txs[r.hash].created_at = new Date((maxTimeOf(r) + 1) * 1000).toISOString();
+    await mismatch(verifyEscrowTx(r.hash, resolveOf(b)));
+  });
+});
+
+describe("findEscrowTx: disputes and resolutions", () => {
+  const { buyer: b, seller: s } = WP15.exits;
+  const since = new Date("2026-11-24T09:00:00Z");
+
+  it("finds the disputing trader's own dispute and the arbiter's resolution of each escrow", async () => {
+    expect(await findEscrowTx(b.accounts.buyer, b.contractId, "dispute_escrow", since)).toBe(b.steps.dispute.hash);
+    expect(await findEscrowTx(b.accounts.seller, b.contractId, "dispute_escrow", since)).toBeNull();
+    expect(await findEscrowTx(s.accounts.seller, s.contractId, "dispute_escrow", since)).toBe(s.steps.dispute.hash);
+    expect(await findEscrowTx(ARBITER_ACCOUNT, b.contractId, "resolve_dispute", since)).toBe(b.steps.resolve.hash);
+    expect(await findEscrowTx(ARBITER_ACCOUNT, s.contractId, "resolve_dispute", since)).toBe(s.steps.resolve.hash);
+    // The resolution shows in the paid buyer's history too, but the buyer did not make it.
+    expect(await findEscrowTx(b.accounts.buyer, b.contractId, "resolve_dispute", since)).toBeNull();
   });
 });
