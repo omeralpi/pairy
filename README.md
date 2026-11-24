@@ -76,18 +76,22 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 
 ### Use this key in Freighter
 
-A wallet opened with an email or Google login (Privy) can leave Pairy. **Export key** on the wallet page opens Privy's own screen, which shows the private key; Pairy never sees it. The key has one destination: Freighter's import field. Never paste it anywhere else, not into Pairy, not into a chat, not into a search box.
+A wallet opened with an email or Google login (Privy) can leave Pairy. **Export key** on the wallet page opens Privy's own screen; its **Copy key** button copies the private key to the clipboard without showing it, and Pairy never sees it. The key has one destination: the import field of Varial (formerly Freighter), the Stellar wallet extension. Install it only from [varialwallet.com](https://varialwallet.com) (freighter.app leads there too). Never paste it anywhere else: not into Pairy, a chat, a note, a search box, or a website that offers to convert or check a key. The one exception is the offline converter below.
 
-1. In Freighter, switch to **Test Net**, open the account menu and choose **Import a Stellar secret key**.
-2. Paste the key and confirm. Freighter must show the same G… address as Pairy's wallet page. If it shows a different address, a different key was pasted; remove that account from Freighter and start again.
+1. In Varial, switch to **Test Net**. Click the wallet name at the top, choose **Add wallet**, then **Import a Stellar secret key**.
+2. Paste the key, enter your Varial password, tick the box and choose **Import**. Varial must now show the same G… address as Pairy's wallet page.
 
-Freighter takes a Stellar secret key: 56 characters starting with `S`. If the key Privy shows looks like that, paste it as it is. If it starts with `0x` (hex), convert it first, offline, on your own computer with the Stellar SDK (`npm i @stellar/stellar-sdk` in an empty folder). The command reads the key from the terminal, not from the command line, so it never lands in your shell history:
+Varial takes a Stellar secret key: 56 characters starting with `S`. If it refuses the key although the password is right, Privy copied it as hex (`0x…`). Convert it on your own computer, in a new terminal window (macOS or Linux; on Windows use WSL), with Node.js 20 or newer: run `npm i @stellar/stellar-base` in an empty folder, then
 
 ```sh
-node -e 'const {StrKey}=require("@stellar/stellar-sdk");let h="";process.stdin.on("data",d=>h+=d).on("end",()=>console.log(StrKey.encodeEd25519SecretSeed(Buffer.from(h.trim().replace(/^0x/,"").slice(0,64),"hex"))))'
+node -e 'const {Keypair}=require("@stellar/stellar-base");let h="";process.stdin.on("data",d=>h+=d).on("end",()=>{const k=Keypair.fromRawEd25519Seed(Buffer.from(h.trim().replace(/^0x/i,"").slice(0,64),"hex"));console.log(k.publicKey());console.log(k.secret())})'
 ```
 
-Paste the hex key, press Enter, then Ctrl-D. The `S…` key it prints is what Freighter takes; close the terminal afterwards. From then on two things hold this key, Privy behind your login and Freighter on that computer, and either one controls the wallet.
+Paste the key, press Enter, then Ctrl-D. The command reads the key from the terminal, not from the command line, so it never lands in your shell history. It prints the G… address, which must match Pairy's wallet page, and then the `S…` key for step 2. If it prints an error instead, stop: the key is in a form this note does not cover. Close the terminal window afterwards, and copy some other text so the key leaves your clipboard.
+
+If Varial shows a different G… address, a different key went in. Varial cannot delete an account: rename that one (for example "wrong") and start again. Never use **Reset wallet** for this; it wipes every account in Varial.
+
+From then on two things hold this key, Privy behind your login and Varial on that computer, and either one controls the wallet.
 
 ---
 

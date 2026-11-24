@@ -64,11 +64,18 @@ describe("WalletPage for a Privy wallet", () => {
 
   it("links to a README note that exists and tells the user where the exported key may go", () => {
     const readme = readFileSync(path.join(process.cwd(), "README.md"), "utf8");
-    const note = readme.split(/^### Use this key in Freighter$/m)[1];
+    // The note alone: from its heading to the next heading or rule.
+    const note = readme.split(/^### Use this key in Freighter$/m)[1]?.split(/^(?:---|#{1,3} )/m)[0];
     expect(note, "README.md has no '### Use this key in Freighter' heading").toBeDefined();
-    // The key's one destination, and that Pairy is not one of them.
+    // The key's one destination, named as the extension ships today (O-30), and that Pairy is not one of them.
+    expect(note).toContain("Varial (formerly Freighter)");
     expect(note).toContain("Import a Stellar secret key");
     expect(note).toMatch(/never paste it anywhere else/i);
+    // The offline converter reads the key from stdin, never from the command line (shell history).
+    const converter = note!.match(/```sh\n(node -e '[^\n]*')\n```/)?.[1];
+    expect(converter, "the note has no node -e converter in a ```sh block").toBeDefined();
+    expect(converter).toContain("process.stdin");
+    expect(converter).not.toContain("process.argv");
   });
 
   it("says that logging out also signs out of Privy", () => {
