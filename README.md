@@ -74,6 +74,21 @@ You sign in by signing a one-time message ([SEP-53](https://github.com/stellar/s
 
 **The residual risk.** The encrypted key lives in browser storage, so a cross-site scripting flaw on Pairy's own site could read the ciphertext. This is a testnet demo. Passkey-wrapped storage is planned for evaluation before any mainnet work.
 
+### Use this key in Freighter
+
+A wallet opened with an email or Google login (Privy) can leave Pairy. **Export key** on the wallet page opens Privy's own screen, which shows the private key; Pairy never sees it. The key has one destination: Freighter's import field. Never paste it anywhere else, not into Pairy, not into a chat, not into a search box.
+
+1. In Freighter, switch to **Test Net**, open the account menu and choose **Import a Stellar secret key**.
+2. Paste the key and confirm. Freighter must show the same G… address as Pairy's wallet page. If it shows a different address, a different key was pasted; remove that account from Freighter and start again.
+
+Freighter takes a Stellar secret key: 56 characters starting with `S`. If the key Privy shows looks like that, paste it as it is. If it starts with `0x` (hex), convert it first, offline, on your own computer with the Stellar SDK (`npm i @stellar/stellar-sdk` in an empty folder). The command reads the key from the terminal, not from the command line, so it never lands in your shell history:
+
+```sh
+node -e 'const {StrKey}=require("@stellar/stellar-sdk");let h="";process.stdin.on("data",d=>h+=d).on("end",()=>console.log(StrKey.encodeEd25519SecretSeed(Buffer.from(h.trim().replace(/^0x/,"").slice(0,64),"hex"))))'
+```
+
+Paste the hex key, press Enter, then Ctrl-D. The `S…` key it prints is what Freighter takes; close the terminal afterwards. From then on two things hold this key, Privy behind your login and Freighter on that computer, and either one controls the wallet.
+
 ---
 
 ## What Pairy stores
