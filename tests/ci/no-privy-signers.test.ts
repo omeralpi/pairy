@@ -30,6 +30,8 @@ const PRIVY_FILE = "components/providers/privy-layer.tsx";
 const PRIVY_PACKAGE = "@privy-io/react-auth";
 const PRIVY_VERSION = "3.51.1";
 const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
+/** Privy's server SDKs and the REST types they are built on, matched as a name prefix (fail-closed: a new @privy-io/node-* is caught too). */
+const SERVER_PACKAGES = ["@privy-io/server-auth", "@privy-io/node", "@privy-io/public-api"];
 
 /** Frozen by S-01 (WP-06) against the installed 3.51.1 .d.ts: module → the named imports Pairy uses. */
 const ALLOWED_IMPORTS: Record<string, string[]> = {
@@ -131,6 +133,14 @@ function packageProblems(pkg: PackageJson): string[] {
         return [];
       }),
   );
+}
+
+/**
+ * #1, lockfile: pnpm-lock.yaml lists every installed package, so a Privy server SDK shows up there however it came
+ * in: as a dependency, under an npm alias, or through another package that wraps it (WP-18 judge, note 1).
+ */
+function lockfileProblems(lock: string): string[] {
+  return SERVER_PACKAGES.filter((p) => lock.includes(p)).map((p) => `pnpm-lock.yaml: has ${p}`);
 }
 
 /** #2: one integration point. Any `@privy-io/` in code outside it (import, require, a string) is a second one. */
@@ -252,6 +262,7 @@ function privyApiProblems(files: Source[]): string[] {
 
 const SOURCES = sources();
 const PACKAGE_JSON = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as PackageJson;
+const LOCKFILE = readFileSync(path.join(root, "pnpm-lock.yaml"), "utf8");
 
 describe("no-privy-signers", () => {
   it("the scan sees the source tree", () => {
@@ -264,6 +275,11 @@ describe("no-privy-signers", () => {
 
   it("1: the only Privy package is @privy-io/react-auth, pinned exactly", () => {
     expect(packageProblems(PACKAGE_JSON)).toEqual([]);
+  });
+
+  it("1: pnpm-lock.yaml holds no Privy server package, direct, aliased or brought in by another package", () => {
+    expect(LOCKFILE).toContain(`'${PRIVY_PACKAGE}@${PRIVY_VERSION}'`);
+    expect(lockfileProblems(LOCKFILE)).toEqual([]);
   });
 
   it("2: only components/providers/privy-layer.tsx mentions @privy-io/", () => {
@@ -354,6 +370,26 @@ describe("no-privy-signers", () => {
         'package.json dependencies: auth-kit ("npm:@privy-io/server-auth@1.28.0") is not @privy-io/react-auth',
       ]);
       expect(packageProblems({ devDependencies: { privy: "npm:@privy-io/react-auth@3.51.1" } })).toHaveLength(1);
+    });
+
+    it("a Privy server package in the lockfile: direct, under an npm alias or through a wrapper, but not the browser SDK's own packages", () => {
+      const direct = [
+        "importers:",
+        "  .:",
+        "    dependencies:",
+        "      '@privy-io/server-auth':",
+        "        specifier: 1.32.5",
+        "        version: 1.32.5",
+      ].join("\n");
+      const alias = ["      auth-kit:", "        specifier: npm:@privy-io/server-auth@1.32.5", "        version: '@privy-io/server-auth@1.32.5'"].join("\n");
+      // A wrapper such as AgentKit's PrivyWalletProvider: package.json names only the wrapper.
+      const wrapper = ["snapshots:", "  '@coinbase/agentkit@0.10.4':", "    dependencies:", "      '@privy-io/server-auth': 1.32.5"].join("\n");
+      for (const lock of [direct, alias, wrapper]) expect(lockfileProblems(lock), lock).toEqual(["pnpm-lock.yaml: has @privy-io/server-auth"]);
+      for (const p of SERVER_PACKAGES) expect(lockfileProblems(`packages:\n  '${p}@0.4.0':\n`), p).toEqual([`pnpm-lock.yaml: has ${p}`]);
+      expect(lockfileProblems("  '@privy-io/node-sdk@1.0.0':")).toEqual(["pnpm-lock.yaml: has @privy-io/node"]);
+      // react-auth 3.51.1's own closure (WP-18 judge): none is a server package.
+      const browser = ["react-auth@3.51.1", "js-sdk-core@0.79.2", "api-base@2.0.0", "api-types@0.24.0", "routes@0.5.0", "urls@0.0.5"];
+      expect(lockfileProblems(browser.map((p) => `  '@privy-io/${p}': {}`).join("\n"))).toEqual([]);
     });
 
     it("an allowlisted hook imported from a file other than privy-layer.tsx", () => {
