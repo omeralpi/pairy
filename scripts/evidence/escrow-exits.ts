@@ -2,6 +2,7 @@
 // Pairy's roles on testnet, from creation to one of its exits.
 //
 //   pnpm tsx scripts/evidence/escrow-exits.ts <release|dispute-buyer|dispute-seller> [--arbiter=test|real] [--dry-run]
+//   pnpm tsx scripts/evidence/escrow-exits.ts release --seller=G… [--escrow=C…] [--arbiter=test|real]
 //
 // release (Gate D2): a fresh creation key deploys the escrow, the seller funds
 // it, and the seller alone releases it to the buyer. --arbiter picks the
@@ -33,6 +34,16 @@
 // --dry-run checks the arbiter account (O-17's preflight) and stops before
 // anything is created.
 //
+// --seller=G… (WP-20, S-06): the seller is an outside wallet, such as a Privy
+// wallet in its own browser, whose key this script never holds. It must
+// already hold a USDC trustline (Trustless Work refuses the deploy without
+// it); if it holds less than the amount, a throwaway account buys the amount
+// on the DEX and pays it over. The script deploys the escrow, prepares the
+// fund, checks it and stops: the checked, unsigned fund goes to
+// .state/handoff-fund.json for the wallet's own browser to check again, sign
+// and send (app/(app)/spike-escrow). With --escrow=C…, it prepares that
+// escrow's release the same way (.state/handoff-release.json).
+//
 // Trustless Work only prepares each transaction, through server/tw/client.ts
 // with the development key from .env.local (DECISIONS 11). Each one passes
 // validateEscrowCall before it is signed (DECISIONS 7), goes straight to
@@ -50,8 +61,11 @@ import path from "node:path";
 
 import {
   Address,
+  BASE_FEE,
   Keypair,
   NotFoundError,
+  Operation,
+  StrKey,
   TransactionBuilder,
   TransactionFailedError,
   rpc,
@@ -93,6 +107,8 @@ import {
   balanceStroops,
   freshAccount,
   latestLedger,
+  loadAccount,
+  signAndSubmit,
   toStroops,
   txRecord,
   type Submitted,
@@ -335,45 +351,27 @@ const asStrings = (h: Awaited<ReturnType<typeof holdings>>) => ({
 const sorted = (t: Transfer[]) => JSON.stringify([...t].sort((a, b) => a.to.localeCompare(b.to)));
 
 /**
- * What every exit starts with: fresh traders, then the escrow, deployed by a
- * fresh creation key, checked on chain and funded by the seller.
+ * The escrow, deployed by the creation key with Pairy's roles and checked on
+ * chain: the instance runs the pinned code, and its ["Escrow"] entry names
+ * the roles asked for.
  */
-async function openEscrow(arbiter: Arbiter, exit: Exit) {
-  const resolver = resolverFor(arbiter);
+async function deployEscrow(creation: Signer, seller: string, buyer: string, resolver: string, exit: Exit) {
   const amountStroops = toStroops(AMOUNT);
-
-  const creation = makeCreationKey();
-  const [sellerKp, buyerKp] = await Promise.all([freshAccount(), freshAccount()]);
-  await fundWithFriendbot(creation.publicKey);
-  const seller = walletOf(sellerKp);
-  const buyer = buyerKp.publicKey();
-  const parties = { seller: seller.publicKey, buyer };
-  console.log(`seller ${seller.publicKey}\nbuyer ${buyer}\ncreation account ${creation.publicKey}\nresolver ${resolver}`);
-
-  const setup = [
-    await txEvidence("seller trustline", await addUsdcTrustline(sellerKp)),
-    await txEvidence("buyer trustline", await addUsdcTrustline(buyerKp)),
-    await txEvidence(`seller acquires ${AMOUNT} USDC`, await acquire(sellerKp, "USDC", AMOUNT)),
-  ];
-
   // Pairy's role mapping (DECISIONS 3, S-16): the seller approves and releases, the buyer receives.
   const terms: EscrowTerms = {
     admin: creation.publicKey,
     platform: PLATFORM_ACCOUNT,
     receiver: buyer,
-    approvers: [seller.publicKey],
-    releaseSigners: [seller.publicKey],
+    approvers: [seller],
+    releaseSigners: [seller],
     disputeResolvers: [resolver],
-    serviceProviders: [seller.publicKey],
+    serviceProviders: [seller],
     otherRoles: [],
     amountStroops,
     platformFeePercent: 0,
     tokenContract: USDC_SAC,
     milestones: [{ description: MILESTONE_DESCRIPTION }],
   };
-
-  const before = await holdings("before deploy", parties, null);
-  check(before.seller === amountStroops && before.buyer === 0n, `The seller holds ${before.seller} and the buyer ${before.buyer} stroops of USDC.`);
 
   const deploy = await step(
     "deploy",
@@ -409,16 +407,44 @@ async function openEscrow(arbiter: Arbiter, exit: Exit) {
   const created = await escrowOnChain(contractId, deploy.ledger);
   const expectedRoles = {
     admin: creation.publicKey,
-    approvers: [seller.publicKey],
+    approvers: [seller],
     dispute_resolvers: [resolver],
     platform: PLATFORM_ACCOUNT,
     receiver: buyer,
-    release_signers: [seller.publicKey],
-    service_providers: [seller.publicKey],
+    release_signers: [seller],
+    service_providers: [seller],
   };
   const pairyRoles = Object.fromEntries(Object.keys(expectedRoles).map((k) => [k, created.roles[k]]));
   check(JSON.stringify(pairyRoles) === JSON.stringify(expectedRoles), `The escrow's roles on chain are ${JSON.stringify(created.roles)}.`);
   check(created.amountStroops === String(amountStroops) && !created.released && !created.disputed, "The escrow on chain is not a fresh 5 USDC escrow.");
+  return { amountStroops, terms, deploy, contractId, wasmHash, created };
+}
+
+/**
+ * What every exit starts with: fresh traders, then the escrow, deployed by a
+ * fresh creation key, checked on chain and funded by the seller.
+ */
+async function openEscrow(arbiter: Arbiter, exit: Exit) {
+  const resolver = resolverFor(arbiter);
+
+  const creation = makeCreationKey();
+  const [sellerKp, buyerKp] = await Promise.all([freshAccount(), freshAccount()]);
+  await fundWithFriendbot(creation.publicKey);
+  const seller = walletOf(sellerKp);
+  const buyer = buyerKp.publicKey();
+  const parties = { seller: seller.publicKey, buyer };
+  console.log(`seller ${seller.publicKey}\nbuyer ${buyer}\ncreation account ${creation.publicKey}\nresolver ${resolver}`);
+
+  const setup = [
+    await txEvidence("seller trustline", await addUsdcTrustline(sellerKp)),
+    await txEvidence("buyer trustline", await addUsdcTrustline(buyerKp)),
+    await txEvidence(`seller acquires ${AMOUNT} USDC`, await acquire(sellerKp, "USDC", AMOUNT)),
+  ];
+
+  const before = await holdings("before deploy", parties, null);
+  check(before.seller === toStroops(AMOUNT) && before.buyer === 0n, `The seller holds ${before.seller} and the buyer ${before.buyer} stroops of USDC.`);
+
+  const { amountStroops, terms, deploy, contractId, wasmHash, created } = await deployEscrow(creation, seller.publicKey, buyer, resolver, exit);
   const afterDeploy = await holdings("after deploy", parties, { contractId, ledger: deploy.ledger });
 
   const fund = await step(
@@ -497,6 +523,104 @@ async function release(arbiter: Arbiter) {
       milestoneStatusStep: false,
     },
   };
+}
+
+/**
+ * One checked, unsigned call for an outside seller's browser (--seller):
+ * app/(app)/spike-escrow rebuilds the expectation from these public facts,
+ * checks the transaction again, signs it with the wallet and sends it.
+ */
+type Handoff = {
+  call: "fund" | "release";
+  contractId: string;
+  viewerUrl: string;
+  unsignedXdr: string;
+  /** Trustless Work's hash of unsignedXdr: what the wallet signs. */
+  txHash: string;
+  seller: string;
+  amount: string;
+  /** The deploy's other parties, for the fund's term check; a release needs none. */
+  escrow: { buyer: string; admin: string; resolver: string } | null;
+  preparedAt: string;
+};
+
+/** Trustless Work prepares, Pairy checks, and the unsigned call is written out for the seller's browser instead of signed here. */
+async function prepareHandoff<E extends "fund" | "approveAndRelease">(
+  ep: E,
+  input: TwInput[E],
+  expectation: CallExpectation,
+  facts: Omit<Handoff, "unsignedXdr" | "txHash" | "preparedAt">,
+) {
+  const preparedAt = new Date().toISOString();
+  const prepared = await twCall(ep, input, {});
+  const problems = validateEscrowCall(decodeEscrowCall(prepared), expectation);
+  check(!problems.length, `Refusing to hand over the ${facts.call}:\n- ${problems.join("\n- ")}`);
+  const name = `handoff-${facts.call}`;
+  writeState(name, { ...facts, unsignedXdr: prepared.unsignedXdr, txHash: prepared.txHash, preparedAt } satisfies Handoff);
+  console.log(
+    [
+      `${facts.call} of escrow ${facts.contractId} prepared for ${facts.seller} at ${preparedAt}, checked, unsigned (valid about 5 minutes):`,
+      prepared.unsignedXdr,
+      `hash ${prepared.txHash}`,
+      `Handed over in scripts/evidence/.state/${name}.json; the seller's browser signs and sends it.`,
+    ].join("\n"),
+  );
+}
+
+/** A throwaway buys the amount on the DEX and pays it to the seller: the seller's own key signs nothing here. */
+async function payUsdcTo(seller: string) {
+  const helper = await freshAccount();
+  await addUsdcTrustline(helper);
+  await acquire(helper, "USDC", AMOUNT);
+  const tx = new TransactionBuilder(await loadAccount(helper), { fee: BASE_FEE, networkPassphrase: NETWORK_PASSPHRASE })
+    .addOperation(Operation.payment({ destination: seller, asset: USDC, amount: AMOUNT }))
+    .setTimeout(300)
+    .build();
+  return signAndSubmit(tx, helper);
+}
+
+/**
+ * --seller: the escrow for an outside seller up to its unsigned fund, or that
+ * escrow's unsigned release (--escrow). Everything the seller signs happens in
+ * its own browser; this process holds the creation key and the buyer's only.
+ */
+async function handoffRun(arbiter: Arbiter, seller: string, escrow: string | null) {
+  if (escrow) {
+    await prepareHandoff(
+      "approveAndRelease",
+      { contractId: escrow, signer: seller, milestoneIndexes: [0] },
+      { kind: "release", contractId: escrow, seller },
+      { call: "release", contractId: escrow, viewerUrl: twViewerUrl(escrow), seller, amount: AMOUNT, escrow: null },
+    );
+    return;
+  }
+  const resolver = resolverFor(arbiter);
+  const amountStroops = toStroops(AMOUNT);
+  const account = await horizon.loadAccount(seller);
+  check(
+    account.balances.some((b) => "asset_code" in b && b.asset_code === USDC.code && b.asset_issuer === USDC.issuer),
+    `The seller ${seller} holds no USDC trustline; add it from the wallet page first (Trustless Work refuses the deploy without it).`,
+  );
+  const creation = makeCreationKey();
+  const buyerKp = await freshAccount();
+  await fundWithFriendbot(creation.publicKey);
+  const buyer = buyerKp.publicKey();
+  console.log(`seller ${seller} (outside wallet)\nbuyer ${buyer}\ncreation account ${creation.publicKey}\nresolver ${resolver}`);
+  await addUsdcTrustline(buyerKp);
+  if ((await usdcOf(seller)) < amountStroops) {
+    const paid = await payUsdcTo(seller);
+    console.log(`a throwaway paid the seller ${AMOUNT} USDC: ${paid.hash}`);
+  }
+  const held = await usdcOf(seller);
+  check(held >= amountStroops, `The seller holds ${held} stroops of USDC, less than ${amountStroops}.`);
+
+  const { terms, contractId } = await deployEscrow(creation, seller, buyer, resolver, "release");
+  await prepareHandoff(
+    "fund",
+    { contractId, signer: seller, amount: twAmount(amountStroops) },
+    { kind: "fund", contractId, seller, amountStroops, terms },
+    { call: "fund", contractId, viewerUrl: twViewerUrl(contractId), seller, amount: AMOUNT, escrow: { buyer, admin: creation.publicKey, resolver } },
+  );
 }
 
 /**
@@ -893,12 +1017,23 @@ async function main() {
   const [exit, ...flags] = process.argv.slice(2);
   const arbiter = flags.find((f) => f.startsWith("--arbiter="))?.replace(/^--arbiter=/, "") ?? "test";
   const dryRun = flags.includes("--dry-run");
+  const seller = flags.find((f) => f.startsWith("--seller="))?.replace(/^--seller=/, "") ?? null;
+  const escrow = flags.find((f) => f.startsWith("--escrow="))?.replace(/^--escrow=/, "") ?? null;
   if (
     (exit !== "release" && exit !== "dispute-buyer" && exit !== "dispute-seller") ||
-    flags.some((f) => f !== "--dry-run" && !f.startsWith("--arbiter=")) ||
-    (arbiter !== "test" && arbiter !== "real")
+    flags.some((f) => f !== "--dry-run" && !/^--(arbiter|seller|escrow)=/.test(f)) ||
+    (arbiter !== "test" && arbiter !== "real") ||
+    (seller !== null && (exit !== "release" || dryRun || !StrKey.isValidEd25519PublicKey(seller))) ||
+    (escrow !== null && (seller === null || !StrKey.isValidContract(escrow)))
   ) {
-    throw new Error("Usage: escrow-exits.ts <release|dispute-buyer|dispute-seller> [--arbiter=test|real] [--dry-run]");
+    throw new Error(
+      "Usage: escrow-exits.ts <release|dispute-buyer|dispute-seller> [--arbiter=test|real] [--dry-run]\n" +
+        "       escrow-exits.ts release --seller=G… [--escrow=C…] [--arbiter=test|real]",
+    );
+  }
+  if (seller) {
+    await handoffRun(arbiter, seller, escrow);
+    return;
   }
   if (dryRun) {
     const a = await arbiterNow(resolverFor(arbiter));
