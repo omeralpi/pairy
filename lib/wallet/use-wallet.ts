@@ -48,10 +48,11 @@ export type WalletContextValue = {
   /**
    * Logs in with Privy (email or Google), reuses or creates its Stellar wallet
    * and funds it with Friendbot if needed. `onStep` hears each slow step as it
-   * starts, so the screen can say what it is waiting for. null when
-   * NEXT_PUBLIC_PRIVY_APP_ID is unset (local dev, CI build): the option is hidden.
+   * starts, and null once the wallet is connected, so the screen says only what
+   * it is waiting for. null when NEXT_PUBLIC_PRIVY_APP_ID is unset (local dev,
+   * CI build): the option is hidden.
    */
-  connectPrivy: ((onStep?: (step: PrivyStep) => void) => Promise<Wallet>) | null;
+  connectPrivy: ((onStep?: (step: PrivyStep | null) => void) => Promise<Wallet>) | null;
   /** Opens Privy's own export screen for the selected Privy wallet. Pairy never sees the key. null without an App ID. */
   exportPrivyKey: (() => Promise<void>) | null;
   /** `failed`: Privy's code did not load, or Privy did not answer in time; the Privy option should say so or hide. */

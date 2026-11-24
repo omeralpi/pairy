@@ -111,9 +111,10 @@ export async function ensurePrivy(state: PrivyState, publicKey: string): Promise
  * Login, then the Stellar wallet Privy already holds or a new one, then
  * Friendbot if the account is not on testnet yet (DECISIONS 9). Friendbot
  * failing is not fatal: the wallet page has the manual button. `onStep` is
- * told when each of those starts. Returns the G-address.
+ * told when each of those starts, and null when the wallet is connected.
+ * Returns the G-address.
  */
-export async function connectPrivyWallet(state: PrivyState, onStep: (step: PrivyStep) => void = () => {}): Promise<string> {
+export async function connectPrivyWallet(state: PrivyState, onStep: (step: PrivyStep | null) => void = () => {}): Promise<string> {
   const adapter = livePrivy(state);
   if (!adapter.authenticated) {
     onStep("login");
@@ -130,6 +131,7 @@ export async function connectPrivyWallet(state: PrivyState, onStep: (step: Privy
     onStep("funding");
     await fundWithFriendbot(publicKey).catch((e: unknown) => console.error(e));
   }
+  onStep(null);
   return publicKey;
 }
 
@@ -272,13 +274,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setReady(restored.ready);
   }, [ready, selection, adapter, privyFailed, deviceWalletPublicKey]);
 
-  // The wait above is bounded: a Privy that never answers must not hold the
-  // returning user on the loading screen.
+  // The wait is bounded: a Privy that never answers must not hold the returning
+  // user on the loading screen, nor leave the newcomer's choice on "Opening
+  // Privy…" (D1 §7.1). A Privy that turns up ready later is used after all.
   useEffect(() => {
-    if (ready || selection?.kind !== "privy") return;
+    if (!PRIVY_ENABLED || adapter?.ready) return;
     const timer = setTimeout(() => setPrivyBroken(true), PRIVY_READY_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [ready, selection]);
+  }, [adapter]);
 
   const select = useCallback((next: Selection | null) => {
     if (next) localStorage.setItem(SELECTION_KEY, JSON.stringify(next));
@@ -401,8 +404,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
       disconnect: async () => {
         if (selection?.kind === "freighter") await (await freighter()).disconnectFreighter();
-        if (selection?.kind === "privy") await privyRef.current.adapter?.logout();
+        const privy = selection?.kind === "privy" ? privyRef.current.adapter : null;
+        // The wallet is forgotten first: a Privy that is down or still loading
+        // cannot answer a logout, and must not keep the wallet selected.
         select(null);
+        if (privy?.ready) await privy.logout();
       },
     };
   }, [selection, ready, deviceWalletPublicKey, adapter, privyFailed, select, toWallet, withPrompt, confirm]);

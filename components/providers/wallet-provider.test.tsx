@@ -213,17 +213,25 @@ describe("connectPrivyWallet", () => {
     await expect(connectPrivyWallet({ adapter: null, failed: true })).rejects.toThrow(PRIVY_DOWN);
   });
 
-  it("reports each slow step as it starts, so the onboarding button can say what it is waiting for", async () => {
+  it("reports each slow step as it starts, and null once the wallet is connected, so the onboarding button says only what it is waiting for", async () => {
     horizon.loadAccount.mockResolvedValue(null);
-    const steps: string[] = [];
+    const steps: (string | null)[] = [];
     const first = fakeAdapter({ authenticated: false, address: null, addressAfterLogin: null });
     await connectPrivyWallet(first.state, (step) => steps.push(step));
-    expect(steps).toEqual(["login", "creating", "funding"]);
+    expect(steps).toEqual(["login", "creating", "funding", null]);
+    // Friendbot failing ends the funding step too: the label must not say it is still being asked.
+    horizon.fundWithFriendbot.mockRejectedValue(new Error("HTTP 503"));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed: (string | null)[] = [];
+    await connectPrivyWallet(fakeAdapter({ address: null }).state, (step) => failed.push(step));
+    expect(failed).toEqual(["creating", "funding", null]);
+    logged.mockRestore();
     // Second browser, funded account, session still there: nothing slow happens.
     horizon.loadAccount.mockResolvedValue({});
-    const again: string[] = [];
+    horizon.fundWithFriendbot.mockResolvedValue(undefined);
+    const again: (string | null)[] = [];
     await connectPrivyWallet(fakeAdapter({ address: "GEXISTING" }).state, (step) => again.push(step));
-    expect(again).toEqual([]);
+    expect(again).toEqual([null]);
   });
 });
 
