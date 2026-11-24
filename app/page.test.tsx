@@ -19,8 +19,10 @@ describe("Home: where your key lives", () => {
     const html = renderToStaticMarkup(<Home />);
     expect(html).toContain("You don&#x27;t sign up with Pairy.");
     expect(html).toContain(
-      "With a key on your device or Varial, nobody asks who you are. With email or Google, that login goes to Privy; Pairy itself knows you only by your Stellar address.",
+      "With a key on your device or Varial, nobody asks who you are. With email or Google, that login goes to Privy; Pairy&#x27;s server knows you only by your Stellar address.",
     );
+    // The wallet page reads the login in the browser to show it, so only the server's knowledge is promised (R2-1).
+    expect(html).not.toContain("Pairy itself knows you");
     expect(html).not.toContain("Pairy never asks who you are");
     // The card comes after the safety section, so the first mention there names Varial (formerly Freighter) (O-30).
     const first = html.search(/Varial|Freighter/);

@@ -52,10 +52,10 @@ describe("WalletPage for a Privy wallet", () => {
     // Privy's claim, credited to Privy (O-44).
     expect(html).not.toContain("Privy holds it in two pieces");
     expect(html).toContain("a…@example.com");
-    // Privy's SDK copies its login token into a cookie the browser sends to Pairy's server, so the
-    // panel may promise only what Pairy's code does with it: nothing (O-43, as README says).
-    expect(html).toContain("Pairy never reads or stores this login; it knows this wallet only by its Stellar address.");
-    expect(html).not.toMatch(/server never receives this|only the Stellar address is sent/);
+    // Privy's SDK copies its login token into a cookie the browser sends to Pairy's server, and this
+    // page itself reads the login to show it, so the promise is about the server only (O-43, R2-1).
+    expect(html).toContain("Pairy&#x27;s server never reads or stores this login; it knows this wallet only by its Stellar address.");
+    expect(html).not.toMatch(/server never receives this|only the Stellar address is sent|\. Pairy never reads or stores this login/);
   });
 
   it("offers Export key through Privy's own screen, with the Varial note, and no device backup", () => {

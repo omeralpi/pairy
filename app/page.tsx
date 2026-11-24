@@ -38,7 +38,7 @@ const WHY = [
   },
   {
     title: "You don't sign up with Pairy.",
-    body: "With a key on your device or Varial, nobody asks who you are. With email or Google, that login goes to Privy; Pairy itself knows you only by your Stellar address.",
+    body: "With a key on your device or Varial, nobody asks who you are. With email or Google, that login goes to Privy; Pairy's server knows you only by your Stellar address.",
   },
 ];
 
