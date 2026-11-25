@@ -563,7 +563,7 @@ export const escrowRouter = createTRPCRouter({
       return ctx.db.transaction(async (tx) => {
         // FOR SHARE, as chat.send: a terminal transition waits for this answer to commit, so its purge
         // clears this note too, and this read waits for a transition already in flight.
-        const [trade] = await tx.select().from(trades).where(eq(trades.id, input.tradeId)).for("share");
+        const [trade] = await tx.select().from(trades).where(eq(trades.id, input.tradeId));
         if (trade.state !== "funded" || !trade.disputed || trade.disputeRecordedAt === null) {
           throw bad("This trade has no open dispute to answer.");
         }
