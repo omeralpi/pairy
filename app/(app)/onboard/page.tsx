@@ -63,6 +63,17 @@ export default function OnboardPage() {
     }
   };
 
+  const connectWithPrivy = () => run(() => walletCtx.connectPrivy!(setPrivyStep), "/wallet?new=1");
+
+  // Google's login in Privy's modal leaves the page, and the click that opened
+  // it with it. Back here logged in to Privy, that connect carries on with no
+  // second click, up to Pairy's Sign in dialog (DECISIONS 12), unless the user
+  // has started something else meanwhile. resumePrivy says yes once, when
+  // Privy is ready, so this runs after every render.
+  useEffect(() => {
+    if (ready && walletCtx.resumePrivy?.() && !busy && mode === "choose") connectWithPrivy();
+  });
+
   // A Privy wallet signs through Privy, so its buttons wait for Privy's chunk,
   // but not once Privy has failed: then they say so, and a click reports it.
   const privyWaiting = (kind: Wallet["kind"] | undefined) => kind === "privy" && !privy.ready && !privy.failed;
@@ -154,7 +165,7 @@ export default function OnboardPage() {
                 }
                 description="A wallet is made for you and opens again wherever you sign in. Privy says it splits the key and holds it for you; Pairy never has it. Whoever controls that email or Google account controls this wallet."
                 disabled={busy || privyWaiting("privy")}
-                onClick={() => run(() => walletCtx.connectPrivy!(setPrivyStep), "/wallet?new=1")}
+                onClick={connectWithPrivy}
               />
             )}
             {deviceWalletPublicKey ? (

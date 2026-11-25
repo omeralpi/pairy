@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PRIVY_LOGIN_TEXT } from "@/components/wallet/sign-confirm-dialog";
 import { buildClaimTransaction } from "@/lib/stellar/settlement";
-import type { PrivyAdapter } from "@/lib/wallet/privy-adapter";
+import { PRIVY_LOGIN_CLOSED, type PrivyAdapter } from "@/lib/wallet/privy-adapter";
 
 // The Privy branch of the provider as plain functions over a fake adapter and
 // a fake prompt: no browser, no Privy. Horizon is stubbed so Friendbot and
@@ -26,6 +26,7 @@ const {
   privySignMessage,
   privySignTransaction,
   restoredSelection,
+  resumesPrivyConnect,
 } = await import("./wallet-provider");
 type ConfirmPrompt = Parameters<typeof privySignMessage>[3];
 type PromptRequest = Parameters<Parameters<typeof createPrompt>[1]>[0];
@@ -472,5 +473,110 @@ describe("a Privy logout owed from a logout made while Privy was down (R2-1)", (
     expect(owed.owed()).toBe(false);
     const other = fakeAdapter({ address: "GPRIVY", addressAfterLogin: "GOTHER" });
     await expect(ensurePrivy(other.state, "GPRIVY", fakeOwed(true))).rejects.toThrow(PRIVY_OTHER_ACCOUNT);
+  });
+});
+
+/** The "a Privy connect left this page for its login" mark as the provider keeps it in sessionStorage, in memory here. */
+function fakePending(initial = false) {
+  let flag = initial;
+  return { pending: () => flag, mark: () => void (flag = true), clear: () => void (flag = false) };
+}
+
+describe("back from Google's login, which leaves the page (FIX-oauth)", () => {
+  beforeEach(() => {
+    horizon.loadAccount.mockReset().mockResolvedValue({});
+    horizon.fundWithFriendbot.mockReset().mockResolvedValue(undefined);
+  });
+  const message = "Sign in to Pairy (Stellar testnet).\nNonce: abc";
+
+  it("marks the connect while Privy's login is open: a login that leaves the page keeps the mark, one that settles here clears it", async () => {
+    // Google: Privy's modal sends the browser to Google, so this login never settles on this page.
+    let opened!: () => void;
+    const loginOpened = new Promise<void>((r) => (opened = r));
+    const left = fakePending();
+    const google = fakeAdapter({ authenticated: false, login: () => (opened(), new Promise<void>(() => {})) });
+    void connectPrivyWallet(google.state, () => {}, fakeOwed(), left);
+    await loginOpened;
+    expect(left.pending()).toBe(true);
+
+    // Email: the code is typed in Privy's modal and the login settles here.
+    const email = fakePending();
+    let markedDuringLogin = false;
+    const typed = fakeAdapter({ authenticated: false, address: "GEMAIL", login: async () => void (markedDuringLogin = email.pending()) });
+    expect(await connectPrivyWallet(typed.state, () => {}, fakeOwed(), email)).toBe("GEMAIL");
+    expect(markedDuringLogin).toBe(true);
+    expect(email.pending()).toBe(false);
+
+    // Closed: the user shut Privy's modal.
+    const closed = fakePending();
+    const shut = fakeAdapter({ authenticated: false, login: async () => Promise.reject(new Error(PRIVY_LOGIN_CLOSED)) });
+    await expect(connectPrivyWallet(shut.state, () => {}, fakeOwed(), closed)).rejects.toThrow(PRIVY_LOGIN_CLOSED);
+    expect(closed.pending()).toBe(false);
+  });
+
+  it("back logged in with no Stellar wallet yet: carries on with no click, creates and funds it, and stops at Pairy's Sign in dialog", async () => {
+    horizon.loadAccount.mockResolvedValue(null);
+    const { calls, state } = fakeAdapter({ address: null });
+    const left = fakePending(true);
+    expect(resumesPrivyConnect(state, left, fakeOwed())).toBe(true);
+    const publicKey = await connectPrivyWallet(state, () => {}, fakeOwed(), left);
+    expect(publicKey).toBe("GNEW");
+    expect(calls).toEqual(["create"]);
+    expect(horizon.fundWithFriendbot).toHaveBeenCalledWith("GNEW");
+
+    const dialog = fakePrompt();
+    void privySignMessage(state, publicKey, message, dialog.prompt).catch(() => {});
+    await dialog.opened;
+    expect(dialog.asked).toEqual([{ title: "Sign in", description: PRIVY_LOGIN_TEXT, summary: message }]);
+    // Nothing is signed until the user presses Sign (DECISIONS 12).
+    expect(calls).toEqual(["create"]);
+    dialog.cancel();
+  });
+
+  it("back logged in with the Stellar wallet Privy already holds: finds it, opens no second Privy login, and stops at the same dialog", async () => {
+    const { calls, state } = fakeAdapter({ address: kp.publicKey() });
+    const left = fakePending(true);
+    expect(resumesPrivyConnect(state, left, fakeOwed())).toBe(true);
+    expect(await connectPrivyWallet(state, () => {}, fakeOwed(), left)).toBe(kp.publicKey());
+
+    const dialog = fakePrompt();
+    const signing = privySignMessage(state, kp.publicKey(), message, dialog.prompt);
+    await dialog.opened;
+    expect(calls).toEqual([]);
+    await dialog.sign();
+    expect(kp.verifyMessage(message, Buffer.from(await signing, "base64"))).toBe(true);
+    expect(calls).toEqual(["sign"]);
+  });
+
+  it("waits while Privy is still loading, keeping the mark, then says yes once", () => {
+    const left = fakePending(true);
+    expect(resumesPrivyConnect({ adapter: null, failed: false }, left, fakeOwed())).toBe(false);
+    expect(resumesPrivyConnect(fakeAdapter({ ready: false, authenticated: false }).state, left, fakeOwed())).toBe(false);
+    // Slower than the F-18 bound: counted as failed for now; a Privy that turns up ready is used after all.
+    expect(resumesPrivyConnect({ adapter: null, failed: true }, left, fakeOwed())).toBe(false);
+    expect(left.pending()).toBe(true);
+
+    const { state } = fakeAdapter({ address: null });
+    expect(resumesPrivyConnect(state, left, fakeOwed())).toBe(true);
+    // Decided: a re-render, a reload or a cancelled Sign in dialog does not start it again.
+    expect(left.pending()).toBe(false);
+    expect(resumesPrivyConnect(state, left, fakeOwed())).toBe(false);
+  });
+
+  it("does not carry on when Privy came back logged out, a logout is owed, or no connect was started in this tab", () => {
+    // Google failed, or the user closed Privy's modal on the way back: decided, and back to the choices.
+    const loggedOut = fakePending(true);
+    expect(resumesPrivyConnect(fakeAdapter({ authenticated: false }).state, loggedOut, fakeOwed())).toBe(false);
+    expect(loggedOut.pending()).toBe(false);
+
+    // A logout made while Privy was down (R2-1): the provider ends that session; the user is not signed back in.
+    const owed = fakeOwed(true);
+    const out = fakePending(true);
+    expect(resumesPrivyConnect(fakeAdapter({ address: "GPRIVY" }).state, out, owed)).toBe(false);
+    expect(out.pending()).toBe(false);
+    expect(owed.owed()).toBe(true);
+
+    // A Privy session left from an earlier visit (a device key or Freighter chosen since): nothing to carry on.
+    expect(resumesPrivyConnect(fakeAdapter({ address: "GPRIVY" }).state, fakePending(), fakeOwed())).toBe(false);
   });
 });

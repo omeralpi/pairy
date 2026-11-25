@@ -10,13 +10,20 @@ const ctx = vi.hoisted(() => ({ value: {} as Record<string, unknown>, session: n
 // An error to show as if a wallet step had failed: the page's null states
 // start at it instead (only `error` is rendered on the choices screen).
 const failed = vi.hoisted(() => ({ error: null as string | null }));
+// React's useEffect is captured so a test can run the page's effects by hand, as a mount would.
+const effects = vi.hoisted(() => [] as (() => void)[]);
+const signedIn = vi.hoisted(() => ({ login: vi.fn(async (_wallet: unknown) => {}), push: vi.fn((_path: string) => {}) }));
 
 vi.mock("react", async (importOriginal) => {
   const react = await importOriginal<typeof import("react")>();
-  return { ...react, useState: (v: unknown) => react.useState(v === null ? failed.error : v) };
+  return {
+    ...react,
+    useState: (v: unknown) => react.useState(v === null ? failed.error : v),
+    useEffect: (fn: () => void) => void effects.push(fn),
+  };
 });
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {} }) }));
-vi.mock("@/lib/auth/use-login", () => ({ useLogin: () => ({ login: async () => {}, logout: async () => {}, pending: false }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: signedIn.push }) }));
+vi.mock("@/lib/auth/use-login", () => ({ useLogin: () => ({ login: signedIn.login, logout: async () => {}, pending: false }) }));
 vi.mock("@/lib/auth/use-session", () => ({ useSession: () => ({ publicKey: ctx.session, loading: false }) }));
 vi.mock("@/lib/wallet/use-wallet", () => ({ useWalletContext: () => ctx.value }));
 
@@ -95,6 +102,47 @@ describe("OnboardPage: the Privy choice", () => {
     expect(html).not.toContain("Continue with email or Google");
     expect(html).not.toContain('disabled=""');
     expect(html).toContain("Make a key on this device");
+  });
+});
+
+describe("OnboardPage: back from Google's login (FIX-oauth)", () => {
+  // Google's login leaves the page, so the click that opened it is gone. Back
+  // here, Privy is logged in and the provider says the connect should carry on.
+  const mount = (value: Record<string, unknown>) => {
+    effects.length = 0;
+    signedIn.login.mockClear();
+    signedIn.push.mockClear();
+    vi.stubGlobal("window", { location: { search: "", origin: "https://pairy.org" } });
+    render(value);
+    for (const effect of effects) effect();
+  };
+  const afterAsync = () => new Promise((r) => setTimeout(r, 0));
+
+  it("carries the Privy connect on with no click, through the same sign-in, to the new wallet", async () => {
+    const connectPrivy = vi.fn(async () => privyWallet);
+    try {
+      mount({ ...withPrivy, connectPrivy, resumePrivy: () => true });
+      await afterAsync();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(connectPrivy).toHaveBeenCalledOnce();
+    // login() is the SEP-53 sign-in: for a Privy wallet it opens Pairy's Sign in dialog first (DECISIONS 12).
+    expect(signedIn.login).toHaveBeenCalledOnce();
+    expect(signedIn.login).toHaveBeenCalledWith(privyWallet, undefined);
+    expect(signedIn.push).toHaveBeenCalledWith("/wallet?new=1");
+  });
+
+  it("does nothing on its own when the provider says there is nothing to carry on", async () => {
+    const connectPrivy = vi.fn(async () => privyWallet);
+    try {
+      mount({ ...withPrivy, connectPrivy, resumePrivy: () => false });
+      await afterAsync();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(connectPrivy).not.toHaveBeenCalled();
+    expect(signedIn.login).not.toHaveBeenCalled();
   });
 });
 

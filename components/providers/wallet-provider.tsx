@@ -139,6 +139,48 @@ async function settleOwedLogout(adapter: PrivyAdapter, owed: OwedLogout): Promis
   return hadSession;
 }
 
+/**
+ * A Privy connect whose login may have left the page: Google's login in
+ * Privy's modal is a full-page redirect, so the promise connectPrivyWallet
+ * waits on is gone when Google sends the user back to /onboard, logged in to
+ * Privy. Marked while that login is open and cleared once it settles here, so
+ * a mark found after the page loaded again means Google's redirect. In
+ * sessionStorage: this tab only, never another tab's login.
+ */
+export type PendingConnect = { pending(): boolean; mark(): void; clear(): void };
+const PENDING_CONNECT_KEY = "pairy:privy-connect";
+/** sessionStorage, or nothing where storage is blocked: without the mark, the user clicks once more, as before. */
+const tabStorage = () => {
+  try {
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+};
+const storedPendingConnect: PendingConnect = {
+  pending: () => tabStorage()?.getItem(PENDING_CONNECT_KEY) != null,
+  mark: () => tabStorage()?.setItem(PENDING_CONNECT_KEY, "1"),
+  clear: () => tabStorage()?.removeItem(PENDING_CONNECT_KEY),
+};
+
+/**
+ * Back from Google: true when this tab's Privy connect left the page for its
+ * login and Privy is now ready and logged in, so the onboarding carries the
+ * connect on without a second click. Decided once, as soon as Privy is ready:
+ * the mark is cleared then, so a re-render, a reload or a cancelled Sign in
+ * dialog does not start it again. A logout owed (R2-1) wins: that session is
+ * about to be ended, and the user is not signed back in.
+ */
+export function resumesPrivyConnect(
+  state: PrivyState,
+  pending: PendingConnect = storedPendingConnect,
+  owed: OwedLogout = storedOwedLogout,
+): boolean {
+  if (!state.adapter?.ready || !pending.pending()) return false;
+  pending.clear();
+  return state.adapter.authenticated && !owed.owed();
+}
+
 /** The Privy session a signature needs: logged in, and on this wallet's Stellar address. */
 export async function ensurePrivy(state: PrivyState, publicKey: string, owed: OwedLogout = storedOwedLogout): Promise<PrivyAdapter> {
   const adapter = livePrivy(state);
@@ -158,11 +200,17 @@ export async function connectPrivyWallet(
   state: PrivyState,
   onStep: (step: PrivyStep | null) => void = () => {},
   owed: OwedLogout = storedOwedLogout,
+  pending: PendingConnect = storedPendingConnect,
 ): Promise<string> {
   const adapter = livePrivy(state);
   if ((await settleOwedLogout(adapter, owed)) || !adapter.authenticated) {
     onStep("login");
-    await adapter.login();
+    pending.mark();
+    try {
+      await adapter.login();
+    } finally {
+      pending.clear();
+    }
   }
   // Checked first, so a retry never makes a second wallet.
   let publicKey = adapter.stellarAddress();
@@ -381,6 +429,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       connectPrivy: PRIVY_ENABLED
         ? async (onStep) => choose({ kind: "privy", publicKey: await connectPrivyWallet(privyRef.current, onStep) })
         : null,
+
+      resumePrivy: PRIVY_ENABLED ? () => resumesPrivyConnect(privyRef.current) : null,
 
       createDeviceWallet: async (pincode) => {
         const publicKey = await (await deviceWallet()).createDeviceWallet(pincode);

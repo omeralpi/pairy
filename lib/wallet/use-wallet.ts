@@ -53,6 +53,12 @@ export type WalletContextValue = {
    * CI build): the option is hidden.
    */
   connectPrivy: ((onStep?: (step: PrivyStep | null) => void) => Promise<Wallet>) | null;
+  /**
+   * True once, when this tab's connectPrivy left the page for Google's login
+   * (a full-page redirect) and Privy is now back, ready and logged in: the
+   * onboarding then carries that connect on. null without an App ID.
+   */
+  resumePrivy: (() => boolean) | null;
   /** Opens Privy's own export screen for the selected Privy wallet. Pairy never sees the key. null without an App ID. */
   exportPrivyKey: (() => Promise<void>) | null;
   /** `failed`: Privy's code did not load, or Privy did not answer in time; the Privy option should say so or hide. */
