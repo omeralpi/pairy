@@ -144,7 +144,8 @@ async function settleOwedLogout(adapter: PrivyAdapter, owed: OwedLogout): Promis
  * Privy's modal is a full-page redirect, so the promise connectPrivyWallet
  * waits on is gone when Google sends the user back to /onboard, logged in to
  * Privy. Marked while that login is open and cleared once it settles here, so
- * a mark found after the page loaded again means Google's redirect. In
+ * a mark found after the page loaded again means Google's redirect. Any wallet
+ * chosen, sign-in or logout in this tab ends it too: the user has moved on. In
  * sessionStorage: this tab only, never another tab's login.
  */
 export type PendingConnect = { pending(): boolean; mark(): void; clear(): void };
@@ -384,6 +385,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const select = useCallback((next: Selection | null) => {
     if (next) localStorage.setItem(SELECTION_KEY, JSON.stringify(next));
     else localStorage.removeItem(SELECTION_KEY);
+    // A wallet chosen, or none, ends a Privy connect left pending by Google's redirect.
+    storedPendingConnect.clear();
     setSelection(next);
   }, []);
 
@@ -458,6 +461,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       },
 
       signMessage: async (wallet, message, pincode) => {
+        // Signing in with a wallet, as "Sign in again" does without choosing one, ends it too.
+        storedPendingConnect.clear();
         if (wallet.kind === "device" && pincode !== undefined) {
           return (await deviceWallet()).signMessageWithDeviceWallet(wallet.publicKey, message, pincode);
         }
@@ -503,6 +508,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       },
 
       disconnect: async () => {
+        // Before Varial's disconnect, which can throw before select(null) is reached.
+        storedPendingConnect.clear();
         if (selection?.kind === "freighter") await (await freighter()).disconnectFreighter();
         const wasPrivy = selection?.kind === "privy";
         // The wallet is forgotten first: a Privy that is down or still loading

@@ -31,7 +31,7 @@ export default function OnboardPage() {
   const router = useRouter();
   const walletCtx = useWalletContext();
   const { wallet, ready, deviceWalletPublicKey, privy } = walletCtx;
-  const { publicKey: sessionKey } = useSession();
+  const { publicKey: sessionKey, loading: sessionLoading } = useSession();
   const { login } = useLogin();
   const [mode, setMode] = useState<Mode>("choose");
   const [busy, setBusy] = useState(false);
@@ -68,10 +68,12 @@ export default function OnboardPage() {
   // Google's login in Privy's modal leaves the page, and the click that opened
   // it with it. Back here logged in to Privy, that connect carries on with no
   // second click, up to Pairy's Sign in dialog (DECISIONS 12), unless the user
-  // has started something else meanwhile. resumePrivy says yes once, when
-  // Privy is ready, so this runs after every render.
+  // has started something else meanwhile or is already signed in. Decided once
+  // the session is known: resumePrivy says yes once, when Privy is ready, so
+  // this runs after every render.
   useEffect(() => {
-    if (ready && walletCtx.resumePrivy?.() && !busy && mode === "choose") connectWithPrivy();
+    if (!ready || sessionLoading || !walletCtx.resumePrivy?.()) return;
+    if (!busy && mode === "choose" && !(wallet && sessionKey === wallet.publicKey)) connectWithPrivy();
   });
 
   // A Privy wallet signs through Privy, so its buttons wait for Privy's chunk,

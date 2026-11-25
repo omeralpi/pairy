@@ -1,9 +1,12 @@
 import { Account, Keypair, Networks, TransactionBuilder, type Transaction } from "@stellar/stellar-sdk";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PRIVY_LOGIN_TEXT } from "@/components/wallet/sign-confirm-dialog";
 import { buildClaimTransaction } from "@/lib/stellar/settlement";
+import { createDeviceWallet } from "@/lib/wallet/device-wallet";
 import { PRIVY_LOGIN_CLOSED, type PrivyAdapter } from "@/lib/wallet/privy-adapter";
+import { useWalletContext, type WalletContextValue } from "@/lib/wallet/use-wallet";
 
 // The Privy branch of the provider as plain functions over a fake adapter and
 // a fake prompt: no browser, no Privy. Horizon is stubbed so Friendbot and
@@ -14,11 +17,48 @@ const horizon = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/stellar/horizon", () => horizon);
 
+// WalletProvider itself, mounted by hand for the FIX-oauth round-1 tests: with
+// `on`, useState keeps its values across renders, as a mounted provider does,
+// and useEffect is captured so its mount effect can be run. The dialogs render
+// nothing and Varial (Freighter) is a stub; the device wallet is the real one.
+const hooks = vi.hoisted(() => ({ on: false, store: [] as unknown[], i: 0, effects: [] as (() => unknown)[] }));
+vi.mock("react", async (importOriginal) => {
+  const React = await importOriginal<typeof import("react")>();
+  // React's own, for every render outside the mounted-provider tests (the mock below is not a component).
+  const reactState = React.useState;
+  return {
+    ...React,
+    useState: (init: unknown) => {
+      if (!hooks.on) return reactState(init);
+      const i = hooks.i++;
+      if (!(i in hooks.store)) hooks.store[i] = typeof init === "function" ? (init as () => unknown)() : init;
+      const set = (v: unknown) => {
+        hooks.store[i] = typeof v === "function" ? (v as (old: unknown) => unknown)(hooks.store[i]) : v;
+      };
+      return [hooks.store[i], set];
+    },
+    useEffect: (fn: () => unknown) => void hooks.effects.push(fn),
+  };
+});
+vi.mock("@/components/wallet/pincode-dialog", () => ({ PincodeDialog: () => null }));
+vi.mock("@/components/wallet/sign-confirm-dialog", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/wallet/sign-confirm-dialog")>()),
+  SignConfirmDialog: () => null,
+}));
+const varial = vi.hoisted(() => ({ disconnectFreighter: vi.fn(async () => {}) }));
+vi.mock("@/lib/wallet/freighter", () => ({
+  connectFreighter: async () => "GFREIGHTER",
+  disconnectFreighter: varial.disconnectFreighter,
+  signMessageWithFreighter: async () => "c2lnbmF0dXJl",
+  signTransactionWithFreighter: async (_address: string, xdr: string) => xdr,
+}));
+
 const {
   PRIVY_BAD_SIGNATURE,
   PRIVY_DOWN,
   PRIVY_LOADING,
   PRIVY_OTHER_ACCOUNT,
+  WalletProvider,
   connectPrivyWallet,
   createPrompt,
   ensurePrivy,
@@ -523,6 +563,8 @@ describe("back from Google's login, which leaves the page (FIX-oauth)", () => {
     expect(publicKey).toBe("GNEW");
     expect(calls).toEqual(["create"]);
     expect(horizon.fundWithFriendbot).toHaveBeenCalledWith("GNEW");
+    // Already logged in, the carried-on connect marks nothing: no second resume after this one.
+    expect(left.pending()).toBe(false);
 
     const dialog = fakePrompt();
     void privySignMessage(state, publicKey, message, dialog.prompt).catch(() => {});
@@ -538,6 +580,7 @@ describe("back from Google's login, which leaves the page (FIX-oauth)", () => {
     const left = fakePending(true);
     expect(resumesPrivyConnect(state, left, fakeOwed())).toBe(true);
     expect(await connectPrivyWallet(state, () => {}, fakeOwed(), left)).toBe(kp.publicKey());
+    expect(left.pending()).toBe(false);
 
     const dialog = fakePrompt();
     const signing = privySignMessage(state, kp.publicKey(), message, dialog.prompt);
@@ -546,6 +589,22 @@ describe("back from Google's login, which leaves the page (FIX-oauth)", () => {
     await dialog.sign();
     expect(kp.verifyMessage(message, Buffer.from(await signing, "base64"))).toBe(true);
     expect(calls).toEqual(["sign"]);
+  });
+
+  it("a connect already logged in to Privy marks nothing, so a cancelled Sign in dialog is not carried on again", async () => {
+    const { calls, state } = fakeAdapter({ address: kp.publicKey() });
+    const fresh = fakePending();
+    expect(await connectPrivyWallet(state, () => {}, fakeOwed(), fresh)).toBe(kp.publicKey());
+    expect(fresh.pending()).toBe(false);
+
+    const dialog = fakePrompt();
+    const signing = privySignMessage(state, kp.publicKey(), message, dialog.prompt);
+    await dialog.opened;
+    dialog.cancel();
+    await expect(signing).rejects.toThrow("Signing cancelled.");
+    // The render after Cancel asks again: nothing to carry on, so the dialog does not come back.
+    expect(resumesPrivyConnect(state, fresh, fakeOwed())).toBe(false);
+    expect(calls).toEqual([]);
   });
 
   it("waits while Privy is still loading, keeping the mark, then says yes once", () => {
@@ -578,5 +637,125 @@ describe("back from Google's login, which leaves the page (FIX-oauth)", () => {
 
     // A Privy session left from an earlier visit (a device key or Freighter chosen since): nothing to carry on.
     expect(resumesPrivyConnect(fakeAdapter({ address: "GPRIVY" }).state, fakePending(), fakeOwed())).toBe(false);
+  });
+});
+
+/** The Web Storage API in memory: sessionStorage for the mark, localStorage for the selection and the device key. */
+class MemoryStorage implements Storage {
+  private items = new Map<string, string>();
+  get length() {
+    return this.items.size;
+  }
+  key(i: number) {
+    return [...this.items.keys()][i] ?? null;
+  }
+  getItem(k: string) {
+    return this.items.get(k) ?? null;
+  }
+  setItem(k: string, v: string) {
+    this.items.set(k, String(v));
+  }
+  removeItem(k: string) {
+    this.items.delete(k);
+  }
+  clear() {
+    this.items.clear();
+  }
+}
+
+describe("the resume mark in this tab's storage, and what ends it (FIX-oauth round 1)", () => {
+  const MARK = "pairy:privy-connect";
+  const PIN = "correct horse";
+  const message = "Sign in to Pairy (Stellar testnet).\nNonce: abc";
+  let tab: MemoryStorage;
+  let browser: MemoryStorage;
+  beforeEach(() => {
+    tab = new MemoryStorage();
+    browser = new MemoryStorage();
+    vi.stubGlobal("sessionStorage", tab);
+    vi.stubGlobal("localStorage", browser);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    hooks.on = false;
+  });
+
+  /** Google's login left the page: the connect marked this tab and never settled here. */
+  async function leftForGoogle() {
+    let opened!: () => void;
+    const loginOpened = new Promise<void>((r) => (opened = r));
+    const google = fakeAdapter({ authenticated: false, login: () => (opened(), new Promise<void>(() => {})) });
+    void connectPrivyWallet(google.state);
+    await loginOpened;
+    expect(tab.getItem(MARK)).toBe("1");
+  }
+  /** Would the onboarding carry the connect on, with Privy ready and logged in? Stored mark, stored owed logout. */
+  const resumes = () => resumesPrivyConnect(fakeAdapter({ address: "GPRIVY" }).state);
+
+  /** WalletProvider as a page under it sees it, mounted by hand: state kept across renders, its mount effect run. */
+  async function mountProvider() {
+    Object.assign(hooks, { on: true, store: [], i: 0 });
+    let ctx!: WalletContextValue;
+    const Probe = () => {
+      ctx = useWalletContext();
+      return null;
+    };
+    const render = () => {
+      hooks.i = 0;
+      hooks.effects.length = 0;
+      renderToStaticMarkup(
+        <WalletProvider>
+          <Probe />
+        </WalletProvider>,
+      );
+      return ctx;
+    };
+    render();
+    for (const effect of hooks.effects.splice(0)) effect();
+    await vi.waitFor(() => expect(render().ready).toBe(true), { timeout: 10_000 });
+    return render;
+  }
+
+  it("lives in sessionStorage: kept while Privy loads, spent once Privy is ready", async () => {
+    await leftForGoogle();
+    expect(resumesPrivyConnect({ adapter: null, failed: false })).toBe(false);
+    expect(tab.getItem(MARK)).toBe("1");
+    expect(resumes()).toBe(true);
+    expect(tab.getItem(MARK)).toBeNull();
+    expect(resumes()).toBe(false);
+  });
+
+  // Back from Google, the user leaves the choice before Privy is ready there (it was slow, or they went
+  // elsewhere). Whatever they pick instead ends it: a later /onboard visit, Privy logged in, carries nothing on.
+  async function afterGoogle(act: (ctx: WalletContextValue) => unknown) {
+    await leftForGoogle();
+    const render = await mountProvider();
+    await act(render());
+    expect(tab.getItem(MARK)).toBeNull();
+    expect(resumes()).toBe(false);
+  }
+  const varialWallet = { kind: "freighter" as const, publicKey: "GFREIGHTER", signTransaction: async (xdr: string) => xdr };
+
+  it("ends when a key is made on this device", () => afterGoogle((ctx) => ctx.createDeviceWallet(PIN)));
+
+  it("ends when the key already stored here is picked", async () => {
+    await createDeviceWallet(PIN, browser);
+    await afterGoogle((ctx) => ctx.selectDeviceWallet());
+  });
+
+  it("ends when Varial (formerly Freighter) is connected", () => afterGoogle((ctx) => ctx.connectFreighter()));
+
+  it("ends when the user signs in with the wallet already selected here (Sign in again)", () =>
+    afterGoogle((ctx) => ctx.signMessage(varialWallet, message)));
+
+  it("ends when the user logs out", () => afterGoogle((ctx) => ctx.disconnect()));
+
+  it("ends when the user logs out, even if Varial's disconnect fails before the wallet is forgotten", async () => {
+    browser.setItem("pairy:wallet", JSON.stringify({ kind: "freighter", publicKey: "GFREIGHTER" }));
+    varial.disconnectFreighter.mockRejectedValueOnce(new Error("Varial didn't answer."));
+    await afterGoogle(async (ctx) => {
+      expect(ctx.wallet?.kind).toBe("freighter");
+      await expect(ctx.disconnect()).rejects.toThrow("Varial didn't answer.");
+    });
   });
 });

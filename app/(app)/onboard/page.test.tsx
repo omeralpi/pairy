@@ -6,7 +6,7 @@ import { FREIGHTER_MISSING } from "@/lib/wallet/freighter";
 // The onboarding page as it renders for one wallet context; no browser, so
 // effects do not run and the markup is enough to see which choices are offered
 // and what the headline promises.
-const ctx = vi.hoisted(() => ({ value: {} as Record<string, unknown>, session: null as string | null }));
+const ctx = vi.hoisted(() => ({ value: {} as Record<string, unknown>, session: null as string | null, sessionLoading: false }));
 // An error to show as if a wallet step had failed: the page's null states
 // start at it instead (only `error` is rendered on the choices screen).
 const failed = vi.hoisted(() => ({ error: null as string | null }));
@@ -24,7 +24,7 @@ vi.mock("react", async (importOriginal) => {
 });
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: signedIn.push }) }));
 vi.mock("@/lib/auth/use-login", () => ({ useLogin: () => ({ login: signedIn.login, logout: async () => {}, pending: false }) }));
-vi.mock("@/lib/auth/use-session", () => ({ useSession: () => ({ publicKey: ctx.session, loading: false }) }));
+vi.mock("@/lib/auth/use-session", () => ({ useSession: () => ({ publicKey: ctx.session, loading: ctx.sessionLoading }) }));
 vi.mock("@/lib/wallet/use-wallet", () => ({ useWalletContext: () => ctx.value }));
 
 const { default: OnboardPage } = await import("./page");
@@ -108,12 +108,17 @@ describe("OnboardPage: the Privy choice", () => {
 describe("OnboardPage: back from Google's login (FIX-oauth)", () => {
   // Google's login leaves the page, so the click that opened it is gone. Back
   // here, Privy is logged in and the provider says the connect should carry on.
-  const mount = (value: Record<string, unknown>) => {
+  const mount = (value: Record<string, unknown>, session: string | null = null, sessionLoading = false) => {
     effects.length = 0;
     signedIn.login.mockClear();
     signedIn.push.mockClear();
     vi.stubGlobal("window", { location: { search: "", origin: "https://pairy.org" } });
-    render(value);
+    ctx.sessionLoading = sessionLoading;
+    try {
+      render(value, session);
+    } finally {
+      ctx.sessionLoading = false;
+    }
     for (const effect of effects) effect();
   };
   const afterAsync = () => new Promise((r) => setTimeout(r, 0));
@@ -143,6 +148,36 @@ describe("OnboardPage: back from Google's login (FIX-oauth)", () => {
     }
     expect(connectPrivy).not.toHaveBeenCalled();
     expect(signedIn.login).not.toHaveBeenCalled();
+  });
+
+  it("spends the mark but carries nothing on for a user already signed in, whatever their wallet (round 1)", async () => {
+    for (const kind of ["device", "freighter", "privy"]) {
+      const wallet = { ...privyWallet, kind };
+      const connectPrivy = vi.fn(async () => privyWallet);
+      const resumePrivy = vi.fn(() => true);
+      try {
+        mount({ ...withPrivy, wallet, connectPrivy, resumePrivy }, wallet.publicKey);
+        await afterAsync();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+      expect(resumePrivy, kind).toHaveBeenCalled();
+      expect(connectPrivy, kind).not.toHaveBeenCalled();
+      expect(signedIn.login, kind).not.toHaveBeenCalled();
+    }
+  });
+
+  it("does not decide while the session is still loading, so a signed-in user is never taken for a new one (round 1)", async () => {
+    const connectPrivy = vi.fn(async () => privyWallet);
+    const resumePrivy = vi.fn(() => true);
+    try {
+      mount({ ...withPrivy, connectPrivy, resumePrivy }, null, true);
+      await afterAsync();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(resumePrivy).not.toHaveBeenCalled();
+    expect(connectPrivy).not.toHaveBeenCalled();
   });
 });
 
