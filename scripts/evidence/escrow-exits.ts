@@ -889,7 +889,7 @@ async function resolveDispute(
       attempts.push({ ...summary, singleSignatures, outcome: why });
       console.error(
         `${why}. It may still land: look up hash ${prep.rebuilt.txHash} before anything else. ` +
-          `The signed copies are in scripts/evidence/.state/resolve-${run}-${attempt}.*.xdr. Do not sign again; tell the orchestrator this hash.`,
+          `The signed copies are in scripts/evidence/.state/resolve-${run}-${attempt}.*.xdr. Do not sign again; tell the operator this hash.`,
       );
       throw e;
     }
