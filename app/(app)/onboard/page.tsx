@@ -69,11 +69,13 @@ export default function OnboardPage() {
   // it with it. Back here logged in to Privy, that connect carries on with no
   // second click, up to Pairy's Sign in dialog (DECISIONS 12), unless the user
   // has started something else meanwhile or is already signed in. Decided once
-  // the session is known: resumePrivy says yes once, when Privy is ready, so
-  // this runs after every render.
+  // the session is known and the page is idle: the click's own page stays busy
+  // while Privy's modal is open, and its mark is not a return from Google until
+  // the page has loaded again. resumePrivy says yes once, when Privy is ready,
+  // so this runs after every render.
   useEffect(() => {
-    if (!ready || sessionLoading || !walletCtx.resumePrivy?.()) return;
-    if (!busy && mode === "choose" && !(wallet && sessionKey === wallet.publicKey)) connectWithPrivy();
+    if (!ready || sessionLoading || busy || !walletCtx.resumePrivy?.()) return;
+    if (mode === "choose" && !(wallet && sessionKey === wallet.publicKey)) connectWithPrivy();
   });
 
   // A Privy wallet signs through Privy, so its buttons wait for Privy's chunk,
