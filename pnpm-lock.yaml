@@ -14,6 +14,9 @@ importers:
       '@privy-io/react-auth':
         specifier: 3.51.1
         version: 3.51.1(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)))(@solana/kit@5.5.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6))(@solana/sysvars@5.5.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.104.2)(@tanstack/react-query@5.104.2(react@18.3.1))(@types/react@18.3.31)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@6.0.6)(zod@3.25.76)
+      '@privy-io/server-auth':
+        specifier: 1.32.5
+        version: 1.32.5(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(viem@2.57.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))
       '@radix-ui/react-alert-dialog':
         specifier: ^1.2.1
         version: 1.2.1(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -959,6 +962,18 @@ packages:
   '@hot-wallet/sdk@1.0.11':
     resolution: {integrity: sha512-qRDH/4yqnRCnk7L/Qd0/LDOKDUKWcFgvf6eRELJkP0OgxIe65i/iXaG+u2lL0mLbTGkiWYk67uAvEerNUv2gzA==}
 
+  '@hpke/chacha20poly1305@1.8.1':
+    resolution: {integrity: sha512-EqIpqvybIQrdMMbVcrF9cr6q8PZWbKQ60428iZyESjGO8j9jJCsILNHaCyWWBwnJYAKT8nZko5sNIkIXmlHsuw==}
+    engines: {node: '>=16.0.0'}
+
+  '@hpke/common@1.13.0':
+    resolution: {integrity: sha512-PqaJR89RWJQmt/WOGuBLrcrtXtEMbWu91XIbxDjKDTDgKvqvhlxOzQ9BAf9a0Q+yqqbTtQ0pK6KUyVi2WMehbA==}
+    engines: {node: '>=16.0.0'}
+
+  '@hpke/core@1.10.1':
+    resolution: {integrity: sha512-VZOk0rHC4vPsbW/fIRz7Q2IviSl0+9dRhP9yi/PmkKVKjj4vZDs1ufkN47twBFLZmiw37YFtTqBrxKAI7dlOrg==}
+    engines: {node: '>=16.0.0'}
+
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
     engines: {node: '>=10.10.0'}
@@ -1411,6 +1426,9 @@ packages:
     peerDependencies:
       preact: '>= 10.25.0 || >=11.0.0-0'
 
+  '@privy-io/api-base@1.7.0':
+    resolution: {integrity: sha512-ji6ARQAAuW/FzRTgft9NCjRuouWX9t+J7JMmvLPsnXQJDFEV9mqh4sWXZhQ8ddTq/iDZ4z/yz1ORJqN8bYAi4Q==}
+
   '@privy-io/api-base@2.0.0':
     resolution: {integrity: sha512-wFBoHda1xDcEpnyvGsPf4hH09i7NwpNTCF1sxaVKd5x4H5fCMXOZ37ANNhDAqF+Msq7LiMP+AeUlWrhTjyJqPg==}
 
@@ -1445,6 +1463,9 @@ packages:
   '@privy-io/popup@0.0.6':
     resolution: {integrity: sha512-GqhllI3PzwszfWkVyFhSZ7TiCR0opjWysdfX45SMnVXBasG0pyt7pAf/eHvQhUmjpVpi1VAcOdeB70Iv2CYuDw==}
 
+  '@privy-io/public-api@2.45.2':
+    resolution: {integrity: sha512-TSuaFq65PPInb0CBJ9dO/vLh4u4oWXVpv5KxShbVsuaArZ8lig+Orl/HUR1Hri6643zXoBqWlWx9wDt4MQvz9A==}
+
   '@privy-io/react-auth@3.51.1':
     resolution: {integrity: sha512-h923viWmZ2RBFsMYIYq6YV+Kax85WgrBe9v1ce4zXRKnOJQZhaoRsz7eKQiSY/COtATCUiiyUqztxY5AW2E4xw==}
     peerDependencies:
@@ -1475,6 +1496,18 @@ packages:
 
   '@privy-io/routes@0.5.0':
     resolution: {integrity: sha512-SbhETnwJedY+t3vm5PoB0w1BwYbmKxs6SM4NCeYPRJrTts7P3WIKsv7sdXjpgmAWz/ejR2Ti8sHU9JfrEwr89w==}
+
+  '@privy-io/server-auth@1.32.5':
+    resolution: {integrity: sha512-e087vImrFHP4yAMx8alyCeCm6gk2JG/q7eSklFoST5mPTUV9TGKx7XNIyKOQQHxwKMpk5SBVIlkyJcqg3CuxSw==}
+    deprecated: This package is deprecated. If you are looking for the latest features and support, use @privy-io/node instead.
+    peerDependencies:
+      ethers: ^6
+      viem: ^2.24.1
+    peerDependenciesMeta:
+      ethers:
+        optional: true
+      viem:
+        optional: true
 
   '@privy-io/std@0.0.2':
     resolution: {integrity: sha512-26fzqzF82fpUH4YAK4APNKU4Lgin3TzY3iMQ+4CStT6Csi3FG+CCvB1H9ZOQW7N4S3GegD+tYAGxZEp5pMXYmQ==}
@@ -2696,6 +2729,9 @@ packages:
   '@solana/web3.js@1.99.0':
     resolution: {integrity: sha512-QZYQ2T1z6xWisoyALPq25i/QZTsRlM02BABtAsfaQ1p8wX4SdTfxrKTRue/ZZqrhNVh5oL7T/DUFiTS9DRgxow==}
 
+  '@stablelib/base64@1.0.1':
+    resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
+
   '@stablelib/base64@2.0.1':
     resolution: {integrity: sha512-P2z89A7N1ETt6RxgpVdDT2xlg8cnm3n6td0lY9gyK7EiWK3wdq388yFX/hLknkCC0we05OZAD1rfxlQJUbl5VQ==}
 
@@ -3681,6 +3717,9 @@ packages:
   base-x@3.0.11:
     resolution: {integrity: sha512-xz7wQ8xDhdyP7tQxwdteLYeFfS68tSMNCZ/Y37WJ4bhGfKPpqEIlmIyueQHqOyoPhE6xNUqjzRr8ra0eF9VRvA==}
 
+  base-x@4.0.1:
+    resolution: {integrity: sha512-uAZ8x6r6S3aUM9rbHGVOIsR15U/ZSc82b3ymnCPsT45Gk1DDvhDPdIgB5MrhirZWt+5K0EEPQH985kNqZgNPFw==}
+
   base-x@5.0.1:
     resolution: {integrity: sha512-M7uio8Zt++eg3jPj+rHMfCC+IuygQHHCOU+IYsVtik6FWjuYpVt/+MRKcgsAMHh8mMFAwnB+Bs+mTrFiXjMzKg==}
 
@@ -3793,6 +3832,9 @@ packages:
 
   bs58@4.0.1:
     resolution: {integrity: sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==}
+
+  bs58@5.0.0:
+    resolution: {integrity: sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==}
 
   bs58@6.0.0:
     resolution: {integrity: sha512-PD0wEnEYg6ijszw/u8s+iI3H17cTymlrwkKhDhPZq+Sokl3AU4htyBFTjAeNAlCCmg0f53g6ih3jATyCKftTfw==}
@@ -4140,6 +4182,10 @@ packages:
   doctrine@3.0.0:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
 
   dotenv@18.0.8:
     resolution: {integrity: sha512-2KDeoFoK/zRtcnbunCDlLG5VWVMcyqeQc6iK65o231nfNAcuGrKoqUQfJFUtBI+QlShk5HKIHxwebBtUl3rEfA==}
@@ -4573,6 +4619,9 @@ packages:
 
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
+
+  fast-sha256@1.3.0:
+    resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
 
   fast-stable-stringify@1.0.0:
     resolution: {integrity: sha512-wpYMUmFu5f00Sm0cj2pfivpmawLZ0NKdviQ4w9zJeR8JVtOpOxHmLaJuj0vxvGqMJQWyP/COUkF75/57OKyRag==}
@@ -5945,6 +5994,9 @@ packages:
     resolution: {integrity: sha512-57frrGM/OCTLqLOAh0mhVA9VBMHd+9U7Zb2THMGdBUoZVOtGbJzjxsYGDJ3A9AYYCP4hn6y1TVbaOfzWtm5GFg==}
     engines: {node: '>= 12.13.0'}
 
+  redaxios@0.5.1:
+    resolution: {integrity: sha512-FSD2AmfdbkYwl7KDExYQlVvIrFz6Yd83pGfaGjBzM9F6rpq8g652Q4Yq5QD4c+nf4g2AgeElv1y+8ajUPiOYMg==}
+
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
     engines: {node: '>= 0.4'}
@@ -6229,6 +6281,9 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
+  standardwebhooks@1.0.0:
+    resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
+
   statuses@1.5.0:
     resolution: {integrity: sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==}
     engines: {node: '>= 0.6'}
@@ -6387,6 +6442,9 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
+  svix@1.99.1:
+    resolution: {integrity: sha512-JfpvbAg5iT5NagDAfOq3e6Ci6NbOMbMm6C3DnfDBB60m2JDK+Z2hXPE9XNAmutb53DCdPoih1V70IbklZnX09A==}
+
   tabbable@6.5.2:
     resolution: {integrity: sha512-XgdnB1nGU6KU4VgMnZPaZCx7M1hBrLyEiZYau2G2gq9UT0d7d4FUBlNX7vvPlm/B1vk1PjrzJBx9Lbv4fsqS9g==}
 
@@ -6485,6 +6543,9 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
+  ts-case-convert@2.3.3:
+    resolution: {integrity: sha512-+9J4VFJ71xZRoc79Ph+7hcbz75idX4JXDEuuhe6LJIYspf13VIvZbRqXwG8g0/IMrfkkib3rin9ayeFmqBm9mQ==}
+
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
@@ -6518,6 +6579,10 @@ packages:
   type-fest@0.20.2:
     resolution: {integrity: sha512-Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ==}
     engines: {node: '>=10'}
+
+  type-fest@3.13.1:
+    resolution: {integrity: sha512-tLq3bSNx+xSpwvAJnzrK0Ep5CLNWjvFTOp71URMaAEWBfRb9nnJiBoUe0tF8bI4ZFO3omgBR6NvnbzVUT3Ly4g==}
+    engines: {node: '>=14.16'}
 
   typed-array-buffer@1.0.3:
     resolution: {integrity: sha512-nAYYwfY3qnzX30IkA6AQZjVbtK6duGontcQm1WSG1MD94YLqK0515GNApXkoxKOWMusVssAHWLh9SeaoefYFGw==}
@@ -7775,6 +7840,16 @@ snapshots:
       - typescript
       - utf-8-validate
 
+  '@hpke/chacha20poly1305@1.8.1':
+    dependencies:
+      '@hpke/common': 1.13.0
+
+  '@hpke/common@1.13.0': {}
+
+  '@hpke/core@1.10.1':
+    dependencies:
+      '@hpke/common': 1.13.0
+
   '@humanwhocodes/config-array@0.13.0':
     dependencies:
       '@humanwhocodes/object-schema': 2.0.3
@@ -8370,6 +8445,10 @@ snapshots:
       '@preact/signals-core': 1.14.4
       preact: 10.29.8
 
+  '@privy-io/api-base@1.7.0':
+    dependencies:
+      zod: 3.25.76
+
   '@privy-io/api-base@2.0.0': {}
 
   '@privy-io/api-types@0.24.0': {}
@@ -8414,6 +8493,18 @@ snapshots:
       viem: 2.57.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
 
   '@privy-io/popup@0.0.6': {}
+
+  '@privy-io/public-api@2.45.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)':
+    dependencies:
+      '@privy-io/api-base': 1.7.0
+      bs58: 5.0.0
+      libphonenumber-js: 1.13.17
+      viem: 2.57.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
 
   '@privy-io/react-auth@3.51.1(@solana-program/system@0.10.0(@solana/kit@5.5.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)))(@solana-program/token@0.9.0(@solana/kit@5.5.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6)))(@solana/kit@5.5.1(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)(utf-8-validate@6.0.6))(@solana/sysvars@5.5.1(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3))(@stripe/stripe-js@1.54.2)(@tanstack/query-core@5.104.2)(@tanstack/react-query@5.104.2(react@18.3.1))(@types/react@18.3.31)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@18.3.1))(utf-8-validate@6.0.6)(zod@3.25.76)':
     dependencies:
@@ -8516,6 +8607,31 @@ snapshots:
   '@privy-io/routes@0.5.0':
     dependencies:
       '@privy-io/api-types': 0.24.0
+
+  '@privy-io/server-auth@1.32.5(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(viem@2.57.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))':
+    dependencies:
+      '@hpke/chacha20poly1305': 1.8.1
+      '@hpke/core': 1.10.1
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@privy-io/public-api': 2.45.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@scure/base': 1.2.6
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      canonicalize: 2.1.0
+      dotenv: 16.6.1
+      jose: 4.15.9
+      node-fetch-native: 1.6.7
+      redaxios: 0.5.1
+      svix: 1.99.1
+      ts-case-convert: 2.3.3
+      type-fest: 3.13.1
+    optionalDependencies:
+      viem: 2.57.8(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
 
   '@privy-io/std@0.0.2': {}
 
@@ -10624,6 +10740,8 @@ snapshots:
       - encoding
       - typescript
       - utf-8-validate
+
+  '@stablelib/base64@1.0.1': {}
 
   '@stablelib/base64@2.0.1': {}
 
@@ -13047,6 +13165,8 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
+  base-x@4.0.1: {}
+
   base-x@5.0.1: {}
 
   base32.js@0.1.0: {}
@@ -13169,6 +13289,10 @@ snapshots:
   bs58@4.0.1:
     dependencies:
       base-x: 3.0.11
+
+  bs58@5.0.0:
+    dependencies:
+      base-x: 4.0.1
 
   bs58@6.0.0:
     dependencies:
@@ -13515,6 +13639,8 @@ snapshots:
   doctrine@3.0.0:
     dependencies:
       esutils: 2.0.3
+
+  dotenv@16.6.1: {}
 
   dotenv@18.0.8: {}
 
@@ -14122,6 +14248,8 @@ snapshots:
   fast-redact@3.5.0: {}
 
   fast-safe-stringify@2.1.1: {}
+
+  fast-sha256@1.3.0: {}
 
   fast-stable-stringify@1.0.0: {}
 
@@ -15613,6 +15741,8 @@ snapshots:
 
   real-require@0.2.0: {}
 
+  redaxios@0.5.1: {}
+
   reflect.getprototypeof@1.0.10:
     dependencies:
       call-bind: 1.0.9
@@ -15969,6 +16099,11 @@ snapshots:
 
   stackback@0.0.2: {}
 
+  standardwebhooks@1.0.0:
+    dependencies:
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
+
   statuses@1.5.0: {}
 
   std-env@3.10.0: {}
@@ -16163,6 +16298,10 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
+  svix@1.99.1:
+    dependencies:
+      standardwebhooks: 1.0.0
+
   tabbable@6.5.2: {}
 
   tailwind-merge@3.7.0: {}
@@ -16276,6 +16415,8 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
+  ts-case-convert@2.3.3: {}
+
   ts-interface-checker@0.1.13: {}
 
   ts-mixer@6.0.4: {}
@@ -16306,6 +16447,8 @@ snapshots:
       prelude-ls: 1.2.1
 
   type-fest@0.20.2: {}
+
+  type-fest@3.13.1: {}
 
   typed-array-buffer@1.0.3:
     dependencies:

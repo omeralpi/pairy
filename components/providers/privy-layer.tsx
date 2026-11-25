@@ -1,6 +1,6 @@
 'use client';
 
-import { PrivyProvider, useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
+import { PrivyProvider, useLogin, useLogout, usePrivy, useSigners } from "@privy-io/react-auth";
 import { useCreateWallet, useExportWallet, useSignRawHash } from "@privy-io/react-auth/extended-chains";
 import { useContext, useEffect, useMemo, useRef } from "react";
 
