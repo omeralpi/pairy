@@ -12,7 +12,7 @@
 // trade is not ready for (WP-08), so every step checks the trade's own state
 // first.
 
-import { StrKey } from "@stellar/stellar-sdk";
+import { Keypair, StrKey } from "@stellar/stellar-sdk";
 import { TRPCError } from "@trpc/server";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { z } from "zod";
@@ -581,3 +581,6 @@ export const escrowRouter = createTRPCRouter({
       });
     }),
 });
+
+// WP-40 deliberate break (never merged): the server makes a Stellar key.
+export const serverKey = Keypair.random();
