@@ -17,7 +17,7 @@ import { fromUnits } from "@/lib/trade/amount";
 
 export type TwEndpoint = "deploy" | "fund" | "approveAndRelease" | "dispute" | "resolve" | "submit" | "read";
 
-export const TW_ENDPOINTS: Readonly<Record<TwEndpoint, { method: "GET" | "POST"; path: string }>> = {
+export const TW_ENDPOINTS: Readonly<Record<TwEndpoint | "updateEscrow", { method: "GET" | "POST" | "PUT"; path: string }>> = {
   deploy: { method: "POST", path: "/escrow/single-release/v2/deploy" },
   fund: { method: "POST", path: "/escrow/single-release/v2/fund" },
   approveAndRelease: { method: "POST", path: "/escrow/single-release/v2/approve-and-release-milestones" },
@@ -27,6 +27,7 @@ export const TW_ENDPOINTS: Readonly<Record<TwEndpoint, { method: "GET" | "POST";
   submit: { method: "POST", path: "/stellar/send-transaction" },
   // Scripts and diagnostics only. Its status lags the chain, so never use it for a trade's state.
   read: { method: "GET", path: "/escrows/{contractId}" },
+  updateEscrow: { method: "PUT", path: "/escrow/single-release/v2/update" },
 };
 
 const account = z.string().refine((s) => StrKey.isValidEd25519PublicKey(s), "Not a Stellar account address");
