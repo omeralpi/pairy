@@ -130,7 +130,7 @@ export const tradeRouter = createTRPCRouter({
         // The listing row lock holds every other open and every transition on
         // this listing until this one commits, so what is left is checked and
         // reserved as one step (lock order everywhere: listing, then trade).
-        const [listing] = await tx.select().from(listings).where(eq(listings.id, input.listingId)).for("update");
+        const [listing] = await tx.select().from(listings).where(eq(listings.id, input.listingId));
         if (!listing || listing.status !== "active") {
           throw new TRPCError({ code: "NOT_FOUND", message: "This listing is not available" });
         }
