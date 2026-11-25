@@ -131,7 +131,7 @@ Evidence type: live demo URL, public repo, walkthrough video.
 
 This section collects the evidence promised in section 6.1 of the statement of work for Pairy's second InstaWards month. Sprint day 1 is 2026-11-24 and day 30 is 2026-12-23. As in Phase 1, everything runs on Stellar testnet with test money only, and Pairy has no users.
 
-**Status: draft of 2026-11-24 (UTC).** The month-2 code is committed but is not on GitHub or on pairy.org yet. It goes out in one release (push, database migration and deploy) once the owner approves it. The target is 2026-12-07. Until then, every hosted-app item, every GitHub CI link and every recording below says **not done yet**, with what will provide it and when. What exists today is on Stellar testnet: transactions made by the repo's scripts, and by the app running on a developer's machine (`localhost`) against testnet.
+**Status: updated 2026-11-25 (UTC); the links below were last checked on 2026-11-25, by 21:01 UTC.** The month-2 release went out on 2026-11-25: the code reached GitHub at 19:17:15 UTC, the production database was migrated at about 19:33 UTC, and pairy.org has served the month-2 build since 19:36:07 UTC, with protected mode switched off ([the release](#the-release-on-pairyorg-2026-11-25)). The GitHub CI runs, a smoke test on pairy.org and the day-21 gate are linked below. Protected mode on pairy.org, the in-app protected exits there and the recordings still say **not done yet**, with what will provide them and when. Besides pairy.org, the transactions come from the repo's scripts and from the app running on a developer's machine (`localhost`), all on Stellar testnet.
 
 **How this section is ordered.**
 1. One row per SOW 6.1 item, with its status.
@@ -146,36 +146,36 @@ The full gate log is [`docs/phase2-gates.md`](docs/phase2-gates.md).
 
 | # | SOW 6.1 item | Status | Evidence, or what will provide it and when |
 |---|---|---|---|
-| 1 | Day-30 check 1: sign up on https://pairy.org with an email, in two browsers, and see the same wallet | Not done yet | Deliverable 1 reaches pairy.org with the release (target 2026-12-07) and is recorded in R1. Done on localhost with a Privy test account: the same email in two fresh browsers showed the same wallet, and the second browser signed a transaction ([Privy wallets](#privy-wallets-deliverable-1)). |
-| 2 | Day-30 check 2: the three protected-trade exits, checked with the SOW's five steps | Done, by the repo's script. In the app: not done yet | Release, resolved to the buyer, resolved to the seller, each with the real arbiter as the only dispute resolver ([the three exits](#the-three-protected-trade-exits-deliverable-2)). The in-app exits on pairy.org (R2, R3) come after the release. |
+| 1 | Day-30 check 1: sign up on https://pairy.org with an email, in two browsers, and see the same wallet | Not done yet with an email in two browsers. Sign-up on pairy.org works (Google, 2026-11-25) | On pairy.org on 2026-11-25, a Google login made a Privy wallet, and Friendbot funded it ([the day-21 gate](#on-pairyorg-the-day-21-gate-2026-11-25)). The same email in two browsers on pairy.org is recorded in R1, due by day 30 (2026-12-23). Done on localhost with a Privy test account: the same email in two fresh browsers showed the same wallet, and the second browser signed a transaction ([Privy wallets](#privy-wallets-deliverable-1)). |
+| 2 | Day-30 check 2: the three protected-trade exits, checked with the SOW's five steps | Done, by the repo's script. In the app: not done yet | Release, resolved to the buyer, resolved to the seller, each with the real arbiter as the only dispute resolver ([the three exits](#the-three-protected-trade-exits-deliverable-2)). The in-app exits on pairy.org (R2, R3) come once protected mode is switched on there. It has been off since the release; the day-24 gate is due 2026-12-17. |
 | 3 | Day-30 check 3: the arbiter account's signers on stellar.expert | Done (checked 2026-11-24) | [`GCAQSD3C…XCPH`](https://stellar.expert/explorer/testnet/account/GCAQSD3CRZVO34O7AJJWVIRKI6HGTOKLG5WSX4WJJTNG3QQ6ZWPAXCPH): two signers at weight 1, its own key at weight 0, thresholds 2/2/2 ([the arbiter account](#the-arbiter-account)). |
-| 4 | Day-30 check 4: a listing's "left" amount changes after a trade | Not done yet on pairy.org | Comes with the release, in R4 and its screenshots. Done on localhost: "100 of 100 USDC left", then "40 of 100" after a trade of 60 opened, then "100 of 100" again after it was cancelled ([remaining amount](#remaining-amount-and-the-concurrency-test-deliverable-3)). |
+| 4 | Day-30 check 4: a listing's "left" amount changes after a trade | Done on pairy.org (2026-11-25) | A new listing of 5 to 20 XLM showed "20 of 20 XLM left", then "10 of 20 XLM left" once a trade of 10 opened, and still 10 after that trade was claimed ([remaining amount](#remaining-amount-and-the-concurrency-test-deliverable-3), with screenshots). R4, which adds a cancel, is not done yet. Done on localhost too: "100 of 100 USDC left", then "40 of 100" after a trade of 60 opened, then "100 of 100" again after it was cancelled. |
 | 5 | Day-30 check 5: the EURC transactions | Done, except the matured 72-hour reclaim (not done yet) | Lock, claim, early reclaim rejected on chain, 60-second reclaim, and a real 72-hour lock ([EURC](#eurc-deliverable-3)). That lock matures on 2026-11-27 at 10:37:57 UTC and is reclaimed after that. |
 | 6 | Every item marked done or not done in EVIDENCE.md | Done | This table. |
 | 7 | The key table of SOW section 3, checked against the testnet evidence | Done (checked 2026-11-24) | [Key table](#key-table-checked-on-testnet) |
-| 8 | For every new CI check, a run made to fail on purpose on a throwaway branch, next to the green run | Not done yet on GitHub. Done locally | The throwaway branches are pushed with the release, and the GitHub links go here. Until then, a local run of every CI step on each branch: [CI checks](#ci-checks-green-and-deliberate-red-runs). |
-| 9 | R1: email sign-up, a lock and claim signed through Privy, the same email signing again in a second browser, the exported key imported into Varial (formerly Freighter) | Not done yet | Recorded on pairy.org after the release ([recordings](#recordings)). |
-| 10 | R2: a protected trade disputed from the flag dialog, both answers, both builders signing, the resolution in the trade room, the chat gone, a non-signer refused at pairy.org/arbiter | Not done yet | Recorded on pairy.org after the release. |
-| 11 | R3: a protected trade released by the seller | Not done yet | Recorded on pairy.org after the release. |
-| 12 | R4: a listing's "left" amount before and after a trade and after a cancel, and an EURC trade | Not done yet | Recorded on pairy.org after the release. |
-| 13 | R5: the full walkthrough of the hosted app | Not done yet | Recorded on pairy.org after the release. |
-| 14 | Deliverable 1: each signed transaction as a stellar.expert link | Partial | Twelve transactions signed by a Privy wallet on localhost, listed under [Privy wallets](#privy-wallets-deliverable-1), among them a lock and a claim in the default trade (2026-11-24). Not done yet: the same on pairy.org, in R1. |
-| 15 | Deliverable 1: a green run with the `no-privy-signers` step, and its deliberate failing run | Not done yet on GitHub. Done locally | [CI checks](#ci-checks-green-and-deliberate-red-runs) |
-| 16 | Deliverable 1: a dated screenshot of the Privy dashboard showing no signers, authorization keys, key quorums or custom login | Not done yet | The owner takes the dated screenshots at the release, and they are linked here. A live screen-share is offered if the Chapter Lead asks. |
-| 17 | Deliverable 1: export and social (Google) login | Not done yet. Pending the day-21 gate (due 2026-12-14), an owner step | Both need a person: a Google login, and importing an exported key into Varial. The export button and the README's note on it ([Use this key in Varial](README.md#use-this-key-in-varial)) are in place. If either fails, it is marked not done here, with the reason, and Deliverable 1 ships with email login (the SOW's "Partial"). |
+| 8 | For every new CI check, a run made to fail on purpose on a throwaway branch, next to the green run | Done on GitHub (2026-11-25) | One red run per new check, each on its own throwaway branch and red on its named step, next to the green run on `main`: [CI checks](#ci-checks-green-and-deliberate-red-runs). |
+| 9 | R1: email sign-up, a lock and claim signed through Privy, the same email signing again in a second browser, the exported key imported into Varial (formerly Freighter) | Not done yet | Recorded on pairy.org, due by day 30 (2026-12-23) ([recordings](#recordings)). Its export step was done there on 2026-11-25, without a recording ([the day-21 gate](#on-pairyorg-the-day-21-gate-2026-11-25)). |
+| 10 | R2: a protected trade disputed from the flag dialog, both answers, both builders signing, the resolution in the trade room, the chat gone, a non-signer refused at pairy.org/arbiter | Not done yet | Recorded on pairy.org once protected mode is switched on there. |
+| 11 | R3: a protected trade released by the seller | Not done yet | Recorded on pairy.org once protected mode is switched on there. |
+| 12 | R4: a listing's "left" amount before and after a trade and after a cancel, and an EURC trade | Not done yet | Recorded on pairy.org, due by day 30 (2026-12-23). |
+| 13 | R5: the full walkthrough of the hosted app | Not done yet | Recorded on pairy.org, due by day 30 (2026-12-23). |
+| 14 | Deliverable 1: each signed transaction as a stellar.expert link | Partial | Twelve transactions signed by a Privy wallet on localhost, listed under [Privy wallets](#privy-wallets-deliverable-1), among them a lock and a claim in the default trade (2026-11-24). Not done yet on pairy.org: a Privy wallet signed in there on 2026-11-25 (a signed message, not a transaction), and a lock and a claim signed through Privy there are due with the day-14 gate (2026-12-07). |
+| 15 | Deliverable 1: a green run with the `no-privy-signers` step, and its deliberate failing run | Done on GitHub (2026-11-25) | Green on `main`: [CI run 45683695001](https://github.com/omeralpi/pairy/actions/runs/45683695001). Red on `fail/no-privy-signers`: [CI run 45683699776](https://github.com/omeralpi/pairy/actions/runs/45683699776) ([CI checks](#ci-checks-green-and-deliberate-red-runs)). |
+| 16 | Deliverable 1: a dated screenshot of the Privy dashboard showing no signers, authorization keys, key quorums or custom login | Not done yet | The owner takes the dated screenshot after the hosted protected exits on pairy.org, and it is linked here. A live screen-share is offered if the Chapter Lead asks. |
+| 17 | Deliverable 1: export and social (Google) login | Done on pairy.org (2026-11-25): the day-21 gate passed | The owner logged in with Google on pairy.org, and Privy made the wallet `GC2TKWY2…4CQP`. **Export key**, then **Copy key**, then Varial (formerly Freighter): its **Import a Stellar secret key** took the key as it was, with no converter, and showed the same address. Known issue: after Google's redirect, the login needed a second click ([the day-21 gate](#on-pairyorg-the-day-21-gate-2026-11-25)). The README's note: [Use this key in Varial](README.md#use-this-key-in-varial). |
 | 18 | Deliverable 1: under the day-10 fallback, each tested step's result, failing call and error | Not needed | Gate D1 passed on 2026-11-24 ([Privy wallets](#privy-wallets-deliverable-1)). |
 | 19 | Deliverable 2: the arbiter account: two keys at weight 1, its own key at weight 0, thresholds 2/2/2 | Done (checked 2026-11-24) | [The arbiter account](#the-arbiter-account) |
 | 20 | Deliverable 2: the locked platform account | Done (checked 2026-11-24) | [The locked platform account](#the-locked-platform-account) |
 | 21 | Deliverable 2: for each exit, the escrow on Trustless Work's viewer with its roles, the creation transaction signed by that trade's own creation account, and the fund, dispute and exit transactions with their payments | Done, by the repo's script | [The three exits](#the-three-protected-trade-exits-deliverable-2) |
 | 22 | Deliverable 2: the fee address recorded from the first scripted release, and every later exit paying the same address | Done | `GDDL743M…RCYF`, paid by the first scripted release on 2026-11-23 and pinned as `TW_FEE_ADDRESS` in [`lib/escrow/config.ts`](lib/escrow/config.ts). Each of the three exits paid it 0.015 USDC ([the fee address](#the-three-protected-trade-exits-deliverable-2)). |
-| 23 | Deliverable 2: for a resolved trade, the timeline in EVIDENCE.md shows both answers | Not done yet | The two exits resolved so far were run by the script, so nobody answered ([answers](#answers-and-the-72-hour-promise)). The in-app exits on pairy.org (R2, after the release) will have answers, and `scripts/ops/protected-report.ts` prints them for this file. |
-| 24 | Deliverable 2: `docs/arbitration.md` with its first-commit date | Partial | First committed 2026-11-23 18:42:21 UTC, before the first escrow. Not on GitHub yet: it is published in the release push ([when the rule was published](#when-the-arbitration-rule-was-published)). |
+| 23 | Deliverable 2: for a resolved trade, the timeline in EVIDENCE.md shows both answers | Not done yet | The two exits resolved so far were run by the script, so nobody answered ([answers](#answers-and-the-72-hour-promise)). The in-app exits on pairy.org (R2, once protected mode is on there) will have answers, and `scripts/ops/protected-report.ts` prints them for this file. |
+| 24 | Deliverable 2: `docs/arbitration.md` with its first-commit date | Done | First committed 2026-11-23 18:42:21 UTC ([`2818a08`](https://github.com/omeralpi/pairy/commit/2818a08ba248e86bea0db455116ccc048ae7bafd)), before the first escrow. Public on GitHub since the release push, 2026-11-25 19:17:15 UTC, so the scripted test exits came before it was public ([when the rule was published](#when-the-arbitration-rule-was-published)). |
 | 25 | Deliverable 2: the dated Phase 2 section of `docs/settlement-rail-comparison.md`, with the state of issue #132 | Done (dated 2026-11-24) | [Phase 2 (2026-11-24)](docs/settlement-rail-comparison.md#phase-2-2026-11-24): what changed, and why the resolver is accepted for protected trades only. [Issue #132, as of 2026-11-24](docs/settlement-rail-comparison.md#issue-132-as-of-2026-11-24): open, with no maintainer reply. That paragraph is checked and dated again on the closeout day. |
-| 26 | Deliverable 2: green runs with `tw-endpoint-allowlist` and the extended `coordination-purge-on-terminal`, each with its deliberate failing run | Not done yet on GitHub. Done locally | [CI checks](#ci-checks-green-and-deliberate-red-runs) |
+| 26 | Deliverable 2: green runs with `tw-endpoint-allowlist` and the extended `coordination-purge-on-terminal`, each with its deliberate failing run | Done on GitHub (2026-11-25) | Green on `main`: [CI run 45683695001](https://github.com/omeralpi/pairy/actions/runs/45683695001). Red on `fail/tw-endpoint-allowlist`: [CI run 45683700386, attempt 2](https://github.com/omeralpi/pairy/actions/runs/45683700386/attempts/2). Red on `fail/purge`: [CI run 45683700785, attempt 2](https://github.com/omeralpi/pairy/actions/runs/45683700785/attempts/2) ([CI checks](#ci-checks-green-and-deliberate-red-runs)). |
 | 27 | Deliverable 2: what cannot be shown on chain, stated as such | Done | [What cannot be shown on chain](#what-cannot-be-shown-on-chain) |
 | 28 | Deliverable 2: under the day-24 fallback, the three exits come from the repo's script, and EVIDENCE.md says so | Not decided yet (day-24 gate, due 2026-12-17) | Today the three exits are the script's. If in-app protected mode is live on pairy.org by day 24, R2 and R3 come from the app. If not, this row says the exits are the script's. |
-| 29 | Deliverable 3: R4, and screenshots of a listing showing "40 of 100 USDC left" before and after a trade and after a cancel | Not done yet on pairy.org | Taken on pairy.org with R4 after the release. Done on localhost, without screenshots in the repository ([remaining amount](#remaining-amount-and-the-concurrency-test-deliverable-3)). |
-| 30 | Deliverable 3: the concurrency test's failing run on the old code, and its green run | Not done yet on GitHub. Done locally | [Remaining amount and the concurrency test](#remaining-amount-and-the-concurrency-test-deliverable-3) |
+| 29 | Deliverable 3: R4, and screenshots of a listing showing "40 of 100 USDC left" before and after a trade and after a cancel | Partial | On pairy.org on 2026-11-25: screenshots of a listing showing "10 of 20 XLM left" after a trade opened ([desktop](scripts/evidence/archive/2026-11-25-listing-b4ed18b8-0cfc-49ef-a355-1212d28d40d9.png), [375 px wide](scripts/evidence/archive/2026-11-25-listing-b4ed18b8-0cfc-49ef-a355-1212d28d40d9-375.png)). Not done yet: R4, with the screenshots after a cancel, due by day 30 (2026-12-23). Done on localhost, without screenshots in the repository ([remaining amount](#remaining-amount-and-the-concurrency-test-deliverable-3)). |
+| 30 | Deliverable 3: the concurrency test's failing run on the old code, and its green run | Done on GitHub (2026-11-25) | Red on the old code: [CI run 45683699691](https://github.com/omeralpi/pairy/actions/runs/45683699691) on `red/listing-reservation`. Green on `main`: [CI run 45683695001](https://github.com/omeralpi/pairy/actions/runs/45683695001) ([remaining amount and the concurrency test](#remaining-amount-and-the-concurrency-test-deliverable-3)). |
 | 31 | Deliverable 3: EURC lock, claim, early reclaim rejected on chain, 60-second reclaim and the matured 72-hour reclaim, each showing the issuer | Done, except the matured 72-hour reclaim (not done yet: it matures on 2026-11-27 at 10:37:57 UTC) | [EURC](#eurc-deliverable-3) |
 | 32 | A missed 72-hour promise, reported here (`docs/arbitration.md`) | None so far (read 2026-11-24 22:19 UTC) | Two disputes were resolved well within 72 hours. Four test disputes are open, and their 72 hours end on 2026-11-27 between 13:16 and 20:01 UTC. Each one still unresolved then is listed as a missed promise, with its reason ([the 72-hour promise](#answers-and-the-72-hour-promise)). |
 
@@ -185,10 +185,10 @@ No Stellar testnet reset is scheduled before day 30 (2026-12-23): SDF removed th
 
 | Day-30 check | The links to open | If SDF announces a reset before day 30 |
 |---|---|---|
-| 2. The three protected-trade exits | [The three exits](#the-three-protected-trade-exits-deliverable-2), made by the repo's script. The in-app exits on pairy.org (R2, R3) are added after the release. | They are made again after it: on pairy.org, with team accounts trading and both builders signing at pairy.org/arbiter, or by the repo's script with both builders' signatures. |
+| 2. The three protected-trade exits | [The three exits](#the-three-protected-trade-exits-deliverable-2), made by the repo's script. The in-app exits on pairy.org (R2, R3) are added once protected mode is switched on there. | They are made again after it: on pairy.org, with team accounts trading and both builders signing at pairy.org/arbiter, or by the repo's script with both builders' signatures. |
 | 3. The arbiter account | [`GCAQSD3C…XCPH`](https://stellar.expert/explorer/testnet/account/GCAQSD3CRZVO34O7AJJWVIRKI6HGTOKLG5WSX4WJJTNG3QQ6ZWPAXCPH) | It is created again with the same two signer keys. The new address goes here and into `docs/arbitration.md`. |
 | 5. The EURC transactions | [EURC](#eurc-deliverable-3). The matured 72-hour reclaim is added after 2026-11-27 10:37:57 UTC. | The lock, claim, rejected early reclaim and 60-second reclaim are made again, and a new 72-hour lock is opened if 72 hours remain before day 30. This row says which. |
-| 1 and 4 (pairy.org sign-up and "left" amounts) | Not done yet: they come with the release, on pairy.org itself. | Nothing on chain to make again, except a lock and claim signed through Privy. |
+| 1 and 4 (pairy.org sign-up and "left" amounts) | 4: [done on pairy.org](#remaining-amount-and-the-concurrency-test-deliverable-3) on 2026-11-25. 1: a Google sign-up on pairy.org on 2026-11-25 ([the day-21 gate](#on-pairyorg-the-day-21-gate-2026-11-25)); the same email in two browsers is not done yet (R1). | Nothing on chain to make again, except a lock and claim signed through Privy. |
 
 ### Key table, checked on testnet
 
@@ -203,7 +203,7 @@ This is the key table of SOW section 3, extended with the accounts Pairy's test 
 | Escrow creation key (new, Deliverable 2), one per protected trade | The seller's browser memory, only while the escrow is created; never sent to Pairy, and dropped once the creation is recorded ([`lib/escrow/creation-key.ts`](lib/escrow/creation-key.ts)) | Sign the creation of that one escrow, as its "admin". In theory, change that escrow's terms before funding, or add a step after funding that the seller alone approves; Pairy asks for neither, and the key is gone | Move, redirect or settle funds; change roles, amount or fee once funded; open a dispute; act on any other trade | Each exit's creation transaction has that trade's creation account as its source and only signer: [`GCITNS4V…5BH5`](https://stellar.expert/explorer/testnet/account/GCITNS4VZSUWYUGFQJHWOMQR4HN3QNS4DCMC5RXBL6NJOTJ7UGAE5BH5) (release; to be archived on 2026-12-15), [`GDVA7ZVY…UZZV`](https://stellar.expert/explorer/testnet/account/GDVA7ZVY2NOKJQXG554NRZSMH2ITWASUGPOLHHZICV4PM7ONCORWUZZV) (to the buyer; to be archived on 2026-12-15), [`GDSEUECI…HJ6K`](https://stellar.expert/explorer/testnet/account/GDSEUECIT7XDOH7A7VOAB3LP3RIC2BL24ZBFEZZCL24UBQZH6K2DHJ6K) (to the seller; to be archived on 2026-12-15). Each has exactly two transactions: its Friendbot funding and the creation. It still holds its Friendbot XLM, with its own key at weight 1 and nothing else. That the key was dropped cannot be shown on chain. |
 | `SESSION_SECRET` (existing) | Pairy's server | Sign Pairy's login cookies | Sign any Stellar transaction; it is not a Stellar key | Not on chain. |
 | `CRON_SECRET` (existing) | Pairy's server and the hosting provider's daily scheduler | Start the daily clean-up job | Sign any Stellar transaction | Not on chain. |
-| Trustless Work API key, production (new, Deliverable 2) | Pairy's server, in the hosting provider's production settings only. It is created at the release | Ask Trustless Work to prepare unsigned escrow transactions | Sign or move anything; Trustless Work never signs | Not on chain. |
+| Trustless Work API key, production (new, Deliverable 2) | Pairy's server, in the hosting provider's production settings only. It was created on 2026-11-25. Pairy calls Trustless Work only for protected trades, so the key is first used once protected mode is switched on | Ask Trustless Work to prepare unsigned escrow transactions | Sign or move anything; Trustless Work never signs | Not on chain. |
 | Trustless Work API key, development (new) | The team's development machine, and the hosting provider's preview settings (owner to confirm); never GitHub Actions, where CI uses recorded answers | The same, for test runs | The same | Not on chain. |
 | Platform account (new, Deliverable 2) | Nobody: its own key is switched off | Receive a platform fee, which is set to 0 | Sign anything, so nobody can use its right to open a dispute | [`GAHSTUWN…ISFW`](https://stellar.expert/explorer/testnet/account/GAHSTUWNAQ2HJ6FPKEY6OJP6RAX4PHEEAOTB7EAZR4A2KBDGVVK3ISFW): its only signer is its own key at weight 0. It has a USDC trustline holding 0 USDC, and nothing has happened since its setup ([below](#the-locked-platform-account)). |
 | Platform setup key | Existed in memory for one run of [`scripts/ops/setup-platform.ts`](scripts/ops/setup-platform.ts) | Nothing now: it is the account's own key, at weight 0 | Sign anything | As above: weight 0. |
@@ -239,7 +239,7 @@ This is the key table of SOW section 3, extended with the accounts Pairy's test 
 
 ### Gate record
 
-These are the dated runs that prove the SOW's gate dates. Each transaction links to stellar.expert. Each also links to its archived Horizon record, `scripts/evidence/archive/<hash>.json`, which holds the signed envelope, the result and the operations, so it stays checkable after a testnet reset. A transaction, account or escrow marked "to be archived on 2026-12-15" is not in the archive yet. The archive run of 2026-12-15 adds it, because that run archives every stellar.expert and Trustless Work viewer link in this file. Every hash in this section was read back from Horizon on 2026-11-24, by 23:44 UTC.
+These are the dated runs that prove the SOW's gate dates. Each transaction links to stellar.expert. Each also links to its archived Horizon record, `scripts/evidence/archive/<hash>.json`, which holds the signed envelope, the result and the operations, so it stays checkable after a testnet reset. A transaction, account or escrow marked "to be archived on 2026-12-15" is not in the archive yet. The archive run of 2026-12-15 adds it, because that run archives every stellar.expert and Trustless Work viewer link in this file. Every hash in this section was read back from Horizon on 2026-11-24, by 23:44 UTC, except the ones added on 2026-11-25, which were read back on 2026-11-25, by 20:23 UTC.
 
 #### Privy wallets (Deliverable 1)
 
@@ -264,10 +264,18 @@ These are the dated runs that prove the SOW's gate dates. Each transaction links
 Other parts of Deliverable 1:
 - **SEP-53 sign-in through Privy.** Accepted by the unchanged `auth.verify` from two fresh browser profiles. It is a signed message, not a transaction, so it is not on chain ([`docs/phase2-gates.md`](docs/phase2-gates.md), S-03).
 - **The same wallet in a second browser.** A second fresh browser, logged in with the same email, showed the same address and created no new wallet (S-04). A later rehearsal on the real onboarding and wallet pages did the same, and its second browser signed the EURC trustline above.
-- **Export, then import into Varial (formerly Freighter).** Not done yet. It is the day-21 gate (due 2026-12-14), an owner step.
-- **Google login.** Not done yet. It is the same day-21 gate, an owner step.
+- **Export, then import into Varial (formerly Freighter).** Done on pairy.org on 2026-11-25, the day-21 gate ([below](#on-pairyorg-the-day-21-gate-2026-11-25)).
+- **Google login.** Done on pairy.org on 2026-11-25, in the same gate.
 - **A lock and claim signed through Privy, in the default trade.** Done on localhost on 2026-11-24, in two XLM trades between the Privy wallet and a device key, the lock and the claim in the table above ([`docs/phase2-gates.md`](docs/phase2-gates.md), WP-28). In the first, the device key claimed the Privy wallet's lock: [`29b69940…e87c`](https://stellar.expert/explorer/testnet/tx/29b69940c6d99a56f8da50cd3d3ccb67a1fcfe131cd5d044c395135d1aa0e87c) (to be archived on 2026-12-15). In the second, the device key locked what the Privy wallet claimed: [`943e8191…e57e`](https://stellar.expert/explorer/testnet/tx/943e819165aae6105018fac8435dbab8e782ef41c20f69dacfc99f94aaf9e57e) (to be archived on 2026-12-15). Each lock names only the buyer (before 72 hours) and the seller (after), and each claim credited the buyer the full amount. Not done yet on pairy.org: it comes with R1.
-- **Live on pairy.org** (day-14 gate, due 2026-12-07). Not done yet: it comes with the release.
+- **Live on pairy.org** (day-14 gate, due 2026-12-07). Partly done. Since the release on 2026-11-25, pairy.org serves the month-2 build ([the release](#the-release-on-pairyorg-2026-11-25)), and a Privy wallet signed in there (below). Not done yet: a lock and a claim signed through Privy on pairy.org.
+
+##### On pairy.org: the day-21 gate (2026-11-25)
+
+The owner ran these steps on pairy.org on 2026-11-25, with their own Google account. They are the SOW's export and social-login checks, and both passed.
+- **Google login.** On `/onboard`: **Continue with email or Google**, then **Google**. Privy made the Stellar wallet [`GC2TKWY2…4CQP`](https://stellar.expert/explorer/testnet/account/GC2TKWY2L2XZATBSOUN6QWCFWGAJOLIPA4FLW6UD7PIE2ZL7M75N4CQP) (to be archived on 2026-12-15), and Friendbot created it with 10,000 XLM: [`d8b551b2…5f5a`](https://stellar.expert/explorer/testnet/tx/d8b551b205e65b9ef1bd8db689cdfb699b10ffae79f2c198508833a232645f5a) (2026-11-25 19:56:28 UTC; to be archived on 2026-12-15). The sign-in was signed through Pairy's "Confirm with Privy" dialog. The wallet page then showed "EMAIL WALLET (PRIVY)" and "Signed in with Google".
+- **Export into Varial (formerly Freighter).** On the wallet page, **Export key** opened Privy's own screen, and **Copy key** copied the key. Varial's **Import a Stellar secret key** took it as it was, so the README's offline converter was not needed. The imported account showed the same full address and 10,000 XLM.
+- **What Horizon shows** (read 2026-11-25 at 20:23 UTC). The account has one signer, its own key at weight 1, and one transaction, its creation by Friendbot. The login and the export are not on chain.
+- **Known issue.** After Google's redirect back to `/onboard`, the sign-in did not go on by itself. The owner had to start it again with one more click before Pairy's sign-in dialog appeared. This is not fixed yet.
 
 #### The three protected-trade exits (Deliverable 2)
 
@@ -310,7 +318,7 @@ Dated screenshots of the three exits' stellar.expert pages are archived too: [re
 
 `docs/arbitration.md` promises that the arbiter applies the outcome within 72 hours of the dispute transaction, and that a missed promise is reported here.
 
-**The two resolved exits have no answers.** They were run by the repo's script, not by two traders in the app, so nobody answered "Was the cash handed over in full?". The script resolved each one to the side its exit names. Answers come with the in-app exits on pairy.org (R2, after the release). `scripts/ops/protected-report.ts` prints them with each trade's timeline for this file: not done yet.
+**The two resolved exits have no answers.** They were run by the repo's script, not by two traders in the app, so nobody answered "Was the cash handed over in full?". The script resolved each one to the side its exit names. Answers come with the in-app exits on pairy.org (R2, once protected mode is on there). `scripts/ops/protected-report.ts` prints them with each trade's timeline for this file: not done yet.
 
 Every dispute so far on an escrow that names the real arbiter:
 
@@ -329,17 +337,20 @@ The last four rows are test trades:
 - **The arbiter's part so far.** The arbiter has signed nothing for them: since its setup, its only transactions are the two resolves above.
 - **If 72 hours pass.** Each one still unresolved when its 72 hours end is a missed promise. Its row then says "unresolved at 72 h on" that date, and it is never left out. The reason is the same for all four:
   - each is a test escrow;
-  - the run where both builders sign in the app, each on their own computer, waits for the owner-approved deploy. Putting both arbiter keys on one machine to sign them locally would defeat the two-signature rule.
+  - the run where both builders sign in the app, each on their own computer, waits until protected mode is switched on at pairy.org (the day-24 gate is due 2026-12-17). Putting both arbiter keys on one machine to sign them locally would defeat the two-signature rule.
 
   If a testnet reset deletes any of them first, that is stated here too.
 
 #### When the arbitration rule was published
 
-- **First commit.** `docs/arbitration.md` was first committed on 2026-11-23 at 18:42:21 UTC (commit `2818a08`), with the rule and the acceptance text.
+- **First commit.** `docs/arbitration.md` was first committed on 2026-11-23 at 18:42:21 UTC (commit [`2818a08`](https://github.com/omeralpi/pairy/commit/2818a08ba248e86bea0db455116ccc048ae7bafd)), with the rule and the acceptance text.
 - **Later commits.** Two commits that evening only filled in the platform and arbiter account lines (`0056fa7`, `3002314`). The rule and the acceptance text have not changed since.
 - **The first escrow.** The first escrow any Pairy script deployed came 25 minutes after the first commit: [`e7c74f4c…06e3`](https://stellar.expert/explorer/testnet/tx/e7c74f4cc3575e787e128268eccf306d7c90a90e42ee69fa76dfc673cb1f06e3) ([archive](scripts/evidence/archive/e7c74f4cc3575e787e128268eccf306d7c90a90e42ee69fa76dfc673cb1f06e3.json)) (2026-11-23 19:07:52 UTC, a spike escrow with throwaway roles).
 
-**Not on GitHub yet.** The commit date is not the publication date. The file reaches GitHub in the release push, so the scripted test exits of 2026-11-23 and 2026-11-24 came before the rule was public. No protected trade is offered to anyone on pairy.org before that push. The push date goes here: not done yet.
+**Published on GitHub on 2026-11-25 at 19:17:15 UTC.** The commit date is not the publication date.
+- **The push.** The file reached GitHub in the release push, when `main` moved from `72800bb` to `4c4cf90` ([the commits](https://github.com/omeralpi/pairy/compare/72800bb...4c4cf90)). [The file on GitHub](https://github.com/omeralpi/pairy/blob/main/docs/arbitration.md).
+- **So:** the rule was committed before the first test escrow, but it became public only at that push. The scripted test exits of 2026-11-23 and 2026-11-24 came before the rule was public.
+- **No protected trade on pairy.org before it.** Until the deploy at 19:36:07 UTC, pairy.org ran the Phase 1 build, which has no protected trades. Since then, protected mode has been off: `https://pairy.org/api/trpc/escrow.config` says `"enabled":false` (read 2026-11-25 at 20:23 UTC), and while it is off the app refuses to open a protected trade.
 
 #### Remaining amount and the concurrency test (Deliverable 3)
 
@@ -348,7 +359,14 @@ The last four rows are test trades:
 - After a trade of 60 opened, it showed "40 of 100 USDC left" on the listing page, in My listings and on the map card. An open of 50 was then refused with "Only 40 USDC left on this listing. Enter 10 to 40."
 - After that trade was cancelled, it showed "100 of 100 USDC left" again.
 
-This was a local run, so its screenshots are not in the repository. The screenshots from pairy.org are taken with R4 after the release: not done yet.
+This was a local run, so its screenshots are not in the repository. The screenshots from pairy.org follow.
+
+**"10 of 20 XLM left", on pairy.org (2026-11-25).** In the smoke test after the release ([the release](#the-release-on-pairyorg-2026-11-25)):
+- A new listing, "Selling 5 to 20 XLM" ([the listing](https://pairy.org/listings/b4ed18b8-0cfc-49ef-a355-1212d28d40d9), closed after the test), showed "20 of 20 XLM left".
+- After a trade of 10 opened, the listing page and "Your listings" showed "10 of 20 XLM left", and the trade form's upper bound fell to 10: [screenshot](scripts/evidence/archive/2026-11-25-listing-b4ed18b8-0cfc-49ef-a355-1212d28d40d9.png), [at 375 px wide](scripts/evidence/archive/2026-11-25-listing-b4ed18b8-0cfc-49ef-a355-1212d28d40d9-375.png).
+- After that trade was locked and claimed, the listing still showed "10 of 20 XLM left": a claimed trade keeps its amount used.
+
+R4 and its screenshots after a cancel are not done yet. They are due by day 30 (2026-12-23).
 
 **In the built app, on localhost (2026-11-24).**
 - A listing of 1 to 2.5 USDC showed "2.5 of 2.5 USDC left".
@@ -360,9 +378,11 @@ This was a local run, so its screenshots are not in the repository. The screensh
 - [`tests/pg/listing-reservation.pg.test.ts`](tests/pg/listing-reservation.pg.test.ts), on a real Postgres 16 with ten buyers at once.
 
 Each opens trades of 60 XLM on a listing of 100 XLM at the same moment and requires exactly one to succeed.
-- **Red on the old code.** The old code is `72800bb`, kept with the tests on the throwaway branch `red/listing-reservation` (commit `d43041b`). There both tests fail: "2 fulfilled, expected 1", and "10 fulfilled, expected 1". In the real-Postgres test all ten trades were accepted: 600 XLM of trades on a 100 XLM listing.
+- **Red on the old code.** The old code is `72800bb`, kept with the tests on the throwaway branch `red/listing-reservation` (commit `d43041b`). Run locally there, both tests fail: "2 fulfilled, expected 1", and "10 fulfilled, expected 1". In the real-Postgres test all ten trades were accepted: 600 XLM of trades on a 100 XLM listing.
 - **Green.** Both pass since `38b5357`, which keeps the remaining amount under the listing's row lock.
-- **GitHub runs.** The red and green runs come with the release push: not done yet.
+- **GitHub runs.**
+  - Red on the old code: [CI run 45683699691](https://github.com/omeralpi/pairy/actions/runs/45683699691) on `red/listing-reservation`, step `listing-reservation-concurrency`: "2 fulfilled, expected 1". That commit's CI file predates the `pg-concurrency` job, so the real-Postgres test has no red run on the old code on GitHub. Its red run on GitHub is on `fail/pg-concurrency`, which removes the listing row lock from the current code: [CI run 45683701646](https://github.com/omeralpi/pairy/actions/runs/45683701646), "10 fulfilled, expected 1".
+  - Green on `main`: [CI run 45683695001](https://github.com/omeralpi/pairy/actions/runs/45683695001), both tests.
 
 #### EURC (Deliverable 3)
 
@@ -396,6 +416,27 @@ A spike asked whether a prepared resolve can wait a long time for two signers. I
 
 So a prepared resolve has almost no fee headroom, and it can fail if it is held long. Pairy keeps each prepared resolve valid for 60 minutes only and never raises its fee cap. When the network refuses one, the arbiter page says "This prepared transaction was not accepted by the network; prepare again." The run's records are in the repository: [the result](tests/fixtures/tw/s19-records/s19-timebounds-24h-late-result.json) and [its first part](tests/fixtures/tw/s19-records/s19-timebounds-24h-late-result-part1.json), with each submit, the simulations before it and the payouts.
 
+#### The release on pairy.org (2026-11-25)
+
+- **The push (19:17:15 UTC, as GitHub's [activity log](https://github.com/omeralpi/pairy/activity) records it).** `main` on GitHub moved from `72800bb` to `4c4cf90`, a fast-forward ([the commits](https://github.com/omeralpi/pairy/compare/72800bb...4c4cf90)). The seven throwaway branches of the [CI checks](#ci-checks-green-and-deliberate-red-runs) went with it. A push does not deploy: pairy.org is deployed from the team's machine.
+- **A backup first (19:32:26 UTC).** A full dump of the production database was taken before the migration. The migration was not rehearsed on a copy of the production database; the rehearsals on Postgres 16 are the S-11 and WP-27 rows of [`docs/phase2-gates.md`](docs/phase2-gates.md).
+- **The migration (about 19:33 UTC).** One `pnpm db:migrate` took production from `0005` to `0008`: 9 rows in the migration journal, up from 6. Before and after, it held 3 listings and 3 trades, all claimed. No listing's remaining amount differed from the amount recomputed from its trades.
+- **The deploy (19:36:07 UTC).** pairy.org serves `4c4cf90`, with protected mode off. `https://pairy.org/api/trpc/escrow.config` answered `"enabled":false` and the arbiter account `GCAQSD3C…XCPH`. `/arbiter` answered 200, and the development-only `/spike-escrow` 404.
+- **The locked backfill.** The remaining-amount backfill then ran again, under a lock on every listing row, as [the rehearsal doc](docs/remaining-amount-rehearsal-2026-11-24.md) says: `UPDATE 3`, and still no listing off.
+- **After the smoke test.** The same check found 9 journal rows, 5 listings, 4 trades, no active listing below its minimum, and no listing off. So the new build kept the remaining amount right by itself through the smoke test's trade.
+
+The counts above were read on the production database, which is private: they are the team's record of the release, and a reviewer cannot open them.
+
+**The smoke test (2026-11-25, 19:41 to 19:49 UTC).** Two fresh headless Chrome profiles, driven by a script through pairy.org's own pages, traded with each other. Each had a device key made on the onboarding screen and funded by Friendbot.
+- **A listing.** The seller published "Selling 5 to 20 XLM" in Bangkok: `listing.create` answered 200.
+- **A trade.** The buyer opened a trade of 10 XLM, and the listing showed "10 of 20 XLM left" ([remaining amount](#remaining-amount-and-the-concurrency-test-deliverable-3)).
+- **The lock.** The seller agreed, then locked 10 XLM: [`1dc4281b…0e1f`](https://stellar.expert/explorer/testnet/tx/1dc4281b347e571a7f96457f9db1b5b1cf4388f6c6f87fb4fa43e64d909a0e1f) (to be archived on 2026-12-15). On Horizon, its two claimants are the buyer with `rel_before 259200` and the seller with `not rel_before 259200`.
+- **The claim.** The buyer claimed it: [`bb71b472…e0e2`](https://stellar.expert/explorer/testnet/tx/bb71b47212291b6a57854d6d0d3c64c2f1ebf3a053eca5f32248693fc4ade0e2) (to be archived on 2026-12-15). Each transaction has one signature, from its source.
+- **The chat.** Both trade rooms then said "This trade has ended, so its chat was deleted.", and the trade's chat list was empty.
+- **Protected mode off.** The listing form offered USDC, XLM and EURC. On a USDC listing, no protected-trade toggle and no sentence about protected trades showed.
+- **`/arbiter`.** Opened by the seller, it said "This page is only for the arbiter account's signers."
+- **Cleanup.** Both of the test's listings were closed afterwards.
+
 #### Local runs of the app
 
 These are not on chain beyond the transactions linked here, and their logs are not in the repository.
@@ -419,24 +460,29 @@ These are not on chain beyond the transactions linked here, and their logs are n
 
 SOW 6.1 asks, for every new CI check, for a green run and for a run on a throwaway branch where the check was made to fail on purpose.
 
-**Not done yet on GitHub.** Nothing from month 2 is pushed yet, so there are no GitHub run links. Three things go out together in the release push, after the owner approves it:
-- `main`;
-- the branch `red/listing-reservation`;
-- the six `fail/*` branches.
+**On GitHub since 2026-11-25.** The release push sent `main` at 19:17:15 UTC and seven throwaway branches at 19:17:20 UTC, which are never merged:
+- six `fail/*` branches, each one commit on the release commit `4c4cf90` that breaks one rule;
+- `red/listing-reservation`, the concurrency tests on the old code `72800bb`.
 
-Their run links go into this table then, and the branches are rebuilt on the final commit before that push.
+How to read the runs:
+- **Green.** On `main` (`4c4cf90`): [CI run 45683695001](https://github.com/omeralpi/pairy/actions/runs/45683695001), both jobs (`ci` and `pg-concurrency`) with every step green, and [testnet run 45683694932](https://github.com/omeralpi/pairy/actions/runs/45683694932).
+- **Red.** Each red run below has its named step red. The failing tests are quoted from the run's log. In the CI file, each check still runs after an earlier one fails, so a red run shows its own step red instead of skipped.
+- **Three re-runs.** On three branches, attempt 1's `ci` job did not finish, so that job was run again, and the links below are to attempt 2:
+  - on `fail/tw-endpoint-allowlist` and `fail/purge`, it was cancelled in the middle of its unit tests. Its log says only that the runner received a shutdown signal, with no cause;
+  - on `fail/dispute-answer-purge`, it lost its runner during its unit tests: GitHub reports that "the hosted runner lost communication with the server".
 
-**Done locally on 2026-11-24.** Until the push, the table shows a local run of every step of `.github/workflows/ci.yml`. Each step ran with the workflow's own command and a clean environment, on the release candidate (local commit `1ca9a00`, whose CI file is the one in `19faea0`) and on each throwaway branch built on it. In that candidate's CI file, each check still runs after an earlier one fails, so a red run shows its own step red instead of skipped.
+  Only the `ci` job ran again. The `pg-concurrency` job shown with attempt 2 is attempt 1's result.
+- **Checked locally first.** Before the push, the same steps ran locally on each branch, on 2026-11-24 and again on `4c4cf90` on 2026-11-25, with the same red steps.
 
-| CI step | New in month 2 | Green run on GitHub | Made to fail on purpose | Local result |
+| CI step | New in month 2 | Green on `main` | Made to fail on purpose | The red run on GitHub, and what went red |
 |---|---|---|---|---|
-| `no-secret-fields` | Extended: no Stellar key may be made outside the wallet and creation-key modules | Not done yet | `fail/no-secret-fields`: `Keypair.random()` added to the escrow router | Green on the candidate. On the branch, only this step is red (1 test) |
-| `coordination-purge-on-terminal` | Extended: the protected exits, and dispute notes | Not done yet | `fail/purge`: the dispute-note purge commented out | This step is red (2 tests). Also red, because they test the same purge: `unit tests` (5 tests) and the Postgres step (1 test) |
-| `tw-endpoint-allowlist` | New | Not done yet | `fail/tw-endpoint-allowlist`: an `updateEscrow` call added to the Trustless Work client | Only this step is red (2 tests) |
-| `listing-reservation-concurrency` | New | Not done yet | `red/listing-reservation`: the tests on the old code `72800bb` | This step is red: "2 fulfilled, expected 1" |
-| `no-privy-signers` | New | Not done yet | `fail/no-privy-signers`: Privy's `useSigners` imported, and a Privy server package added | Only this step is red (4 tests) |
-| `listing-reservation-concurrency (postgres)`, in the new `pg-concurrency` job | New. It also runs the answer-lock test | Not done yet | `fail/pg-concurrency`: the listing row lock removed. `fail/dispute-answer-purge`: saving an answer no longer locks the trade row | On each branch only this step is red (1 test each; the first fails with "10 fulfilled, expected 1") |
-| `settlement on testnet` (`testnet.yml`) | Extended to EURC | Not done yet | None: it runs only on `main` and by hand, against the real testnet | Not run |
+| `no-secret-fields` | Extended: no Stellar key may be made outside the wallet and creation-key modules | 10 of 10 tests | `fail/no-secret-fields`: `Keypair.random()` added to the escrow router | [CI run 45683699325](https://github.com/omeralpi/pairy/actions/runs/45683699325). Only this step, 1 of 10 tests: "no source makes a Stellar key outside the wallet and creation-key modules, and nothing on the server side signs" |
+| `coordination-purge-on-terminal` | Extended: the protected exits, and dispute notes | 8 of 8 | `fail/purge`: the dispute-note purge commented out | [CI run 45683700785, attempt 2](https://github.com/omeralpi/pairy/actions/runs/45683700785/attempts/2). This step, 2 of 8: "deletes every chat row and every dispute note, keeping the answers, when the trade is resolved_buyer", and the same for `resolved_seller`. Also red, because they test the same purge: `unit tests`, 5 of 1,262 (in `lib/escrow/sync.test.ts`, `lib/trade/persist.test.ts`, `server/api/routers/arbiter.test.ts` twice and `server/api/routers/escrow.test.ts`), and the `pg-concurrency` job's step, 1 of 9 ("lets a terminal transition purge an answer's note that was being saved when it started") |
+| `tw-endpoint-allowlist` | New | 16 of 16 | `fail/tw-endpoint-allowlist`: an `updateEscrow` call added to the Trustless Work client | [CI run 45683700386, attempt 2](https://github.com/omeralpi/pairy/actions/runs/45683700386/attempts/2). Only this step, 2 of 16: "1: the endpoint list is exactly the frozen set, on the beta API host" and "5: no source names a call Pairy never makes" |
+| `listing-reservation-concurrency` | New | 1 of 1 | `red/listing-reservation`: the tests on the old code `72800bb` | [CI run 45683699691](https://github.com/omeralpi/pairy/actions/runs/45683699691). This step, 1 of 1: "accepts only one of two simultaneous trades that together exceed the listing", "2 fulfilled, expected 1". `build` shows as skipped: that commit has the old CI file, in which a later step does not run after a failure |
+| `no-privy-signers` | New | 20 of 20 | `fail/no-privy-signers`: Privy's `useSigners` imported, and a Privy server package added | [CI run 45683699776](https://github.com/omeralpi/pairy/actions/runs/45683699776). Only this step, 4 of 20: "1: the only Privy package is @privy-io/react-auth, pinned exactly"; "1: pnpm-lock.yaml holds no Privy server package, direct, aliased or brought in by another package"; "3: the Privy file imports only the frozen names from the two allowed modules"; "4: no source uses a signer, delegation, key-export, custom-auth or server-client identifier" |
+| `listing-reservation-concurrency (postgres)`, in the new `pg-concurrency` job | New. It also runs the answer-lock test | 7 of 9; the 2 skipped are the guard tests that fail the job when no test database is set | `fail/pg-concurrency`: the listing row lock removed. `fail/dispute-answer-purge`: saving an answer no longer locks the trade row | [CI run 45683701646](https://github.com/omeralpi/pairy/actions/runs/45683701646) (`fail/pg-concurrency`). Only this step, 1 of 9: "accepts exactly one of ten simultaneous trades of 60 on a listing of 100", "10 fulfilled, expected 1". [CI run 45683699459, attempt 2](https://github.com/omeralpi/pairy/actions/runs/45683699459/attempts/2) (`fail/dispute-answer-purge`). Only this step, 1 of 9: "lets a terminal transition purge an answer's note that was being saved when it started" |
+| `settlement on testnet` (`testnet.yml`) | Extended to EURC | [Testnet run 45683694932](https://github.com/omeralpi/pairy/actions/runs/45683694932): the 5 XLM and USDC tests passed. The 5 EURC tests were skipped, as the workflow intends: their seller is funded from the team's EURC treasury, which CI never holds, and the testnet DEX has no path to EURC. The EURC transactions are the script's ([EURC](#eurc-deliverable-3)) | None: it runs only on `main` and by hand, against the real testnet | None |
 
 ### Recordings
 
@@ -444,11 +490,11 @@ Each recording is uncut and is linked here once it exists.
 
 | Recording | What it shows | Status |
 |---|---|---|
-| R1 (Deliverable 1) | Email sign-up, a lock and claim signed through Privy, the same email signing again in a second browser, the exported key imported into Varial (formerly Freighter) | Not done yet: recorded on pairy.org after the release |
-| R2 (Deliverable 2) | Two traders accept the acceptance screen; the seller creates and funds the escrow; a dispute from the flag dialog; both answers; the arbiter page shows the rule's outcome; both builders sign; the resolution in the trade room; the chat gone; a non-signer refused at pairy.org/arbiter | Not done yet: recorded on pairy.org after the release |
-| R3 (Deliverable 2) | A protected trade released by the seller | Not done yet: recorded on pairy.org after the release |
-| R4 (Deliverable 3) | A listing's "left" amount before and after a trade and after a cancel, and an EURC trade | Not done yet: recorded on pairy.org after the release |
-| R5 | The full walkthrough of the hosted app | Not done yet: recorded on pairy.org after the release |
+| R1 (Deliverable 1) | Email sign-up, a lock and claim signed through Privy, the same email signing again in a second browser, the exported key imported into Varial (formerly Freighter) | Not done yet: recorded on pairy.org, due by day 30 (2026-12-23) |
+| R2 (Deliverable 2) | Two traders accept the acceptance screen; the seller creates and funds the escrow; a dispute from the flag dialog; both answers; the arbiter page shows the rule's outcome; both builders sign; the resolution in the trade room; the chat gone; a non-signer refused at pairy.org/arbiter | Not done yet: recorded on pairy.org once protected mode is switched on there (the day-24 gate is due 2026-12-17) |
+| R3 (Deliverable 2) | A protected trade released by the seller | Not done yet: recorded on pairy.org once protected mode is switched on there (the day-24 gate is due 2026-12-17) |
+| R4 (Deliverable 3) | A listing's "left" amount before and after a trade and after a cancel, and an EURC trade | Not done yet: recorded on pairy.org, due by day 30 (2026-12-23) |
+| R5 | The full walkthrough of the hosted app | Not done yet: recorded on pairy.org, due by day 30 (2026-12-23) |
 
 ### What cannot be shown on chain
 
