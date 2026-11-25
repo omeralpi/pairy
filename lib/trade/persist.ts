@@ -113,7 +113,7 @@ export async function transitionTrade(
       if (isTerminal(next.state)) {
         await tx.delete(chatMessages).where(eq(chatMessages.tradeId, tradeId));
         // The yes/no answers stay in the timeline; the free text goes with the chat.
-        await tx.update(disputeAnswers).set({ note: null }).where(eq(disputeAnswers.tradeId, tradeId));
+        // await tx.update(disputeAnswers).set({ note: null }).where(eq(disputeAnswers.tradeId, tradeId));
       }
       await recomputeRemaining(tx, ref.listingId);
       return updated;
